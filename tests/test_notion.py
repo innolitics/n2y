@@ -1,6 +1,6 @@
 import pytest
 
-from notion import id_from_share_link
+from n2y.notion import id_from_share_link
 
 
 def test_database_id_from_share_link_id():

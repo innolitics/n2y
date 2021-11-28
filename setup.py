@@ -15,7 +15,7 @@ setup(
     description=description,
     long_description=description,
     long_description_content_type='text/x-rst',
-    url='https://github.com/innolitics/notion2yaml',
+    url='https://github.com/innolitics/n2y',
     author='Innolitics, LLC',
     author_email='info@innolitics.com',
     license='MIT',
@@ -29,7 +29,7 @@ setup(
         'Programming Language :: Python :: 3.9',
     ],
     keywords='notion documentation yaml markdown',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    packages=find_packages(exclude=['tests']),
     install_requires=['pyyaml'],
     extras_require={
         'dev': [
