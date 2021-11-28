@@ -1,3 +1,6 @@
+"""
+Grabbing data from the Notion API
+"""
 import json
 
 import requests
