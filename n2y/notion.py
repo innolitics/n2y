@@ -7,8 +7,10 @@ class Client:
 
 
 def id_from_share_link(share_link):
-    # see tests
-    database_id = share_link.split("/")[-1].split("?")[0].replace("-", "")
+    hyphens_removed = share_link.replace("-", "")
+    if len(hyphens_removed) == 36:
+        return hyphens_removed
+    database_id = hyphens_removed.split("/")[-1].split("?")[0]
     if len(database_id) != 36:
         raise ValueError(f"Notion database ID {database_id} is not 36 characters long as expected")
     return database_id
