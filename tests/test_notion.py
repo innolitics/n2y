@@ -1,6 +1,6 @@
 import pytest
 
-from n2y.notion import id_from_share_link, get_all_pages
+from n2y.notion import id_from_share_link
 
 
 def test_database_id_from_share_link_id():

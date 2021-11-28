@@ -21,23 +21,37 @@ def simplify_property_name(name):
 
 
 def simplify_property(prop):
-    if prop["type"] == "rich_text":
+    if prop["type"] == "title":
+        return simplify_title(prop["title"])
+    elif prop["type"] == "rich_text":
         return simplify_rich_text(prop["rich_text"])
     elif prop["type"] == "select":
         return simplify_select(prop["select"])
-    elif prop["type"] == "title":
-        return simplify_title(prop["title"])
+    elif prop["type"] == "people":
+        return simplify_people(prop["people"])
+    elif prop["type"] == "url":
+        return prop["url"]
+    elif prop["type"] == "number":
+        return prop["number"]
+    elif prop["type"] == "email":
+        return prop["email"]
+    elif prop["type"] == "checkbox":
+        return prop["checkbox"]
+    elif prop["type"] == "phone_number":
+        return prop["phone_number"]
+    elif prop["type"] == "date":
+        return simplify_date(prop["date"])
     else:
-        # TODO: add other column types
+        # TODO: add remaining column types
         raise NotImplementedError()
-
-
-def simplify_select(data):
-    return data["name"]
 
 
 def simplify_title(data):
     return data[0]["plain_text"]
+
+
+def simplify_select(data):
+    return data["name"]
 
 
 def simplify_rich_text(data):
@@ -48,3 +62,14 @@ def simplify_rich_text(data):
         return ""
     else:
         return data[0]["plain_text"]
+
+
+def simplify_people(data):
+    return [p["name"] for p in data]
+
+
+def simplify_date(data):
+    if data["end"] is None:
+        return data["start"]
+    else:
+        return f'{data["start"]} to {data["end"]}'
