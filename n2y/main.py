@@ -4,10 +4,9 @@ import argparse
 
 import yaml
 
-import notion
+from n2y import notion
 
-
-if __name__ == "__main__":
+def main():
     ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
     if ACCESS_TOKEN is None:
         print("No NOTION_ACCESS_TOKEN environment variable is set", file=sys.stderr)
@@ -20,3 +19,7 @@ if __name__ == "__main__":
     client = notion.Client(ACCESS_TOKEN)
     database_data = client.get_database(database_id)
     print(yaml.dump(database_data))
+
+
+if __name__ == "__main__":
+    main()

@@ -16,7 +16,7 @@ Finally, in Notion you'll need to share the relevant pages with your internal in
 
 ## Converting a Database to YAML
 
-Copy the link for the database you'd like to export to YAML. Then run:
+Copy the link for the database you'd like to export to YAML. Note that linked databases aren't supported. Then run:
 
 ```
 n2y DATABASE_LINK > database.yml
