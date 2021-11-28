@@ -15,7 +15,8 @@ def main():
 
     parser = argparse.ArgumentParser(description="Move data from Notion into YAML files")
     parser.add_argument("database", help="The Notion database id or share url")
-    parser.add_argument("--raw", action='store_true',
+    parser.add_argument(
+        "--raw", action='store_true',
         help="Dump the raw notion API data",
     )
     args = parser.parse_args()

@@ -1,5 +1,3 @@
-import pytest
-
 from n2y.notion import id_from_share_link
 
 

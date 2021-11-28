@@ -1,4 +1,3 @@
-import pytest
 import yaml
 
 from n2y.simplify import flatten_database_row

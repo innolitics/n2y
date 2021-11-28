@@ -1,8 +1,6 @@
 """
 Grabbing data from the Notion API
 """
-import json
-
 import requests
 
 
@@ -25,7 +23,6 @@ class Client:
 
         return sum(depaginator(starting_url), [])
 
-
     def _get_database(self, url, database_id):
         headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -34,11 +31,11 @@ class Client:
         }
         response = requests.post(url, headers=headers)
         if response.status_code == 401:
-            raise ValueError(f"The provided API token is invalid")
+            raise ValueError("The provided API token is invalid")
         if response.status_code == 404:
             raise ValueError(f"Unable to find database with id '{database_id}'")
         if response.status_code == 400:
-            raise ValueError(f"Invalid request")
+            raise ValueError("Invalid request")
         if response.status_code != 200:
             raise ValueError(f"Unable to find database with id '{database_id}'")
         return response.json()
