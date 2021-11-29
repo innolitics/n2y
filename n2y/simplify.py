@@ -55,13 +55,31 @@ def simplify_select(data):
 
 
 def simplify_rich_text(data):
-    # TODO: support formatting that markdown supports (bold, italics,
-    # strikeout, links, etc.). Note that this will strip out some things that
-    # markdown doesn't support, like colors and underline.
-    if len(data) == 0:
-        return ""
-    else:
-        return data[0]["plain_text"]
+    # Note that this will strip out some things that markdown doesn't support,
+    # like colors and underlines.
+    return "".join(simplify_rich_text_item(r) for r in data)
+
+
+def simplify_rich_text_item(data):
+    text = escape_markdown(data["plain_text"])
+    if data["annotations"]["code"]:
+        text = f"`{text}`"
+    if data["annotations"]["bold"]:
+        text = f"**{text}**"
+    if data["annotations"]["italic"]:
+        text = f"*{text}*"
+    if data["annotations"]["strikethrough"]:
+        text = f"~~{text}~~"
+    if data["href"] is not None:
+        text = f"[{text}]({data['href']})"
+    return text
+
+
+def escape_markdown(text):
+    # TODO: think through other things we should escape and if/when we need to
+    # escape
+    escaped = "*_`[]"
+    return "".join(c if c not in escaped else f"\\{c}" for c in text)
 
 
 def simplify_people(data):

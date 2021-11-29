@@ -1,15 +1,11 @@
 import yaml
 
-from n2y.simplify import flatten_database_row
+from n2y.simplify import flatten_database_row, simplify_property_name, simplify_rich_text
 
 
 def test_flatten_database_rows():
     raw = yaml.safe_load('''
     properties:
-        rich_text:
-          rich_text:
-          - plain_text: Rich
-          type: rich_text
         url:
           type: url
           url: https://example.com
@@ -48,7 +44,6 @@ def test_flatten_database_rows():
           type: phone_number
     ''')
     flattened = {
-        "rich_text": "Rich",
         "url": "https://example.com",
         "number": 7,
         "email": "info@innolitics.com",
@@ -62,3 +57,65 @@ def test_flatten_database_rows():
     }
 
     assert flatten_database_row(raw) == flattened
+
+
+def test_simplify_property_name_capitals():
+    assert simplify_property_name("Hello World") == "hello_world"
+
+
+def test_simplify_property_name_punctuation():
+    assert simplify_property_name("Misc. Items") == "misc_items"
+
+
+def test_simplify_property_name_numbers():
+    assert simplify_property_name("123 456") == "123_456"
+
+
+def test_simplify_rich_text_escape_specials():
+    # we always escape to keep things simple; this may not be desirable
+    assert simplify_rich_text([rich("h_")]) == "h\_"
+    assert simplify_rich_text([rich("h`")]) == "h\`"
+    assert simplify_rich_text([rich("h*")]) == "h\*"
+    assert simplify_rich_text([rich("h__")]) == "h\_\_"
+
+
+def test_simplify_rich_text_bold():
+    assert simplify_rich_text([rich("hello", "b")]) == "**hello**"
+
+
+def test_simplify_rich_text_bold_italic():
+    assert simplify_rich_text([rich("hello", "bi")]) == "***hello***"
+
+
+def test_simplify_rich_text_bold_italic_code():
+    assert simplify_rich_text([rich("hello", "bic")]) == "***`hello`***"
+
+
+def test_simplify_rich_text_bold_italic_code_strikethrough():
+    assert simplify_rich_text([rich("hello", "bics")]) == "~~***`hello`***~~"
+
+
+def test_simplify_rich_text_bold_then_bold_italic():
+    # TODO: ideally this would reduce down to "**x*y***"
+    assert simplify_rich_text([rich("x", "b"), rich("y", "bi")]) == "**x*****y***"
+
+
+def test_simplify_rich_text_link():
+    assert simplify_rich_text([rich("hello", href="#")]) == "[hello](#)"
+
+
+def test_simplify_rich_text_link():
+    assert simplify_rich_text([rich("hello", "i", "#")]) == "[*hello*](#)"
+
+
+def rich(text, qualifiers="", href=None):
+    return {
+        "plain_text": text,
+        "annotations": {
+            "bold": "b" in qualifiers,
+            "code": "c" in qualifiers,
+            "italic": "i" in qualifiers,
+            "strikethrough": "s" in qualifiers,
+        },
+        "href": href,
+    }
