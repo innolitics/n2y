@@ -73,10 +73,10 @@ def test_simplify_property_name_numbers():
 
 def test_simplify_rich_text_escape_specials():
     # we always escape to keep things simple; this may not be desirable
-    assert simplify_rich_text([rich("h_")]) == "h\_"
-    assert simplify_rich_text([rich("h`")]) == "h\`"
-    assert simplify_rich_text([rich("h*")]) == "h\*"
-    assert simplify_rich_text([rich("h__")]) == "h\_\_"
+    assert simplify_rich_text([rich("h_")]) == r"h\_"
+    assert simplify_rich_text([rich("h`")]) == r"h\`"
+    assert simplify_rich_text([rich("h*")]) == r"h\*"
+    assert simplify_rich_text([rich("h__")]) == r"h\_\_"
 
 
 def test_simplify_rich_text_bold():
@@ -104,7 +104,7 @@ def test_simplify_rich_text_link():
     assert simplify_rich_text([rich("hello", href="#")]) == "[hello](#)"
 
 
-def test_simplify_rich_text_link():
+def test_simplify_rich_text_link_with_styling():
     assert simplify_rich_text([rich("hello", "i", "#")]) == "[*hello*](#)"
 
 
