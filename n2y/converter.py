@@ -17,8 +17,8 @@ import re
 
 def convert(input_page):
     ast = _parse_block({"type": "container",
-                       "has_children": True,
-                       "children": input_page["content"]})
+                        "has_children": True,
+                        "children": input_page["content"]})
     doc = Pandoc(Meta({}), ast)
     return doc
 
