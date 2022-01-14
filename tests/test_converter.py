@@ -11,6 +11,9 @@ default_annotation = {"bold": False, "italic": False, "strikethrough": False,
                       "underline": False, "code": False, "color": "default"}
 
 
+def newline_lf(input):
+    return input.replace('\r\n', '\n')
+
 def test_unknown_block_type():
     input = {"type": "not implemented",
              "has_children": False,
@@ -38,8 +41,8 @@ def test_parse_paragraph():
     pandoc_output = converter._parse_block(input)
     assert pandoc_output == [Para([Str("paragraph"), Space(), Str("text")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    assert markdown_output == "paragraph text\r\n"
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    assert newline_lf(markdown_output) == "paragraph text\n"
 
 
 def test_parse_heading_1():
@@ -55,8 +58,8 @@ def test_parse_heading_1():
     pandoc_output = converter._parse_block(input)
     assert pandoc_output == [Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    assert markdown_output == "# Heading One\r\n"
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    assert newline_lf(markdown_output) == "# Heading One\n"
 
 
 def test_parse_heading_2():
@@ -72,8 +75,8 @@ def test_parse_heading_2():
     pandoc_output = converter._parse_block(input)
     assert pandoc_output == [Header(2, ("", [], []), [Str("Heading"), Space(), Str("Two")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    assert markdown_output == "## Heading Two\r\n"
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    assert newline_lf(markdown_output) == "## Heading Two\n"
 
 
 def test_parse_heading_3():
@@ -89,8 +92,8 @@ def test_parse_heading_3():
     pandoc_output = converter._parse_block(input)
     assert pandoc_output == [Header(3, ("", [], []), [Str("Heading"), Space(), Str("Three")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    assert markdown_output == "### Heading Three\r\n"
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    assert newline_lf(markdown_output) == "### Heading Three\n"
 
 
 def test_bulleted_list():
@@ -131,9 +134,9 @@ def test_bulleted_list():
                              BulletList([[Plain([Str("Item"), Space(), Str("One")])],
                                          [Plain([Str("Item"), Space(), Str("Two")])]])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "Bulleted List\r\n\r\n-   Item One\r\n-   Item Two\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "Bulleted List\n\n-   Item One\n-   Item Two\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_numbered_list():
@@ -175,9 +178,9 @@ def test_numbered_list():
                                          [[Plain([Str("Item"), Space(), Str("One")])],
                                           [Plain([Str("Item"), Space(), Str("Two")])]])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "Numbered List\r\n\r\n1.  Item One\r\n2.  Item Two\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "Numbered List\n\n1.  Item One\n2.  Item Two\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_numbered_and_bulleted_list():
@@ -243,19 +246,19 @@ def test_numbered_and_bulleted_list():
                              BulletList([[Plain([Str("Bulleted"), Space(),
                                                  Str("item"), Space(), Str("two")])]])]
 
-    markdown_output = pandoc.write(pandoc_output)
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = (
-        "Mixed List\r\n"
-        "\r\n"
-        "1.  Item One\r\n"
-        "\r\n"
-        "-   Bulleted item\r\n"
-        "\r\n"
-        "1.  Item Two\r\n"
-        "\r\n"
-        "-   Bulleted item two\r\n")
+        "Mixed List\n"
+        "\n"
+        "1.  Item One\n"
+        "\n"
+        "-   Bulleted item\n"
+        "\n"
+        "1.  Item Two\n"
+        "\n"
+        "-   Bulleted item two\n")
 
-    assert markdown_output == expected_markdown
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_list_complex():
@@ -277,19 +280,19 @@ def test_list_complex():
         Para([Str("Paragraph"), Space(), Str("after"), Space(), Str("a"),
               Space(), Str("numbered"), Space(), Str("list")])])
 
-    markdown_output = pandoc.write(pandoc_output)
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = (
-        "1.  item one\r\n"
-        "    1.  sub item one\r\n"
-        "        -   bulleted item one\r\n"
-        "        -   bulleted item one\r\n"
-        "            skip bullet\r\n"
-        "    2.  subitem two\r\n"
-        "        skip number\r\n"
-        "2.  item two\r\n"
-        "\r\n"
-        "Paragraph after a numbered list\r\n")
-    assert markdown_output == expected_markdown
+        "1.  item one\n"
+        "    1.  sub item one\n"
+        "        -   bulleted item one\n"
+        "        -   bulleted item one\n"
+        "            skip bullet\n"
+        "    2.  subitem two\n"
+        "        skip number\n"
+        "2.  item two\n"
+        "\n"
+        "Paragraph after a numbered list\n")
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_convert():
@@ -308,9 +311,9 @@ def test_convert():
     pandoc_output = converter.convert(input)
     assert pandoc_output == Pandoc(Meta({}), [Para([Str("Simple"), Space(), Str("page")])])
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "Simple page\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "Simple page\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_bold_word():
@@ -332,9 +335,9 @@ def test_bold_word():
     assert pandoc_output == [Para([Str("A"), Space(),
                                    Strong([Str("bold")]), Space(), Str("word.")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "A **bold** word.\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "A **bold** word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_bold_letter():
@@ -356,9 +359,9 @@ def test_bold_letter():
     assert pandoc_output == [Para([Str("A"), Space(),
                                    Strong([Str("b")]), Str("old"), Space(), Str("word.")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "A **b**old word.\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "A **b**old word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_italic_word():
@@ -380,9 +383,9 @@ def test_italic_word():
     assert pandoc_output == [Para([Str("An"), Space(),
                                    Emph([Str("italic")]), Space(), Str("word.")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "An *italic* word.\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "An *italic* word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_italic_letter():
@@ -404,9 +407,9 @@ def test_italic_letter():
     assert pandoc_output == [Para([Str("An"), Space(),
                                    Emph([Str("i")]), Str("talic"), Space(), Str("word.")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "An *i*talic word.\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "An *i*talic word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_bold_italic_word():
@@ -428,9 +431,9 @@ def test_bold_italic_word():
     assert pandoc_output == [Para([Str("A"), Space(), Emph([Strong([Str("bold-italic")])]),
                                    Space(), Str("word.")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "A ***bold-italic*** word.\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "A ***bold-italic*** word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_strikeout_word():
@@ -452,9 +455,9 @@ def test_strikeout_word():
     assert pandoc_output == [
         Para([Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "A ~~deleted~~ word.\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "A ~~deleted~~ word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
 
 
 def test_code_inline():
@@ -476,6 +479,6 @@ def test_code_inline():
     assert pandoc_output == [
         Para([Str("A"), Space(), Code(("", [], []), "code"), Space(), Str("word.")])]
 
-    markdown_output = pandoc.write(pandoc_output)
-    expected_markdown = "A `code` word.\r\n"
-    assert markdown_output == expected_markdown
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "A `code` word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
