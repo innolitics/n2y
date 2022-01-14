@@ -14,6 +14,7 @@ default_annotation = {"bold": False, "italic": False, "strikethrough": False,
 def newline_lf(input):
     return input.replace('\r\n', '\n')
 
+
 def test_unknown_block_type():
     input = {"type": "not implemented",
              "has_children": False,
