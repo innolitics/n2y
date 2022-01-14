@@ -1,4 +1,3 @@
-from lib2to3.pytree import convert
 import pytest
 from n2y import converter
 import pandoc
