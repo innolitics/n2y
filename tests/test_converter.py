@@ -2,7 +2,7 @@ import pytest
 from n2y import converter
 import pandoc
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link
+    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule
 
 import json
 from os.path import join, dirname
@@ -580,4 +580,18 @@ def test_bookmark_without_caption():
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "<https://innolotics.com>\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_divider():
+    input = {
+        "type": "divider",
+        "has_children": False
+    }
+
+    pandoc_output = converter._parse_block(input)
+    assert pandoc_output == [HorizontalRule()]
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "-----\n"
     assert newline_lf(markdown_output) == expected_markdown

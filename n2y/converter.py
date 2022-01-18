@@ -1,5 +1,5 @@
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link
+    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule
 import re
 
 # Notes:
@@ -43,6 +43,8 @@ def _parse_block(block):
         ast.append(_parse_numbered_list(block))
     elif block["type"] == "bookmark":
         ast.append(_parse_bookmark(block))
+    elif block["type"] == "divider":
+        ast.append(HorizontalRule())
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
