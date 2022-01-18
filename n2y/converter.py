@@ -1,5 +1,5 @@
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc
+    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link
 import re
 
 # Notes:
@@ -41,6 +41,8 @@ def _parse_block(block):
         ast.append(_parse_bulleted_list(block))
     elif block["type"] == "numbered_list":
         ast.append(_parse_numbered_list(block))
+    elif block["type"] == "bookmark":
+        ast.append(_parse_bookmark(block))
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
@@ -120,6 +122,7 @@ def _parse_block(block):
 
 
 def _parse_plain_text(text):
+    """Split into words and spaces"""
     ast = []
     match = re.findall(r"( +)?\b(\S+)+( +)?", text)
 
@@ -156,6 +159,8 @@ def _parse_rich_text_array(rich_text_array):
             text = [Strikeout(text)]
         if item["annotations"]["code"]:
             text = [Code(("", [], []), item["plain_text"])]
+        if item["href"]:
+            text = [Link(('', [], []), text, (item["href"], ''))]
         ast.extend(text)
     return ast
 
@@ -202,3 +207,11 @@ def _parse_numbered_list_item(block):
             _parse_block({"type": "container", "has_children": True, "children": block["children"]})
         result.extend(parsed_children)
     return result
+
+
+def _parse_bookmark(block):
+    """A bookmark block in Notion is a paragraph with just a link"""
+    caption = _parse_rich_text_array(block["bookmark"]["caption"])
+    if len(caption) == 0:
+        caption = [Str(block["bookmark"]["url"])]
+    return Para([Link(('', [], []), caption, (block["bookmark"]["url"], ''))])

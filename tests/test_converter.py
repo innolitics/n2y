@@ -2,7 +2,7 @@ import pytest
 from n2y import converter
 import pandoc
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc
+    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link
 
 import json
 from os.path import join, dirname
@@ -36,6 +36,7 @@ def test_parse_paragraph():
                  "text": [
                      {
                          "annotations": default_annotation,
+                         "href": None,
                          "plain_text": "paragraph text"}
                  ]}}
 
@@ -53,6 +54,7 @@ def test_parse_heading_1():
                  "text": [
                      {
                          "annotations": default_annotation,
+                         "href": None,
                          "plain_text": "Heading One"}
                  ]}}
 
@@ -70,6 +72,7 @@ def test_parse_heading_2():
                  "text": [
                      {
                          "annotations": default_annotation,
+                         "href": None,
                          "plain_text": "Heading Two"}
                  ]}}
 
@@ -87,6 +90,7 @@ def test_parse_heading_3():
                  "text": [
                      {
                          "annotations": default_annotation,
+                         "href": None,
                          "plain_text": "Heading Three"}
                  ]}}
 
@@ -105,6 +109,7 @@ def test_bulleted_list():
                  "text": [
                      {
                          "annotations": default_annotation,
+                         "href": None,
                          "plain_text": "Bulleted List"}
                  ]},
              "children": [
@@ -114,6 +119,7 @@ def test_bulleted_list():
                      "bulleted_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Item One"
                          }]
                      }
@@ -124,6 +130,7 @@ def test_bulleted_list():
                      "bulleted_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Item Two"
                          }]
                      }
@@ -148,6 +155,7 @@ def test_numbered_list():
                  "text": [
                      {
                          "annotations": default_annotation,
+                         "href": None,
                          "plain_text": "Numbered List"}
                  ]},
              "children": [
@@ -157,6 +165,7 @@ def test_numbered_list():
                      "numbered_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Item One"
                          }]
                      }
@@ -167,6 +176,7 @@ def test_numbered_list():
                      "numbered_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Item Two"
                          }]
                      }
@@ -192,6 +202,7 @@ def test_numbered_and_bulleted_list():
                  "text": [
                      {
                          "annotations": default_annotation,
+                         "href": None,
                          "plain_text": "Mixed List"}
                  ]},
              "children": [
@@ -201,6 +212,7 @@ def test_numbered_and_bulleted_list():
                      "numbered_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Item One"
                          }]
                      }
@@ -211,6 +223,7 @@ def test_numbered_and_bulleted_list():
                      "bulleted_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Bulleted item"
                          }]
                      }
@@ -221,6 +234,7 @@ def test_numbered_and_bulleted_list():
                      "numbered_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Item Two"
                          }]
                      }
@@ -231,6 +245,7 @@ def test_numbered_and_bulleted_list():
                      "bulleted_list_item": {
                          "text": [{
                              "annotations": default_annotation,
+                             "href": None,
                              "plain_text": "Bulleted item two"
                          }]
                      }
@@ -310,7 +325,9 @@ def test_convert():
                      "has_children": False,
                      "paragraph": {
                          "text": [
-                             {"annotations": default_annotation, "plain_text": "Simple page"},
+                             {"annotations": default_annotation,
+                              "href": None,
+                              "plain_text": "Simple page"},
                          ]
                      }
                  }, ]
@@ -329,11 +346,12 @@ def test_bold_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "plain_text": "A "},
+                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
                     {"annotations": {"bold": True, "italic": False, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
+                        "href": None,
                         "plain_text": "bold"},
-                    {"annotations": default_annotation, "plain_text": " word."},
+                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -353,11 +371,12 @@ def test_bold_letter():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "plain_text": "A "},
+                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
                     {"annotations": {"bold": True, "italic": False, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
+                        "href": None,
                         "plain_text": "b"},
-                    {"annotations": default_annotation, "plain_text": "old word."},
+                    {"annotations": default_annotation, "href": None, "plain_text": "old word."},
                 ]
         }
     }
@@ -377,11 +396,12 @@ def test_italic_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "plain_text": "An "},
+                    {"annotations": default_annotation, "href": None, "plain_text": "An "},
                     {"annotations": {"bold": False, "italic": True, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
+                        "href": None,
                         "plain_text": "italic"},
-                    {"annotations": default_annotation, "plain_text": " word."},
+                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -401,11 +421,12 @@ def test_italic_letter():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "plain_text": "An "},
+                    {"annotations": default_annotation, "href": None, "plain_text": "An "},
                     {"annotations": {"bold": False, "italic": True, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
+                        "href": None,
                         "plain_text": "i"},
-                    {"annotations": default_annotation, "plain_text": "talic word."},
+                    {"annotations": default_annotation, "href": None, "plain_text": "talic word."},
                 ]
         }
     }
@@ -425,11 +446,12 @@ def test_bold_italic_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "plain_text": "A "},
+                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
                     {"annotations": {"bold": True, "italic": True, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
+                        "href": None,
                         "plain_text": "bold-italic"},
-                    {"annotations": default_annotation, "plain_text": " word."},
+                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -449,11 +471,12 @@ def test_strikeout_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "plain_text": "A "},
+                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
                     {"annotations": {"bold": False, "italic": False, "strikethrough": True,
                                      "underline": False, "code": False, "color": "default"},
+                        "href": None,
                         "plain_text": "deleted"},
-                    {"annotations": default_annotation, "plain_text": " word."},
+                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -473,11 +496,12 @@ def test_code_inline():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "plain_text": "A "},
+                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
                     {"annotations": {"bold": False, "italic": False, "strikethrough": False,
                                      "underline": False, "code": True, "color": "default"},
+                        "href": None,
                         "plain_text": "code"},
-                    {"annotations": default_annotation, "plain_text": " word."},
+                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -488,4 +512,72 @@ def test_code_inline():
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A `code` word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_link_inline():
+    input = {
+        "type": "paragraph",
+        "has_children": False,
+        "paragraph": {
+                "text": [
+                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
+                    {"annotations": {"bold": False, "italic": False, "strikethrough": False,
+                                     "underline": False, "code": False, "color": "default"},
+                        "href": "https://innolitics.com/",
+                        "plain_text": "link"},
+                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
+                ]
+        }
+    }
+
+    pandoc_output = converter._parse_block(input)
+    assert pandoc_output == [
+        Para([Str('A'), Space(), Link(('', [], []), [Str('link')], ('https://innolitics.com/', '')),
+              Space(), Str('word.')])]
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "A [link](https://innolitics.com/) word.\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_bookmark_with_caption():
+    input = {
+        "type": "bookmark",
+        "has_children": False,
+        "bookmark": {
+            "caption": [
+                {"annotations": default_annotation,
+                 "href": None,
+                 "plain_text": "Innolitics"}],
+            "url": "https://innolotics.com"
+        }
+    }
+
+    pandoc_output = converter._parse_block(input)
+    assert pandoc_output == \
+        [Para([Link(('', [], []), [Str('Innolitics')], ('https://innolotics.com', ''))])]
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "[Innolitics](https://innolotics.com)\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_bookmark_without_caption():
+    input = {
+        "type": "bookmark",
+        "has_children": False,
+        "bookmark": {
+            "caption": [],
+            "url": "https://innolotics.com"
+        }
+    }
+
+    pandoc_output = converter._parse_block(input)
+    assert pandoc_output == \
+        [Para([Link(('', [], []), [Str('https://innolotics.com')],
+                    ('https://innolotics.com', ''))])]
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "<https://innolotics.com>\n"
     assert newline_lf(markdown_output) == expected_markdown
