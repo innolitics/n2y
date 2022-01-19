@@ -2,7 +2,7 @@ import pytest
 from n2y import converter
 import pandoc
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule
+    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote
 
 import json
 from os.path import join, dirname
@@ -588,4 +588,27 @@ def test_divider():
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "------------------------------------------------------------------------\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_block_quote():
+    input = {
+        "type": "quote",
+        "has_children": False,
+        "quote": {
+            "text": [{"annotations": default_annotation, "href": None, "plain_text":
+                      "In a time of deceit telling the truth is a revolutionary act."}]
+        }
+    }
+
+    pandoc_output = converter._parse_block(input)
+    assert pandoc_output == \
+        [BlockQuote(
+            [Para([Str('In'), Space(), Str('a'), Space(), Str('time'), Space(), Str('of'),
+                  Space(), Str('deceit'), Space(), Str('telling'), Space(), Str('the'), Space(),
+                  Str('truth'), Space(), Str('is'), Space(), Str('a'), Space(),
+                  Str('revolutionary'), Space(), Str('act.')])])]
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "> In a time of deceit telling the truth is a revolutionary act.\n"
     assert newline_lf(markdown_output) == expected_markdown
