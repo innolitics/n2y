@@ -143,7 +143,7 @@ def test_bulleted_list():
                                          [Plain([Str("Item"), Space(), Str("Two")])]])]
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = 'Bulleted List\n\n  - Item One\n  - Item Two\n'
+    expected_markdown = "Bulleted List\n\n-   Item One\n-   Item Two\n"
     assert newline_lf(markdown_output) == expected_markdown
 
 
@@ -268,17 +268,11 @@ def test_numbered_and_bulleted_list():
         "\n"
         "1.  Item One\n"
         "\n"
-        "<!-- end list -->\n"
-        "\n"
-        "  - Bulleted item\n"
-        "\n"
-        "<!-- end list -->\n"
+        "-   Bulleted item\n"
         "\n"
         "1.  Item Two\n"
         "\n"
-        "<!-- end list -->\n"
-        "\n"
-        "  - Bulleted item two\n")
+        "-   Bulleted item two\n")
 
     assert newline_lf(markdown_output) == expected_markdown
 
@@ -306,8 +300,8 @@ def test_list_complex():
     expected_markdown = (
         "1.  item one\n"
         "    1.  sub item one\n"
-        "          - bulleted item one\n"
-        "          - bulleted item one\n"
+        "        -   bulleted item one\n"
+        "        -   bulleted item one\n"
         "            skip bullet\n"
         "    2.  subitem two\n"
         "        skip number\n"
@@ -593,5 +587,5 @@ def test_divider():
     assert pandoc_output == [HorizontalRule()]
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "-----\n"
+    expected_markdown = "------------------------------------------------------------------------\n"
     assert newline_lf(markdown_output) == expected_markdown

@@ -1,5 +1,5 @@
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule
+    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, CodeBlock
 import re
 
 # Notes:
@@ -45,6 +45,8 @@ def _parse_block(block):
         ast.append(_parse_bookmark(block))
     elif block["type"] == "divider":
         ast.append(HorizontalRule())
+    elif block["type"] == "code":
+        ast.append(_parse_code_block(block))
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
@@ -217,3 +219,8 @@ def _parse_bookmark(block):
     if len(caption) == 0:
         caption = [Str(block["bookmark"]["url"])]
     return Para([Link(('', [], []), caption, (block["bookmark"]["url"], ''))])
+
+
+def _parse_code_block(block):
+    """Handle fenced code"""
+    return CodeBlock(('', [block["code"]["language"]], []), block['code']['text'][0]['plain_text'])
