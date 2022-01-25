@@ -1,11 +1,12 @@
+from unittest import mock
+
 import pytest
-from n2y import converter
 import pandoc
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote
+    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote,\
+    MetaString, Image, CodeBlock
 
-import json
-from os.path import join, dirname
+from n2y import converter, notion
 
 default_annotation = {"bold": False, "italic": False, "strikethrough": False,
                       "underline": False, "code": False, "color": "default"}
@@ -15,21 +16,16 @@ def newline_lf(input):
     return input.replace('\r\n', '\n')
 
 
-def test_unknown_block_type():
-    input = {"type": "not implemented",
-             "has_children": False,
-             "paragraph": {
-                 "text": [
-                     {
-                         "annotations": default_annotation,
-                         "plain_text": "paragraph text"}
-                 ]}}
-
+@mock.patch.object(notion.Client, 'get_block')
+def test_unknown_block_type(mock_get_block):
+    mock_get_block.return_value = {"type": "this does not exist"}
+    client = notion.Client('')
     with pytest.raises(NotImplementedError):
-        converter._parse_block(input)
+        converter.load_block(client, None)
 
 
-def test_parse_paragraph():
+@mock.patch.object(notion.Client, 'get_block')
+def test_paragraph(mock_get_block):
     input = {"type": "paragraph",
              "has_children": False,
              "paragraph": {
@@ -39,15 +35,18 @@ def test_parse_paragraph():
                          "href": None,
                          "plain_text": "paragraph text"}
                  ]}}
-
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Para([Str("paragraph"), Space(), Str("text")])]
+    mock_get_block.return_value = input
+    client = notion.Client('')
+    paragraph_object = converter.load_block(client, None)
+    pandoc_output = paragraph_object.to_pandoc()
+    assert pandoc_output == Para([Str("paragraph"), Space(), Str("text")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     assert newline_lf(markdown_output) == "paragraph text\n"
 
 
-def test_parse_heading_1():
+@mock.patch.object(notion.Client, 'get_block')
+def test_heading_1(mock_get_block):
     input = {"type": "heading_1",
              "has_children": False,
              "heading_1": {
@@ -57,15 +56,19 @@ def test_parse_heading_1():
                          "href": None,
                          "plain_text": "Heading One"}
                  ]}}
+    mock_get_block.return_value = input
+    client = notion.Client('')
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])]
+    heading_object = converter.load_block(client, None)
+    pandoc_output = heading_object.to_pandoc()
+    assert pandoc_output == Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     assert newline_lf(markdown_output) == "# Heading One\n"
 
 
-def test_parse_heading_2():
+@mock.patch.object(notion.Client, 'get_block')
+def test_heading_2(mock_get_block):
     input = {"type": "heading_2",
              "has_children": False,
              "heading_2": {
@@ -73,17 +76,21 @@ def test_parse_heading_2():
                      {
                          "annotations": default_annotation,
                          "href": None,
-                         "plain_text": "Heading Two"}
+                         "plain_text": "Heading One"}
                  ]}}
+    mock_get_block.return_value = input
+    client = notion.Client('')
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Header(2, ("", [], []), [Str("Heading"), Space(), Str("Two")])]
+    heading_object = converter.load_block(client, None)
+    pandoc_output = heading_object.to_pandoc()
+    assert pandoc_output == Header(2, ("", [], []), [Str("Heading"), Space(), Str("One")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
-    assert newline_lf(markdown_output) == "## Heading Two\n"
+    assert newline_lf(markdown_output) == "## Heading One\n"
 
 
-def test_parse_heading_3():
+@mock.patch.object(notion.Client, 'get_block')
+def test_heading_3(mock_get_block):
     input = {"type": "heading_3",
              "has_children": False,
              "heading_3": {
@@ -91,19 +98,25 @@ def test_parse_heading_3():
                      {
                          "annotations": default_annotation,
                          "href": None,
-                         "plain_text": "Heading Three"}
+                         "plain_text": "Heading One"}
                  ]}}
+    mock_get_block.return_value = input
+    client = notion.Client('')
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Header(3, ("", [], []), [Str("Heading"), Space(), Str("Three")])]
+    heading_object = converter.load_block(client, None)
+    pandoc_output = heading_object.to_pandoc()
+    assert pandoc_output == Header(3, ("", [], []), [Str("Heading"), Space(), Str("One")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
-    assert newline_lf(markdown_output) == "### Heading Three\n"
+    assert newline_lf(markdown_output) == "### Heading One\n"
 
 
-def test_bulleted_list():
+@mock.patch.object(notion.Client, 'get_block_children')
+@mock.patch.object(notion.Client, 'get_block')
+def test_bulleted_list(mock_get_block, mock_get_block_children):
     input = {"type": "paragraph",
              "has_children": True,
+             "id": None,
              "paragraph": {
                  "has_children": True,
                  "text": [
@@ -111,33 +124,38 @@ def test_bulleted_list():
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Bulleted List"}
-                 ]},
-             "children": [
-                 {
-                     "type": "bulleted_list_item",
-                     "has_children": False,
-                     "bulleted_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Item One"
-                         }]
-                     }
-                 },
-                 {
-                     "type": "bulleted_list_item",
-                     "has_children": False,
-                     "bulleted_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Item Two"
-                         }]
-                     }
-                 }
-             ]
+                 ]}
              }
-    pandoc_output = converter._parse_block(input)
+    children = [
+        {
+            "type": "bulleted_list_item",
+            "has_children": False,
+            "bulleted_list_item": {
+                "text": [{
+                    "annotations": default_annotation,
+                    "href": None,
+                    "plain_text": "Item One"
+                }]
+            }
+        },
+        {
+            "type": "bulleted_list_item",
+            "has_children": False,
+            "bulleted_list_item": {
+                "text": [{
+                    "annotations": default_annotation,
+                    "href": None,
+                    "plain_text": "Item Two"
+                }]
+            }
+        }
+    ]
+    mock_get_block.return_value = input
+    mock_get_block_children.return_value = children
+    client = notion.Client('')
+
+    bulleted_list_object = converter.load_block(client, None)
+    pandoc_output = bulleted_list_object.to_pandoc()
     assert pandoc_output == [Para([Str("Bulleted"), Space(), Str("List")]),
                              BulletList([[Plain([Str("Item"), Space(), Str("One")])],
                                          [Plain([Str("Item"), Space(), Str("Two")])]])]
@@ -147,9 +165,12 @@ def test_bulleted_list():
     assert newline_lf(markdown_output) == expected_markdown
 
 
-def test_numbered_list():
+@mock.patch.object(notion.Client, 'get_block_children')
+@mock.patch.object(notion.Client, 'get_block')
+def test_numbered_list(mock_get_block, mock_get_block_children):
     input = {"type": "paragraph",
              "has_children": True,
+             "id": None,
              "paragraph": {
                  "has_children": True,
                  "text": [
@@ -157,33 +178,38 @@ def test_numbered_list():
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Numbered List"}
-                 ]},
-             "children": [
-                 {
-                     "type": "numbered_list_item",
-                     "has_children": False,
-                     "numbered_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Item One"
-                         }]
-                     }
-                 },
-                 {
-                     "type": "numbered_list_item",
-                     "has_children": False,
-                     "numbered_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Item Two"
-                         }]
-                     }
-                 }
-             ]
+                 ]}
              }
-    pandoc_output = converter._parse_block(input)
+    children = [
+        {
+            "type": "numbered_list_item",
+            "has_children": False,
+            "numbered_list_item": {
+                "text": [{
+                    "annotations": default_annotation,
+                    "href": None,
+                    "plain_text": "Item One"
+                }]
+            }
+        },
+        {
+            "type": "numbered_list_item",
+            "has_children": False,
+            "numbered_list_item": {
+                "text": [{
+                    "annotations": default_annotation,
+                    "href": None,
+                    "plain_text": "Item Two"
+                }]
+            }
+        }
+    ]
+    mock_get_block.return_value = input
+    mock_get_block_children.return_value = children
+    client = notion.Client('')
+
+    numbered_list_object = converter.load_block(client, None)
+    pandoc_output = numbered_list_object.to_pandoc()
     assert pandoc_output == [Para([Str("Numbered"), Space(), Str("List")]),
                              OrderedList((1, Decimal(), Period()),
                                          [[Plain([Str("Item"), Space(), Str("One")])],
@@ -194,140 +220,37 @@ def test_numbered_list():
     assert newline_lf(markdown_output) == expected_markdown
 
 
-def test_numbered_and_bulleted_list():
-    input = {"type": "paragraph",
+@mock.patch.object(notion.Client, 'get_block_children')
+@mock.patch.object(notion.Client, 'get_block')
+def test_page(mock_get_block, mock_get_block_children):
+    input = {"type": "child_page",
              "has_children": True,
-             "paragraph": {
-                 "has_children": True,
-                 "text": [
-                     {
-                         "annotations": default_annotation,
-                         "href": None,
-                         "plain_text": "Mixed List"}
-                 ]},
-             "children": [
-                 {
-                     "type": "numbered_list_item",
-                     "has_children": False,
-                     "numbered_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Item One"
-                         }]
-                     }
-                 },
-                 {
-                     "type": "bulleted_list_item",
-                     "has_children": False,
-                     "bulleted_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Bulleted item"
-                         }]
-                     }
-                 },
-                 {
-                     "type": "numbered_list_item",
-                     "has_children": False,
-                     "numbered_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Item Two"
-                         }]
-                     }
-                 },
-                 {
-                     "type": "bulleted_list_item",
-                     "has_children": False,
-                     "bulleted_list_item": {
-                         "text": [{
-                             "annotations": default_annotation,
-                             "href": None,
-                             "plain_text": "Bulleted item two"
-                         }]
-                     }
-                 },
-             ]
+             "id": None,
+             "child_page": {
+                 "title": "Simple Page"
              }
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Para([Str("Mixed"), Space(), Str("List")]),
-                             OrderedList((1, Decimal(), Period()), [
-                                         [Plain([Str("Item"), Space(), Str("One")])]]),
-                             BulletList([[Plain([Str("Bulleted"), Space(), Str("item")])]]),
-                             OrderedList((1, Decimal(), Period()), [
-                                 [Plain([Str("Item"), Space(), Str("Two")])]]),
-                             BulletList([[Plain([Str("Bulleted"), Space(),
-                                                 Str("item"), Space(), Str("two")])]])]
-
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = (
-        "Mixed List\n"
-        "\n"
-        "1.  Item One\n"
-        "\n"
-        "-   Bulleted item\n"
-        "\n"
-        "1.  Item Two\n"
-        "\n"
-        "-   Bulleted item two\n")
-
-    assert newline_lf(markdown_output) == expected_markdown
-
-
-def test_list_complex():
-    f = open(join(dirname(__file__), "notion_complex_list.json"))
-    input = json.load(f)
-    f.close()
-
-    pandoc_output = converter.convert(input)
-    assert pandoc_output == Pandoc(Meta({}), [OrderedList((1, Decimal(), Period()), [
-        [Plain([Str("item"), Space(), Str("one")]),
-         OrderedList((1, Decimal(), Period()), [
-             [Plain([Str("sub"), Space(), Str("item"), Space(), Str("one")]),
-              BulletList([[Plain([Str("bulleted"), Space(), Str("item"), Space(), Str("one")])], [
-                  Plain([Str("bulleted"), Space(), Str("item"), Space(), Str("one")]),
-                  Para([Str("skip"), Space(), Str("bullet")])]])],
-             [Plain([Str("subitem"), Space(), Str("two")]),
-                 Para([Str("skip"), Space(), Str("number")])]])],
-        [Plain([Str("item"), Space(), Str("two")])]]),
-        Para([Str("Paragraph"), Space(), Str("after"), Space(), Str("a"),
-              Space(), Str("numbered"), Space(), Str("list")])])
-
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = (
-        "1.  item one\n"
-        "    1.  sub item one\n"
-        "        -   bulleted item one\n"
-        "        -   bulleted item one\n"
-        "            skip bullet\n"
-        "    2.  subitem two\n"
-        "        skip number\n"
-        "2.  item two\n"
-        "\n"
-        "Paragraph after a numbered list\n")
-    assert newline_lf(markdown_output) == expected_markdown
-
-
-def test_convert():
-    input = {"type": "page",
-             "content": [
-                 {
-                     "type": "paragraph",
-                     "has_children": False,
-                     "paragraph": {
-                         "text": [
-                             {"annotations": default_annotation,
-                              "href": None,
-                              "plain_text": "Simple page"},
-                         ]
-                     }
-                 }, ]
              }
-    pandoc_output = converter.convert(input)
-    assert pandoc_output == Pandoc(Meta({}), [Para([Str("Simple"), Space(), Str("page")])])
+    children = [{
+        "type": "paragraph",
+        'id': None,
+        "has_children": False,
+        "paragraph": {
+            "text": [{
+                "annotations": default_annotation,
+                "href": None,
+                "plain_text": "Simple page"
+            }]
+        }}]
+    mock_get_block.return_value = input
+    mock_get_block_children.return_value = children
+    client = notion.Client('')
+
+    child_page_object = converter.load_block(client, None)
+    pandoc_output = child_page_object.to_pandoc()
+
+    assert pandoc_output == \
+        Pandoc(Meta({'title': MetaString('Simple Page')}),
+               [Para([Str("Simple"), Space(), Str("page")])])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "Simple page\n"
@@ -350,9 +273,11 @@ def test_bold_word():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Para([Str("A"), Space(),
-                                   Strong([Str("bold")]), Space(), Str("word.")])]
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para([Str("A"), Space(),
+                                 Strong([Str("bold")]), Space(), Str("word.")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A **bold** word.\n"
@@ -375,9 +300,11 @@ def test_bold_letter():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Para([Str("A"), Space(),
-                                   Strong([Str("b")]), Str("old"), Space(), Str("word.")])]
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para([Str("A"), Space(),
+                                 Strong([Str("b")]), Str("old"), Space(), Str("word.")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A **b**old word.\n"
@@ -400,9 +327,11 @@ def test_italic_word():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Para([Str("An"), Space(),
-                                   Emph([Str("italic")]), Space(), Str("word.")])]
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para([Str("An"), Space(),
+                                 Emph([Str("italic")]), Space(), Str("word.")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "An *italic* word.\n"
@@ -425,9 +354,11 @@ def test_italic_letter():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Para([Str("An"), Space(),
-                                   Emph([Str("i")]), Str("talic"), Space(), Str("word.")])]
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para([Str("An"), Space(),
+                                 Emph([Str("i")]), Str("talic"), Space(), Str("word.")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "An *i*talic word.\n"
@@ -450,9 +381,11 @@ def test_bold_italic_word():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [Para([Str("A"), Space(), Emph([Strong([Str("bold-italic")])]),
-                                   Space(), Str("word.")])]
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para([Str("A"), Space(), Emph([Strong([Str("bold-italic")])]),
+                                 Space(), Str("word.")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A ***bold-italic*** word.\n"
@@ -475,9 +408,11 @@ def test_strikeout_word():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [
-        Para([Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")])]
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == \
+        Para([Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A ~~deleted~~ word.\n"
@@ -500,38 +435,14 @@ def test_code_inline():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [
-        Para([Str("A"), Space(), Code(("", [], []), "code"), Space(), Str("word.")])]
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == \
+        Para([Str("A"), Space(), Code(("", [], []), "code"), Space(), Str("word.")])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A `code` word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
-
-
-def test_link_inline():
-    input = {
-        "type": "paragraph",
-        "has_children": False,
-        "paragraph": {
-                "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
-                    {"annotations": {"bold": False, "italic": False, "strikethrough": False,
-                                     "underline": False, "code": False, "color": "default"},
-                        "href": "https://innolitics.com/",
-                        "plain_text": "link"},
-                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
-                ]
-        }
-    }
-
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [
-        Para([Str('A'), Space(), Link(('', [], []), [Str('link')], ('https://innolitics.com/', '')),
-              Space(), Str('word.')])]
-
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "A [link](https://innolitics.com/) word.\n"
     assert newline_lf(markdown_output) == expected_markdown
 
 
@@ -548,9 +459,11 @@ def test_bookmark_with_caption():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
     assert pandoc_output == \
-        [Para([Link(('', [], []), [Str('Innolitics')], ('https://innolotics.com', ''))])]
+        Para([Link(('', [], []), [Str('Innolitics')], ('https://innolotics.com', ''))])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "[Innolitics](https://innolotics.com)\n"
@@ -567,10 +480,11 @@ def test_bookmark_without_caption():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
     assert pandoc_output == \
-        [Para([Link(('', [], []), [Str('https://innolotics.com')],
-                    ('https://innolotics.com', ''))])]
+        Para([Link(('', [], []), [Str('https://innolotics.com')], ('https://innolotics.com', ''))])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "<https://innolotics.com>\n"
@@ -580,11 +494,14 @@ def test_bookmark_without_caption():
 def test_divider():
     input = {
         "type": "divider",
-        "has_children": False
+        "has_children": False,
+        "divider": {}
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == [HorizontalRule()]
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == HorizontalRule()
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "------------------------------------------------------------------------\n"
@@ -601,14 +518,94 @@ def test_block_quote():
         }
     }
 
-    pandoc_output = converter._parse_block(input)
-    assert pandoc_output == \
-        [BlockQuote(
-            [Para([Str('In'), Space(), Str('a'), Space(), Str('time'), Space(), Str('of'),
-                  Space(), Str('deceit'), Space(), Str('telling'), Space(), Str('the'), Space(),
-                  Str('truth'), Space(), Str('is'), Space(), Str('a'), Space(),
-                  Str('revolutionary'), Space(), Str('act.')])])]
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == BlockQuote(
+        [Para([Str('In'), Space(), Str('a'), Space(), Str('time'), Space(), Str('of'),
+              Space(), Str('deceit'), Space(), Str('telling'), Space(), Str('the'), Space(),
+              Str('truth'), Space(), Str('is'), Space(), Str('a'), Space(),
+              Str('revolutionary'), Space(), Str('act.')])])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "> In a time of deceit telling the truth is a revolutionary act.\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+@mock.patch.object(converter.File, 'download')
+def test_image_internal_with_caption(mock_download):
+    input = {
+        "type": "image",
+        "image": {
+            'type': 'file',
+            'caption': [
+                {"annotations": default_annotation,
+                 "href": None,
+                 "plain_text": "test image"}],
+            'file': {
+                'url': "https://example.com/image.png",
+                'expiry_time': None
+            }
+        }
+    }
+
+    mock_download.return_value = 'image.png'
+
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para([Image(('', [], []), [Str('test'), Space(), Str('image')],
+                                        ('image.png', ''))])
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "![test image](image.png)\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_image_external_without_caption():
+    input = {
+        "type": "image",
+        "image": {
+            'type': 'external',
+            'caption': [
+                {"annotations": default_annotation,
+                 "href": None,
+                 "plain_text": "test image"}],
+            'external': {
+                'url': "https://example.com/image.png",
+                # 'expiry_time': None
+            }
+        }
+    }
+
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para([Image(('', [], []), [Str('test'), Space(), Str('image')],
+                                        ('https://example.com/image.png', ''))])
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "![test image](https://example.com/image.png)\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_code_block():
+    input = {
+        "type": "code",
+        "code": {
+            "text": [{
+                "type": "text",
+                "plain_text": "const a = 3"
+            }],
+            "language": "javascript"
+        }
+    }
+
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == CodeBlock(('', ['javascript'], []), 'const a = 3')
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "``` javascript\nconst a = 3\n```\n"
     assert newline_lf(markdown_output) == expected_markdown
