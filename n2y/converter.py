@@ -1,3 +1,4 @@
+import importlib.util
 from os import path, makedirs
 from shutil import copyfileobj
 from urllib.parse import urlparse
@@ -26,6 +27,41 @@ from n2y.notion import Client
 
 IMAGE_PATH = None
 IMAGE_WEB_PATH = None
+# plugin_module = None
+
+
+def load_plugins(filename):
+    # global plugin_module
+    global ChildPageBlock, ParagraphBlock, HeadingOne, HeadingTwo, HeadingThree, Divider, \
+        Bookmark, ImageBlock, CodeBlockFenced, Quote
+    abs_path = path.abspath(filename)
+    plugin_spec = importlib.util.spec_from_file_location("plugins", abs_path)
+    plugin_module = importlib.util.module_from_spec(plugin_spec)
+    plugin_spec.loader.exec_module(plugin_module)
+    print(plugin_module)
+    for (key, value) in plugin_module.exports.items():
+        if key == "ParagraphBlock":
+            ParagraphBlock = value
+        elif key == "ChildPageBlock":
+            ChildPageBlock = value
+        elif key == "HeadingOne":
+            HeadingOne = value
+        elif key == "HeadingTwo":
+            HeadingTwo = value
+        elif key == "HeadingThree":
+            HeadingThree = value
+        elif key == "Divider":
+            Divider = value
+        elif key == "Bookmark":
+            Bookmark = value
+        elif key == "ImageBlock":
+            ImageBlock = value
+        elif key == "CodeBlockFenced":
+            CodeBlockFenced = value
+        elif key == "Quote":
+            Quote = value
+        else:
+            raise NotImplementedError(f"Unknown plugin type {key}")
 
 
 def load_block(client: Client, id, get_children=True):

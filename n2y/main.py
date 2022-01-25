@@ -25,11 +25,14 @@ def main():
     # )
     parser.add_argument("--image-path", help="Specify path where to save images")
     parser.add_argument("--image-web-path", help="web path for images")
+    parser.add_argument("--plugins", help="plugin file")
     args = parser.parse_args()
     database_id = notion.id_from_share_link(args.database)
 
     converter.IMAGE_PATH = args.image_path
     converter.IMAGE_WEB_PATH = args.image_web_path
+    if args.plugins:
+        converter.load_plugins(args.plugins)
 
     client = notion.Client(ACCESS_TOKEN)
     raw_rows = client.get_database(database_id)
@@ -38,7 +41,6 @@ def main():
         meta = simplify.flatten_database_row(row)
         print(f"Processing {meta['title']}")
         markdown = pandoc.write(
-            # converter.convert({'content': client.get_page(row['id'])}), format='gfm')\
             converter.load_block(client, row['id']).to_pandoc()) \
             .replace('\r\n', '\n')  # Deal with Windows line endings
         # sanitize file name just a bit
