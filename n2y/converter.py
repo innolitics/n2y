@@ -325,7 +325,7 @@ class File():
         if IMAGE_PATH:
             local_filename = path.join(IMAGE_PATH, path.basename(parsed_url.path))
         else:
-            local_filename =path.basename(parsed_url.path)
+            local_filename = path.basename(parsed_url.path)
         with requests.get(self.url, stream=True) as request_stream:
             with open(local_filename, 'wb') as file_stream:
                 copyfileobj(request_stream.raw, file_stream)

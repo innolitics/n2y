@@ -119,4 +119,3 @@ def id_from_share_link(share_link):
         return hyphens_removed
     else:
         return hyphens_removed.split("/")[-1].split("?")[0]
-
