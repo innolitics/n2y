@@ -29,7 +29,7 @@ def main():
     database_id = notion.id_from_share_link(args.database)
 
     converter.IMAGE_PATH = args.image_path
-    converter.IMAGE__WEB_PATH = args.image_web_path
+    converter.IMAGE_WEB_PATH = args.image_web_path
 
     client = notion.Client(ACCESS_TOKEN)
     raw_rows = client.get_database(database_id)
