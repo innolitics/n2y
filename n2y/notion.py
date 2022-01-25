@@ -41,7 +41,7 @@ class Client:
         return response.json()
 
     # recursively get block children
-    def get_block_children(self, block_id):
+    def get_block_children(self, block_id, recursive=False):
         starting_url = f"{self.base_url}blocks/{block_id}/children"
 
         # Blocks that may have children.
@@ -73,10 +73,11 @@ class Client:
         result = sum(depaginator(starting_url), [])
 
         # recurse for all blocks that have children
-        for item in result:
-            if item['has_children'] and item['type'] in blocks_to_expand:
-                # populate child objects
-                item['children'] = self.get_block_children(item['id'])
+        if recursive:
+            for item in result:
+                if item['has_children'] and item['type'] in blocks_to_expand:
+                    # populate child objects
+                    item['children'] = self.get_block_children(item['id'])
 
         return result
 
@@ -97,6 +98,20 @@ class Client:
         page = self.get_block_children(page_id)
         return page
 
+    def get_block(self, block_id):
+        url = f"{self.base_url}blocks/{block_id}"
+        response = requests.get(url, headers=self.headers)
+        if response.status_code == 401:
+            raise ValueError("The provided API token is invalid")
+        if response.status_code == 404:
+            raise ValueError(f"Unable to find block with id '{block_id}'")
+        if response.status_code == 400:
+            raise ValueError("Invalid request")
+        if response.status_code != 200:
+            raise ValueError(f"Unable to find block with id '{block_id}'")
+
+        return response.json()
+
 
 def id_from_share_link(share_link):
     hyphens_removed = share_link.replace("-", "")
@@ -104,3 +119,4 @@ def id_from_share_link(share_link):
         return hyphens_removed
     else:
         return hyphens_removed.split("/")[-1].split("?")[0]
+

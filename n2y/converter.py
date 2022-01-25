@@ -1,7 +1,15 @@
+from os import path, makedirs
+from shutil import copyfileobj
+from urllib.parse import urlparse
+import requests
+
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, CodeBlock, \
-    BlockQuote
+    Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, \
+    BlockQuote, Image, Underline, MetaString
 import re
+
+from n2y.notion import Client
+
 
 # Notes:
 # A single Notion block may have multiple lines of text.
@@ -16,218 +24,312 @@ import re
 #   numbered_list - Notion has numbered_list_item, but no enclusing container
 
 
-def convert(input_page):
-    ast = _parse_block({"type": "container",
-                        "has_children": True,
-                        "children": input_page["content"]})
-    doc = Pandoc(Meta({}), ast)
-    return doc
+IMAGE_PATH = None
+IMAGE_WEB_PATH = None
 
 
-def _parse_block(block):
-    ast = []
-    if block["type"] in ["container"]:
-        # do nothing since there a no blocks at this level, only children
-        pass
-    elif block["type"] == "paragraph":
-        ast.append(_parse_paragraph(block))
+def load_block(client: Client, id, get_children=True):
+    block = client.get_block(id)
+    return parse_block(client, block, get_children)
 
-    elif block["type"] == "heading_1":
-        ast.append(_parse_heading_1(block))
-    elif block["type"] == "heading_2":
-        ast.append(_parse_heading_2(block))
-    elif block["type"] == "heading_3":
-        ast.append(_parse_heading_3(block))
-    elif block["type"] == "bulleted_list":
-        ast.append(_parse_bulleted_list(block))
-    elif block["type"] == "numbered_list":
-        ast.append(_parse_numbered_list(block))
-    elif block["type"] == "bookmark":
-        ast.append(_parse_bookmark(block))
-    elif block["type"] == "divider":
-        ast.append(HorizontalRule())
-    elif block["type"] == "code":
-        ast.append(_parse_code_block(block))
-    elif block["type"] == "quote":
-        ast.append(_parse_block_quote(block))
+
+def parse_block(client: Client, block, get_children=True):
+    if block['type'] == "child_page":
+        return ChildPageBlock(client, block, get_children)
+    elif block['type'] == "paragraph":
+        return ParagraphBlock(client, block, get_children)
+    elif block['type'] == "heading_1":
+        return HeadingOne(client, block, get_children)
+    elif block['type'] == "heading_2":
+        return HeadingTwo(client, block, get_children)
+    elif block['type'] == "heading_3":
+        return HeadingThree(client, block, get_children)
+    elif block['type'] == "divider":
+        return Divider(client, block, get_children)
+    elif block['type'] == "bookmark":
+        return Bookmark(client, block, get_children)
+    elif block['type'] == "image":
+        return ImageBlock(client, block, get_children)
+    elif block['type'] == "code":
+        return CodeBlockFenced(client, block, get_children)
+    elif block['type'] == "quote":
+        return Quote(client, block, get_children)
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
 
-    if block["has_children"]:
-        previous_child_type = ""
-        list_accumulator = []
-        for child in block["children"]:
-            ########################
-            # handle bulleted list #
-            ########################
-            if child["type"] == "bulleted_list_item" \
-                    and previous_child_type != "bulleted_list_item":
-                # handle leftovers from a pervious list if it exists
-                if len(list_accumulator):
-                    if previous_child_type == "numbered_list_item":
-                        ast.extend(_parse_block({"type": "numbered_list",
-                                                "has_children": False, "items": list_accumulator}))
-                    else:
-                        raise ValueError
-                # starting a new list
-                list_accumulator = [child]
-            elif child["type"] == "bulleted_list_item" \
-                    and previous_child_type == "bulleted_list_item":
-                # append list
-                list_accumulator.append(child)
-            elif child["type"] != "bulleted_list_item" \
-                    and previous_child_type == "bulleted_list_item":
-                # create bulleted list container and append it to ast
-                ast.extend(_parse_block({"type": "bulleted_list",
-                                        "has_children": False, "items": list_accumulator}))
-                # empty the accumulator
-                list_accumulator = []
-                if child["type"] == "numbered_list_item":
-                    # starting a new list
-                    list_accumulator = [child]
+
+class Block():
+    def __init__(self, client: Client, block, get_children=True):
+        # print(f"Creating {block['type']}")
+        self.client = client
+        # populate attributes
+        for key, value in block.items():
+            if key != block['type']:
+                self.__dict__[key] = value
+
+        # append attributes specific to block type
+        for key, value in block[self.type].items():
+            self.__dict__[key] = value
+
+        if get_children:
+            self.get_children()
+
+    def to_pandoc(self):
+        if self.has_children:
+            return [c.to_pandoc() for c in self.children]
+
+    def get_children(self):
+        if self.has_children:
+            self.children = []
+            previous_child_type = ""
+            for child in self.client.get_block_children(self.id, recursive=False):
+                if child['type'] == "numbered_list_item":
+                    if previous_child_type != "numbered_list_item":
+                        self.children.append(NumberedList(self.client, {}, get_children=False))
+                    self.children[-1].append(NumberedListItem(self.client, child))
+                elif child['type'] == "bulleted_list_item":
+                    if previous_child_type != "bulleted_list_item":
+                        self.children.append(BulletedList(self.client, {}, get_children=False))
+                    self.children[-1].append(BulletedListItem(self.client, child))
                 else:
-                    ast.extend(_parse_block(child))
+                    self.children.append(parse_block(self.client, child, get_children=True))
 
-            ########################
-            # handle numbered list #
-            ########################
-            elif child["type"] == "numbered_list_item" \
-                    and previous_child_type != "numbered_list_item":
-                # starting a new list
-                list_accumulator = [child]
-            elif child["type"] == "numbered_list_item" \
-                    and previous_child_type == "numbered_list_item":
-                # append list
-                list_accumulator.append(child)
-            elif child["type"] != "numbered_list_item" \
-                    and previous_child_type == "numbered_list_item":
-                # create numbered list container and append it to ast
-                ast.extend(_parse_block({"type": "numbered_list",
-                                        "has_children": False, "items": list_accumulator}))
-                # empty the accumulator
-                list_accumulator = []
-                if child["type"] != "bulleted_list_item":
-                    ast.extend(_parse_block(child))
-
-            ####################################
-            # handle blocks that are not lists #
-            ####################################
-            else:
-                ast.extend(_parse_block(child))
-            previous_child_type = child["type"]
-
-        # handle numbered and bulleted lists that were not followed by another block type
-        if len(list_accumulator):
-            if previous_child_type == "bulleted_list_item":
-                ast.extend(_parse_block({"type": "bulleted_list",
-                                        "has_children": False, "items": list_accumulator}))
-            elif previous_child_type == "numbered_list_item":
-                ast.extend(_parse_block({"type": "numbered_list",
-                                        "has_children": False, "items": list_accumulator}))
-    return ast
+                previous_child_type = child['type']
 
 
-def _parse_plain_text(text):
-    """Split into words and spaces"""
-    ast = []
-    match = re.findall(r"( +)?\b(\S+)+( +)?", text)
+class PlainText():
+    def __init__(self, text):
+        self.text = text
 
-    for m in match:
-        spaces_before, word, spaces_after = m
-        for _ in range(len(spaces_before)):
-            ast.append(Space())
-        ast.append(Str(word))
-        for _ in range(len(spaces_after)):
-            ast.append(Space())
-    return ast
+    def to_pandoc(self):
+        """Split into words and spaces"""
+        ast = []
+        self.text.replace('\t', '    ')
+        match = re.findall(r"( +)?(\S+)?( +)?", self.text)
 
-
-def _parse_paragraph(block):
-    ast = Para(_parse_rich_text_array(block["paragraph"]["text"]))
-    return ast
-
-
-def _parse_rich_text_array(rich_text_array):
-    ast = []
-    for item in rich_text_array:
-        text = _parse_plain_text(item["plain_text"])
-        if item["annotations"]["bold"]:
-            text = [Strong(text)]
-        if item["annotations"]["italic"]:
-            text = [Emph(text)]
-        # Underline is not supported in markdown.
-        # TODO: Enable using command line argument?
-        # (in case we are exporting to something other than markdown)
-        #
-        # if item["annotations"]["underline"]:
-        #     text = [Underline(text)]
-        if item["annotations"]["strikethrough"]:
-            text = [Strikeout(text)]
-        if item["annotations"]["code"]:
-            text = [Code(("", [], []), item["plain_text"])]
-        if item["href"]:
-            text = [Link(('', [], []), text, (item["href"], ''))]
-        ast.extend(text)
-    return ast
+        for m in match:
+            spaces_before, word, spaces_after = m
+            for _ in range(len(spaces_before)):
+                ast.append(Space())
+            if word:
+                ast.append(Str(word))
+            for _ in range(len(spaces_after)):
+                ast.append(Space())
+        return ast
 
 
-def _parse_heading_1(block):
-    return Header(1, ("", [], []), _parse_rich_text_array(block["heading_1"]["text"]))
+class Annotations():
+    def __init__(self, block):
+        for key, value in block.items():
+            self.__dict__[key] = value
+
+    def apply_pandoc(self, target):
+        result = target
+        if self.code:
+            result = [Code(("", [], []), result)]
+        if self.bold:
+            result = [Strong(result)]
+        if self.italic:
+            result = [Emph(result)]
+        if self.underline:
+            result = [Underline(result)]
+        if self.strikethrough:
+            result = [Strikeout(result)]
+        return result
 
 
-def _parse_heading_2(block):
-    return Header(2, ("", [], []), _parse_rich_text_array(block["heading_2"]["text"]))
+class RichText():
+    def __init__(self, block):
+        for key, value in block.items():
+            if key not in ['annotations', 'plain_text']:
+                self.__dict__[key] = value
+            self.annotations = Annotations(block['annotations'])
+            self.plain_text = PlainText(block['plain_text'])
+
+    def to_pandoc(self):
+        if self.annotations.code:
+            return self.annotations.apply_pandoc(self.plain_text.text)
+        elif self.href:
+            return [Link(('', [], []), self.plain_text.to_pandoc(), (self.href, ''))]
+        else:
+            return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
 
 
-def _parse_heading_3(block):
-    return Header(3, ("", [], []), _parse_rich_text_array(block["heading_3"]["text"]))
+class RichTextArray():
+    def __init__(self, text):
+        self.text = [RichText(i) for i in text]
+
+    def to_pandoc(self):
+        return sum([item.to_pandoc() for item in self.text], [])
 
 
-def _parse_bulleted_list(block):
-    items = []
-    for item in block["items"]:
-        items.append(_parse_bulleted_list_item(item))
-    return BulletList(items)
+class ChildPageBlock(Block):
+    def to_pandoc(self):
+        children = [item.to_pandoc() for item in self.children]
+        return Pandoc(Meta({'title': MetaString(self.title)}), children)
 
 
-def _parse_numbered_list(block):
-    items = []
-    for item in block["items"]:
-        items.append(_parse_numbered_list_item(item))
-    return OrderedList((1, Decimal(), Period()), items)
+class ParagraphBlock(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.text = RichTextArray(self.text)
+
+    def to_pandoc(self):
+        content = self.text.to_pandoc()
+        children = super().to_pandoc()
+        if children:
+            result = [Para(content)]
+            result.extend(children)
+            return result
+        else:
+            return Para(content)
 
 
-def _parse_bulleted_list_item(block):
-    result = [Plain(_parse_rich_text_array(block["bulleted_list_item"]["text"]))]
-    if block["has_children"]:
-        parsed_children = \
-            _parse_block({"type": "container", "has_children": True, "children": block["children"]})
-        result.extend(parsed_children)
-    return result
+class BulletedListItem(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.text = RichTextArray(self.text)
+
+    def to_pandoc(self):
+        content = [Plain(self.text.to_pandoc())]
+        children = super().to_pandoc()
+        if children:
+            content.extend(children)
+        return content
 
 
-def _parse_numbered_list_item(block):
-    result = [Plain(_parse_rich_text_array(block["numbered_list_item"]["text"]))]
-    if block["has_children"]:
-        parsed_children = \
-            _parse_block({"type": "container", "has_children": True, "children": block["children"]})
-        result.extend(parsed_children)
-    return result
+class BulletedList(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        self.client = client
+        self.has_children = False
+        self.items = []
+        self.created_time = None
+        self.last_edited_time = None
+        self.type = "bulleted_list"
+        self.id = None
+
+    def append(self, item: BulletedListItem):
+        self.items.append(item)
+
+    def to_pandoc(self):
+        return BulletList([i.to_pandoc() for i in self.items])
 
 
-def _parse_bookmark(block):
-    """A bookmark block in Notion is a paragraph with just a link"""
-    caption = _parse_rich_text_array(block["bookmark"]["caption"])
-    if len(caption) == 0:
-        caption = [Str(block["bookmark"]["url"])]
-    return Para([Link(('', [], []), caption, (block["bookmark"]["url"], ''))])
+class NumberedListItem(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.text = RichTextArray(self.text)
+
+    def to_pandoc(self):
+        content = [Plain(self.text.to_pandoc())]
+        children = super().to_pandoc()
+        if children:
+            content.extend(children)
+        return content
 
 
-def _parse_code_block(block):
-    """Handle fenced code"""
-    return CodeBlock(('', [block["code"]["language"]], []), block['code']['text'][0]['plain_text'])
+class NumberedList(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        self.client = client
+        self.has_children = False
+        self.items = []
+        self.created_time = None
+        self.last_edited_time = None
+        self.type = "numbered_list"
+        self.id = None
+
+    def append(self, item: NumberedListItem):
+        self.items.append(item)
+
+    def to_pandoc(self):
+        return OrderedList((1, Decimal(), Period()), [i.to_pandoc() for i in self.items])
 
 
-def _parse_block_quote(block):
-    return BlockQuote([Para(_parse_rich_text_array(block["quote"]["text"]))])
+class HeadingBase(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.text = RichTextArray(self.text)
+
+    def to_pandoc(self):
+        return Header(self.level, ('', [], []), self.text.to_pandoc())
+
+
+class HeadingOne(HeadingBase):
+    level = 1
+
+
+class HeadingTwo(HeadingBase):
+    level = 2
+
+
+class HeadingThree(HeadingBase):
+    level = 3
+
+
+class Divider(Block):
+    def to_pandoc(self):
+        return HorizontalRule()
+
+
+class Bookmark(Block):
+    def to_pandoc(self):
+        caption = None
+        if self.caption:
+            caption = RichTextArray(self.caption).to_pandoc()
+        else:
+            caption = [Str(self.url)]
+        return Para([Link(('', [], []), caption, (self.url, ''))])
+
+
+class CodeBlockFenced(Block):
+    def to_pandoc(self):
+        return CodeBlock(('', [self.language], []), self.text[0]['plain_text'])
+
+
+class Quote(Block):
+    def to_pandoc(self):
+        return BlockQuote([Para(RichTextArray(self.text).to_pandoc())])
+
+
+class ImageBlock(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.file = File(block['image'])
+
+    def to_pandoc(self):
+        url = None
+        if self.file.type == "external":
+            url = self.file.url
+        elif self.file.type == "file":
+            url = self.file.download()
+        caption = RichTextArray(self.caption)
+        return Para([Image(('', [], []), caption.to_pandoc(), (url, ''))])
+
+
+class File():
+    def __init__(self, obj):
+        if obj['type'] == "file":
+            self.type = "file"
+            self.url = obj['file']['url']
+            self.expiry_time = obj['file']['expiry_time']
+        elif obj['type'] == "external":
+            self.type = "external"
+            self.url = obj['external']['url']
+
+    def download(self):
+        # TODO: append created time as hex to end of file to prevent collisions?
+        if IMAGE_PATH and not path.exists(IMAGE_PATH):
+            makedirs(IMAGE_PATH)
+        parsed_url = urlparse(self.url)
+        if IMAGE_PATH:
+            local_filename = path.join(IMAGE_PATH, path.basename(parsed_url.path))
+        else:
+            local_filename =path.basename(parsed_url.path)
+        with requests.get(self.url, stream=True) as request_stream:
+            with open(local_filename, 'wb') as file_stream:
+                copyfileobj(request_stream.raw, file_stream)
+                if IMAGE_WEB_PATH:
+                    return IMAGE_WEB_PATH + path.basename(parsed_url.path)
+                else:
+                    return path.basename(parsed_url.path)

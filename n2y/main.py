@@ -6,7 +6,7 @@ import re
 import yaml
 import pandoc
 
-from n2y import notion, simplify, converter
+from n2y import converter, notion, simplify
 
 
 def main():
@@ -23,8 +23,14 @@ def main():
     #     "--raw", action='store_true',
     #     help="Dump the raw notion API data",
     # )
+    parser.add_argument("--image-path", help="Specify path where to save images")
+    parser.add_argument("--image-web-path", help="web path for images")
     args = parser.parse_args()
     database_id = notion.id_from_share_link(args.database)
+
+    converter.IMAGE_PATH = args.image_path
+    converter.IMAGE__WEB_PATH = args.image_web_path
+
     client = notion.Client(ACCESS_TOKEN)
     raw_rows = client.get_database(database_id)
 
@@ -32,11 +38,12 @@ def main():
         meta = simplify.flatten_database_row(row)
         print(f"Processing {meta['title']}")
         markdown = pandoc.write(
-            converter.convert({'content': client.get_page(row['id'])}), format='gfm')\
+            # converter.convert({'content': client.get_page(row['id'])}), format='gfm')\
+            converter.load_block(client, row['id']).to_pandoc()) \
             .replace('\r\n', '\n')  # Deal with Windows line endings
         # sanitize file name just a bit
         # maybe use python-slugify in the future?
-        filename = re.sub(r"[/,\\]", '_', meta['title'])
+        filename = re.sub(r"[/,\\]", '_', meta['title'].lower())
         with open(f"{filename}.md", 'w') as f:
             f.write('---\n')
             f.write(yaml.dump(meta))
