@@ -95,6 +95,8 @@ def parse_block(client: Client, block, get_children=True):
         return TableBlock(client, block, get_children)
     elif block['type'] == "table_row":
         return RowBlock(client, block, get_children)
+    elif block['type'] == "toggle":
+        return Toggle(client, block, get_children)
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
@@ -410,3 +412,15 @@ class RowBlock(Block):
                       [Plain(RichTextArray(cell).to_pandoc())]) for cell in self.cells]
         row = Row(('', [], []), cells)
         return row
+
+
+class Toggle(Block):
+    # default implementation generates a bulleted list item with indented children
+    # a plugin may be used to add html classes and replicate the interactive behavior
+    def to_pandoc(self):
+        header = RichTextArray(self.text).to_pandoc()
+        children = super().to_pandoc()
+        content = [Para(header)]
+        content.extend(children)
+        output = BulletList([content])
+        return output

@@ -734,3 +734,53 @@ def test_table_block(mock_get_block_children):
         '|---------|---------|\n'
         '| one     | two     |\n'
         '| three   | four    |\n')
+
+
+@mock.patch.object(notion.Client, 'get_block_children')
+def test_toggle(mock_get_block_children):
+    input = {
+        'type': 'toggle',
+        'id': None,
+        'has_children': True,
+        "toggle": {
+            "text": [
+                {
+                    "type": "text",
+                    "annotations": default_annotation,
+                    "plain_text": "Toggle Header",
+                    "href": None
+                }
+            ]
+        }
+    }
+    children = [{
+        "type": "paragraph",
+        "has_children": False,
+        "paragraph": {
+            "text": [
+                {
+                    "type": "text",
+                    "annotations": default_annotation,
+                    "plain_text": "Toggle Content",
+                    "href": None
+                }
+            ]
+        }
+    }]
+
+    mock_get_block_children.return_value = children
+
+    client = notion.Client('')
+    obj = converter.parse_block(client, input)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == \
+        BulletList([[
+            Para([Str('Toggle'), Space(),
+                  Str('Header')]), Para([Str('Toggle'), Space(), Str('Content')])]])
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    assert newline_lf(markdown_output) == (
+        '-   Toggle Header\n'
+        '\n'
+        '    Toggle Content\n')
