@@ -2,9 +2,10 @@ from unittest import mock
 
 import pytest
 import pandoc
-from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote,\
-    MetaString, Image, CodeBlock
+from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, \
+    Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
+    HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody, \
+    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption
 
 from n2y import converter, notion
 
@@ -609,3 +610,127 @@ def test_code_block():
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "``` javascript\nconst a = 3\n```\n"
     assert newline_lf(markdown_output) == expected_markdown
+
+
+@mock.patch.object(notion.Client, 'get_block_children')
+def test_table_block(mock_get_block_children):
+    input = {
+        'type': 'table',
+        'id': None,
+        'has_children': True,
+        "table": {
+            "table_width": 2,
+            "has_column_header": True,
+            "has_row_header": False
+        }
+    }
+    children = [
+        {
+            "type": "table_row",
+            "has_children": False,
+            "table_row": {
+                "cells": [
+                    [
+                        {
+                            "type": "text",
+                            "annotations": default_annotation,
+                            "plain_text": "header1",
+                            "href": None
+                        }
+                    ],
+                    [
+                        {
+                            "type": "text",
+                            "annotations": default_annotation,
+                            "plain_text": "header2",
+                            "href": None
+                        }
+                    ],
+                ]
+            }
+        },
+        {
+            "type": "table_row",
+            "has_children": False,
+            "table_row": {
+                "cells": [
+                    [
+                        {
+                            "type": "text",
+                            "annotations": default_annotation,
+                            "plain_text": "one",
+                            "href": None
+                        }
+                    ],
+                    [
+                        {
+                            "type": "text",
+                            "annotations": default_annotation,
+                            "plain_text": "two",
+                            "href": None
+                        }
+                    ],
+                ]
+            }
+        },
+        {
+            "type": "table_row",
+            "has_children": False,
+            "table_row": {
+                "cells": [
+                    [
+                        {
+                            "type": "text",
+                            "annotations": default_annotation,
+                            "plain_text": "three",
+                            "href": None
+                        }
+                    ],
+                    [
+                        {
+                            "type": "text",
+                            "annotations": default_annotation,
+                            "plain_text": "four",
+                            "href": None
+                        }
+                    ],
+                ]
+            }
+        }
+    ]
+
+    mock_get_block_children.return_value = children
+
+    client = notion.Client('')
+    obj = converter.parse_block(client, input)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == \
+        Table(('', [], []),
+              Caption(None, []),
+              [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
+              TableHead(('', [], []),
+              [Row(('', [], []),
+                   [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
+                         [Plain([Str('header1')])]),
+                    Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
+                         [Plain([Str('header2')])])])]),
+              [TableBody(('', [], []), RowHeadColumns(0), [], [
+                  Row(('', [], []),
+                      [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
+                            [Plain([Str('one')])]),
+                       Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
+                            [Plain([Str('two')])])]),
+                  Row(('', [], []),
+                      [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
+                            [Plain([Str('three')])]),
+                       Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
+                            [Plain([Str('four')])])])])],
+              TableFoot(('', [], []), []))
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    assert newline_lf(markdown_output) == (
+        '| header1 | header2 |\n'
+        '|---------|---------|\n'
+        '| one     | two     |\n'
+        '| three   | four    |\n')

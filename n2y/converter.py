@@ -4,9 +4,10 @@ from shutil import copyfileobj
 from urllib.parse import urlparse
 import requests
 
-from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, Strikeout,\
-    Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, HorizontalRule, \
-    BlockQuote, Image, Underline, MetaString
+from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emph, \
+    Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
+    HorizontalRule, BlockQuote, Image, Underline, MetaString, Table, TableHead, TableBody, \
+    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption
 import re
 
 from n2y.notion import Client
@@ -90,6 +91,10 @@ def parse_block(client: Client, block, get_children=True):
         return CodeBlockFenced(client, block, get_children)
     elif block['type'] == "quote":
         return Quote(client, block, get_children)
+    elif block['type'] == "table":
+        return TableBlock(client, block, get_children)
+    elif block['type'] == "table_row":
+        return RowBlock(client, block, get_children)
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
@@ -139,18 +144,19 @@ class PlainText():
         self.text = text
 
     def to_pandoc(self):
-        """Split into words and spaces"""
+        """Tokenize the text"""
         ast = []
-        self.text.replace('\t', '    ')
-        match = re.findall(r"( +)?(\S+)?( +)?", self.text)
+        match = re.findall(r"( +)|(\S+)|(\n+)|(\t+)", self.text)
 
         for m in match:
-            spaces_before, word, spaces_after = m
-            for _ in range(len(spaces_before)):
+            space, word, newline, tab = m
+            for _ in range(len(space)):
                 ast.append(Space())
             if word:
                 ast.append(Str(word))
-            for _ in range(len(spaces_after)):
+            for _ in range(len(newline)):
+                ast.append(SoftBreak())
+            for _ in range(len(tab) * 4):  # 4 spaces per tab
                 ast.append(Space())
         return ast
 
@@ -369,3 +375,38 @@ class File():
                     return IMAGE_WEB_PATH + path.basename(parsed_url.path)
                 else:
                     return path.basename(parsed_url.path)
+
+
+class TableBlock(Block):
+    def to_pandoc(self):
+        children = super().to_pandoc()
+        # Isolate the header row if it exists
+        if self.has_column_header:
+            header_rows = [children.pop(0)]
+        else:
+            header_rows = []
+        if self.has_row_header:
+            row_header_columns = 1
+        else:
+            row_header_columns = 0
+        # Notion does not have cell alignment or width options, sticking with defaults.
+        colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(self.table_width)]
+        table = Table(('', [], []),  # attr
+                      Caption(None, []),  # caption
+                      colspec,
+                      TableHead(('', [], []), header_rows),  # table header
+                      [TableBody(('', [], []), RowHeadColumns(
+                          row_header_columns), [], children)],   # table body
+                      TableFoot(('', [], []), []))  # table footer
+        return table
+
+
+class RowBlock(Block):
+    def to_pandoc(self):
+        cells = [Cell(('', [], []),
+                      AlignDefault(),
+                      RowSpan(1),
+                      ColSpan(1),
+                      [Plain(RichTextArray(cell).to_pandoc())]) for cell in self.cells]
+        row = Row(('', [], []), cells)
+        return row
