@@ -47,13 +47,22 @@ exports = {
 
 Classes that can be extended (case sensitive):
 
-- ParagraphBlock
+- Bookmark
+- BulletedList
+- BulletedListItem
 - ChildPageBlock
+- CodeBlockFenced
+- Divider
 - HeadingOne
 - HeadingTwo
 - HeadingThree
-- Divider
-- Bookmark
 - ImageBlock
-- CodeBlockFenced
+- NumberedList
+- NumberedListItem
+- ParagraphBlock
 - Quote
+- RowBlock
+- TableBlock
+- ToDo
+- ToDoItem
+- Toggle
