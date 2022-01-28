@@ -784,3 +784,58 @@ def test_toggle(mock_get_block_children):
         '-   Toggle Header\n'
         '\n'
         '    Toggle Content\n')
+
+
+@mock.patch.object(notion.Client, 'get_block_children')
+def test_todo(mock_get_block_children):
+    input = {"type": "paragraph",
+             "has_children": True,
+             "id": None,
+             "paragraph": {
+                 "text": [
+                     {
+                         "annotations": default_annotation,
+                         "href": None,
+                         "plain_text": "Task List"}
+                 ]}
+             }
+    children = [
+        {
+            "type": "to_do",
+            "has_children": False,
+            "checked": True,
+            "to_do": {
+                "text": [{
+                    "annotations": default_annotation,
+                    "href": None,
+                    "plain_text": "Task One"
+                }]
+            }
+        },
+        {
+            "type": "to_do",
+            "has_children": False,
+            "checked": False,
+            "to_do": {
+                "text": [{
+                    "annotations": default_annotation,
+                    "href": None,
+                    "plain_text": "Task Two"
+                }]
+            }
+        },
+    ]
+
+    mock_get_block_children.return_value = children
+
+    client = notion.Client('')
+    obj = converter.parse_block(client, input)
+    pandoc_output = obj.to_pandoc()
+    assert pandoc_output == \
+        [Para([Str('Task'), Space(), Str('List')]),
+         BulletList([[Plain([Str('☒'), Space(), Str('Task'), Space(), Str('One')])],
+                     [Plain([Str('☐'), Space(), Str('Task'), Space(), Str('Two')])]])]
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = 'Task List\n\n-   [x] Task One\n-   [ ] Task Two\n'
+    assert newline_lf(markdown_output) == expected_markdown

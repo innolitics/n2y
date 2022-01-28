@@ -135,6 +135,10 @@ class Block():
                     if previous_child_type != "bulleted_list_item":
                         self.children.append(BulletedList(self.client, {}, get_children=False))
                     self.children[-1].append(BulletedListItem(self.client, child))
+                elif child['type'] == "to_do":
+                    if previous_child_type != "to_do":
+                        self.children.append(ToDo(self.client, {}, get_children=False))
+                    self.children[-1].append(ToDoItem(self.client, child))
                 else:
                     self.children.append(parse_block(self.client, child, get_children=True))
 
@@ -258,6 +262,22 @@ class BulletedList(Block):
 
     def to_pandoc(self):
         return BulletList([i.to_pandoc() for i in self.items])
+
+
+class ToDoItem(BulletedListItem):
+    def __init__(self, client: Client, block, get_children=True):
+        self.type = 'to_do_list'
+        super().__init__(client, block, get_children)
+        if self.checked:
+            self.text.text[0].plain_text.text = '☒ ' + self.text.text[0].plain_text.text
+        else:
+            self.text.text[0].plain_text.text = '☐ ' + self.text.text[0].plain_text.text
+
+
+class ToDo(BulletedList):
+    def __init__(self, client: Client, block, get_children=True):
+        self.type = 'to_do_list'
+        super().__init__(client, block, get_children)
 
 
 class NumberedListItem(Block):
