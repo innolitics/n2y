@@ -26,6 +26,9 @@ def main():
     parser.add_argument("--image-path", help="Specify path where to save images")
     parser.add_argument("--image-web-path", help="web path for images")
     parser.add_argument("--plugins", help="plugin file")
+    # parser.add_argument("--name-column",
+    #                     help="Name of column containting the page name." +
+    #                     "Lowercase letter and numbers. Replace spaces with underscore.")
     args = parser.parse_args()
     database_id = notion.id_from_share_link(args.database)
 
@@ -41,7 +44,7 @@ def main():
         meta = simplify.flatten_database_row(row)
         print(f"Processing {meta['title']}")
         markdown = pandoc.write(
-            converter.load_block(client, row['id']).to_pandoc()) \
+            converter.load_block(client, row['id']).to_pandoc(), format='gfm') \
             .replace('\r\n', '\n')  # Deal with Windows line endings
         # sanitize file name just a bit
         # maybe use python-slugify in the future?
