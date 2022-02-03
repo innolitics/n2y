@@ -22,7 +22,12 @@ Copy the link for the database you'd like to export to YAML. Note that linked da
 n2y DATABASE_LINK > database.yml
 ```
 
-By default, `n2y` will simplify the JSON blobs returned by Notion. You can dump the raw data using the `--raw` argument.
+## Converting a Database to markdown files
+
+```
+n2y -o markdown DATABASE_LINK
+```
+
 
 ## Plugins
 
