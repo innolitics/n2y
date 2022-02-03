@@ -88,8 +88,7 @@ def export_yaml(client, database_id, options):
     result = []
     for row in raw_rows:
         pandoc_output = converter.load_block(client, row['id']).to_pandoc()
-        print(row, file=sys.stderr)
-        markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else 'None'
+        markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else None
         result.append({options.name_column: None,
                        **simplify.flatten_database_row(row),
                        'content': markdown})
