@@ -231,8 +231,11 @@ class RichTextArray():
 
 class ChildPageBlock(Block):
     def to_pandoc(self):
-        children = [item.to_pandoc() for item in self.children]
-        return Pandoc(Meta({'title': MetaString(self.title)}), children)
+        if hasattr(self, 'children'):
+            children = [item.to_pandoc() for item in self.children]
+            return Pandoc(Meta({'title': MetaString(self.title)}), children)
+        else:
+            return None
 
 
 class ParagraphBlock(Block):
