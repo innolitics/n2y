@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--image-web-path", help="web path for images")
     parser.add_argument("--plugins", help="plugin file")
     parser.add_argument("--name-column", default='title',
-                        help=("Name of column containting the page name."
+                        help=("Name of column containing the page name."
                               "Lowercase letter and numbers. Replace spaces with underscore."))
     args = parser.parse_args()
 
@@ -75,7 +75,7 @@ def export_markdown(client, database_id, options):
 def export_yaml(client, database_id, options):
     raw_rows = client.get_database(database_id)
 
-    if not(options.name_column in simplify.flatten_database_row(raw_rows[0])):
+    if not options.name_column in simplify.flatten_database_row(raw_rows[0]):
         print(f"Database does not contain the column \"{options.name_column}\". "
               f"Please specify the correct name column using the --name-column flag.")
         exit(1)
@@ -93,7 +93,7 @@ def export_yaml(client, database_id, options):
                        **simplify.flatten_database_row(row),
                        'content': markdown})
 
-    print(yaml.dump_all(result, sort_keys=False), file=sys.stdout)
+    print(yaml.dump_all(result, sort_keys=False))
 
 
 if __name__ == "__main__":
