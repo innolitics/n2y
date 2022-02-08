@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--image-web-path", help="Web path for images")
     parser.add_argument("--plugins", help="Plugin file")
     parser.add_argument("--name-column", default='title',
-                        help=("Name of column containting the page name."
+                        help=("Name of column containing the page name."
                               "Lowercase letter and numbers. Replace spaces with underscore."))
     args = parser.parse_args()
 
