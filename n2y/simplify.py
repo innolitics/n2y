@@ -69,6 +69,8 @@ def simplify_title(data):
 
 
 def simplify_select(data):
+    if data is None:
+        return None
     return data["name"]
 
 

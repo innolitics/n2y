@@ -17,10 +17,10 @@ def main():
                         choices=["yaml", "markdown"], default="yaml",
                         help=("Select output type\n"
                               "  yaml - print yaml to stdout\n"
-                              "  markdown - create a mardown file per page"))
+                              "  markdown - create a markdown file per page"))
     parser.add_argument("--image-path", help="Specify path where to save images")
-    parser.add_argument("--image-web-path", help="web path for images")
-    parser.add_argument("--plugins", help="plugin file")
+    parser.add_argument("--image-web-path", help="Web path for images")
+    parser.add_argument("--plugins", help="Plugin file")
     parser.add_argument("--name-column", default='title',
                         help=("Name of column containting the page name."
                               "Lowercase letter and numbers. Replace spaces with underscore."))
@@ -40,22 +40,40 @@ def main():
 
     client = notion.Client(ACCESS_TOKEN)
 
+    raw_rows = client.get_database(database_id)
+    first_row_flattened = simplify.flatten_database_row(raw_rows[0])
+
+    def available_columns():
+        return filter(lambda c: isinstance(first_row_flattened[c], str),
+                      first_row_flattened.keys())
+
+    # make sure the title column exists
+    if args.name_column not in first_row_flattened:
+        print(f"Database does not contain the column \"{args.name_column}\". "
+              f"Please specify the correct name column using the --name-column flag.",
+              file=sys.stderr)
+        print("Available column(s): ",
+              # only show columns that have strings as possible options
+              ", ".join(available_columns()), file=sys.stderr)
+        return 1
+
+    # make sure the title column is a string
+    if not isinstance(first_row_flattened[args.name_column], str):
+        print(f"Column \"{args.name_column}\" does not contain a string.", file=sys.stderr)
+        print("Available column(s): ",
+              # only show columns that have strings as possible options
+              ", ".join(available_columns()), file=sys.stderr)
+        return 1
+
     if args.output == 'markdown':
-        export_markdown(client, database_id, options=args)
+        export_markdown(client, raw_rows, options=args)
     elif args.output == 'yaml':
-        export_yaml(client, database_id, options=args)
+        export_yaml(client, raw_rows, options=args)
 
     return 0
 
 
-def export_markdown(client, database_id, options):
-    raw_rows = client.get_database(database_id)
-
-    if options.name_column not in raw_rows[0]:
-        print(f"Database does not contain the column \"{options.name_column}\". "
-              f"Please specify the correct name column using the --name-column flag.")
-        exit(1)
-
+def export_markdown(client, raw_rows, options):
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
         print(f"Processing {meta[options.name_column]}", file=sys.stderr)
@@ -72,19 +90,7 @@ def export_markdown(client, database_id, options):
             f.write(markdown)
 
 
-def export_yaml(client, database_id, options):
-    raw_rows = client.get_database(database_id)
-
-    if not(options.name_column in simplify.flatten_database_row(raw_rows[0])):
-        print(f"Database does not contain the column \"{options.name_column}\". "
-              f"Please specify the correct name column using the --name-column flag.")
-        exit(1)
-
-    # result = [{options.name_column: None, **simplify.flatten_database_row(row),
-    #           'content':
-    #            (pandoc.write(converter.load_block(client, row['id']).to_pandoc(),
-    #                          format='gfm') if row['has_children'] else None)}
-    #           for row in raw_rows]
+def export_yaml(client, raw_rows, options):
     result = []
     for row in raw_rows:
         pandoc_output = converter.load_block(client, row['id']).to_pandoc()
@@ -93,7 +99,7 @@ def export_yaml(client, database_id, options):
                        **simplify.flatten_database_row(row),
                        'content': markdown})
 
-    print(yaml.dump_all(result, sort_keys=False), file=sys.stdout)
+    print(yaml.dump_all(result, sort_keys=False))
 
 
 if __name__ == "__main__":

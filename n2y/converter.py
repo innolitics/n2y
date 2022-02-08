@@ -38,7 +38,6 @@ def load_plugins(filename):
     plugin_spec = importlib.util.spec_from_file_location("plugins", abs_path)
     plugin_module = importlib.util.module_from_spec(plugin_spec)
     plugin_spec.loader.exec_module(plugin_module)
-    print(plugin_module)
     for (key, value) in plugin_module.exports.items():
         if key == "Bookmark":
             Bookmark = value
@@ -121,7 +120,6 @@ def parse_block(client: Client, block, get_children=True):
 
 class Block():
     def __init__(self, client: Client, block, get_children=True):
-        # print(f"Creating {block['type']}")
         self.client = client
         # populate attributes
         for key, value in block.items():

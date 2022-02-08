@@ -8,6 +8,8 @@ This commandline tool pulls data from Notion into YAML and markdown.
 pip install n2y
 ```
 
+Install [pandoc](https://github.com/jgm/pandoc/releases/) for your operating system. (Tested with version 2.16.2)
+
 ## Authorization
 
 In notion, go to the "Settings and Members" page. If you're an admin, you should see an "Integrations" option in the side bar. Click the link that says "Develop your own integrations" and follow the instructions on the page. Copy the "Internal Integration Token" into the `NOTION_ACCESS_TOKEN` environment variable.
