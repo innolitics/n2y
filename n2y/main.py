@@ -57,6 +57,11 @@ def main():
               ", ".join(available_columns()), file=sys.stderr)
         return 1
 
+    # make sure title column is not empty (only the first row is checked)
+    if first_row_flattened[args.name_column] is None:
+        print(f"Column \"{args.name_column}\" cannot be empty.", file=sys.stderr)
+        return 1
+
     # make sure the title column is a string
     if not isinstance(first_row_flattened[args.name_column], str):
         print(f"Column \"{args.name_column}\" does not contain a string.", file=sys.stderr)
@@ -74,20 +79,33 @@ def main():
 
 
 def export_markdown(client, raw_rows, options):
+    file_names = []
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
-        print(f"Processing {meta[options.name_column]}", file=sys.stderr)
-        markdown = pandoc.write(
-            converter.load_block(client, row['id']).to_pandoc(), format='gfm') \
-            .replace('\r\n', '\n')  # Deal with Windows line endings
-        # sanitize file name just a bit
-        # maybe use python-slugify in the future?
-        filename = re.sub(r"[/,\\]", '_', meta[options.name_column].lower())
-        with open(f"{filename}.md", 'w') as f:
-            f.write('---\n')
-            f.write(yaml.dump(meta))
-            f.write('---\n\n')
-            f.write(markdown)
+        page_name = meta[options.name_column]
+        filename = re.sub(r"[/,\\]", '_', page_name.lower())
+        if page_name is not None:
+            print(f"Processing {meta[options.name_column]}", file=sys.stderr)
+            if filename in file_names:
+                print("WARNING: duplicate file name \"{filename}.md\"", file=sys.stderr)
+            file_names.append(filename)
+
+            pandoc_output = converter.load_block(client, row['id']).to_pandoc()
+            # do not create markdown pages if there is no page in Notion
+            if pandoc_output:
+                markdown = pandoc.write(pandoc_output, format='gfm') \
+                    .replace('\r\n', '\n')  # Deal with Windows line endings
+                # sanitize file name just a bit
+                # maybe use python-slugify in the future?
+                with open(f"{filename}.md", 'w') as f:
+                    f.write('---\n')
+                    f.write(yaml.dump(meta))
+                    f.write('---\n\n')
+                    f.write(markdown)
+            else:
+                print(f"WARNING: skipping empty page: {page_name}", file=sys.stderr)
+        else:
+            print("WARNING: skipping page with no name", file=sys.stderr)
 
 
 def export_yaml(client, raw_rows, options):
