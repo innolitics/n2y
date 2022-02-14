@@ -31,54 +31,20 @@ IMAGE_WEB_PATH = None
 
 
 def load_plugins(filename):
-    global Bookmark, BulletedList, BulletedListItem, ChildPageBlock, CodeBlockFenced, \
-        Divider, HeadingOne, HeadingTwo, HeadingThree, ImageBlock, NumberedList, NumberedListItem, \
-        ParagraphBlock, Quote, RowBlock, TableBlock, ToDo, ToDoItem, Toggle
     abs_path = path.abspath(filename)
     plugin_spec = importlib.util.spec_from_file_location("plugins", abs_path)
     plugin_module = importlib.util.module_from_spec(plugin_spec)
     plugin_spec.loader.exec_module(plugin_module)
     for (key, value) in plugin_module.exports.items():
-        if key == "Bookmark":
-            Bookmark = value
-        elif key == "BulletedList":
-            BulletedList = value
-        elif key == "BulletedListItem":
-            BulletedListItem = value
-        elif key == "ChildPageBlock":
-            ChildPageBlock = value
-        elif key == "CodeBlockFenced":
-            CodeBlockFenced = value
-        elif key == "Divider":
-            Divider = value
-        elif key == "HeadingOne":
-            HeadingOne = value
-        elif key == "HeadingTwo":
-            HeadingTwo = value
-        elif key == "HeadingThree":
-            HeadingThree = value
-        elif key == "ImageBlock":
-            ImageBlock = value
-        elif key == "NumberedList":
-            NumberedList = value
-        elif key == "NumberedListItem":
-            NumberedListItem = value
-        elif key == "ParagraphBlock":
-            ParagraphBlock = value
-        elif key == "Quote":
-            Quote = value
-        elif key == "RowBlock":
-            RowBlock = value
-        elif key == "TableBlock":
-            TableBlock = value
-        elif key == "ToDo":
-            ToDo = value
-        elif key == "ToDoItem":
-            ToDoItem = value
-        elif key == "Toggle":
-            Toggle = value
+        if key in globals():
+            # plugins can only override classes in this file that are derrived from a Block
+            if globals()[key].__name__ in [b.__name__ for b in value.__bases__] \
+                    and issubclass(globals()[key], Block):
+                globals()[key] = value
+            else:
+                print(f"Cannot import plugin \"{key}\" since it not derrived from a known class.")
         else:
-            raise NotImplementedError(f"Unknown plugin type {key}")
+            raise NotImplementedError(f"Unknown plugin type {key}.")
 
 
 def load_block(client: Client, id, get_children=True):
@@ -86,6 +52,11 @@ def load_block(client: Client, id, get_children=True):
     return parse_block(client, block, get_children)
 
 
+# The Notion client object is passed down for the following reasons:
+#   1. Some child objects may be unknown until the block is processed.
+#      Links to other Notion pages are an example.
+#   2. In some cases a block may choose not to get child blocks.
+#      Currently, all blocks load all children.
 def parse_block(client: Client, block, get_children=True):
     if block['type'] == "child_page":
         return ChildPageBlock(client, block, get_children)
