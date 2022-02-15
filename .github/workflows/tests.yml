@@ -15,6 +15,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          wget https://github.com/jgm/pandoc/releases/download/2.16.2/pandoc-2.16.2-1-amd64.deb
+          sudo dpkg -i pandoc-2.16.2-1-amd64.deb
+          sudo apt-get install -f
           python -m pip install --upgrade pip setuptools
           pip install -e '.[dev]'
       - name: Run tests

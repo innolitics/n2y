@@ -30,7 +30,7 @@ setup(
     ],
     keywords='notion documentation yaml markdown',
     packages=find_packages(exclude=['tests']),
-    install_requires=['pyyaml', 'requests'],
+    install_requires=['pyyaml', 'requests', 'pandoc'],
     extras_require={
         'dev': [
             'pytest',

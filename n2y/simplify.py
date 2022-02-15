@@ -2,6 +2,7 @@
 Simplify data that has been returned from the Notion API.
 """
 import re
+import sys
 
 
 def flatten_database_rows(raw_rows):
@@ -41,16 +42,35 @@ def simplify_property(prop):
         return prop["phone_number"]
     elif prop["type"] == "date":
         return simplify_date(prop["date"])
+    elif prop["type"] == "multi_select":
+        return [option["name"] for option in prop["multi_select"]]
+    elif prop["type"] == "relation":
+        print("WARNING: field type 'relation' is not fully implemented", file=sys.stderr)
+        return [relation["id"] for relation in prop["relation"]]
+    elif prop["type"] == "rollup":
+        print("WARNING: field type 'rollup' is not fully implemented", file=sys.stderr)
+        r = prop["rollup"]
+        return {"type": r["type"], "function": r["function"], r["type"]: r[r["type"]]}
+    elif prop["type"] == "formula":
+        print("WARNING: field type 'formula' is not fully implemented", file=sys.stderr)
+        return prop["formula"]["string"]
+    elif prop["type"] == "files":
+        print("WARNING: field type 'files' is not fully implemented", file=sys.stderr)
+        return prop["files"]
     else:
         # TODO: add remaining column types
         raise NotImplementedError()
 
 
 def simplify_title(data):
+    if data is None or len(data) == 0:
+        return None
     return data[0]["plain_text"]
 
 
 def simplify_select(data):
+    if data is None:
+        return None
     return data["name"]
 
 
@@ -87,6 +107,8 @@ def simplify_people(data):
 
 
 def simplify_date(data):
+    if data is None:
+        return None
     if data["end"] is None:
         return data["start"]
     else:
