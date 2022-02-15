@@ -37,9 +37,11 @@ def load_plugins(filename):
     plugin_spec.loader.exec_module(plugin_module)
     for (key, value) in plugin_module.exports.items():
         if key in globals():
+            class_to_replace = globals()[key]
+            plugin_base_class_names = [b.__name__ for b in value.__bases__]
             # plugins can only override classes in this file that are derrived from a Block
-            if globals()[key].__name__ in [b.__name__ for b in value.__bases__] \
-                    and issubclass(globals()[key], Block):
+            if class_to_replace.__name__ in plugin_base_class_names \
+                    and issubclass(class_to_replace, Block):
                 globals()[key] = value
             else:
                 print(f"Cannot import plugin \"{key}\" since it not derrived from a known class.")
