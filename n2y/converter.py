@@ -135,11 +135,6 @@ class Block():
                 previous_child_type = child['type']
 
 
-class Equation():
-    def __init__(self, text):
-        self.text = text
-
-
 class PlainText():
     def __init__(self, text):
         if re.search(r"{\\displaystyle", text):
