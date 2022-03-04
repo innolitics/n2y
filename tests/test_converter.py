@@ -11,6 +11,7 @@ from n2y import converter, notion
 
 default_annotation = {"bold": False, "italic": False, "strikethrough": False,
                       "underline": False, "code": False, "color": "default"}
+default_equation = '{\\displaystyle i\\hbar {\\frac {d}{dt}}\\vert \\Psi (t)\\rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}'
 
 
 def newline_lf(input):
@@ -420,6 +421,34 @@ def test_strikeout_word():
     assert newline_lf(markdown_output) == expected_markdown
 
 
+def test_equation_inline():
+    input = {
+        'has_children': False,
+        'type': 'paragraph',
+        'paragraph': {
+            'text': [
+                {'type': 'text', 'text': {'content': 'Schrödinger Equation (', 'link': None}, 'annotations': {
+                    'bold': False, 'italic': False, 'strikethrough': False, 'underline': False, 'code': False, 'color': 'default'}, 'plain_text': 'Schrödinger Equation (', 'href': None},
+                {'type': 'equation', 'equation': {'expression': default_equation}, 'annotations': {'bold': False, 'italic': False,
+                                                                                                   'strikethrough': False, 'underline': False, 'code': False, 'color': 'default'}, 'plain_text': default_equation, 'href': None},
+                {'type': 'text', 'text': {'content': ') is a very useful one indeed', 'link': None}, 'annotations': {'bold': False, 'italic': False,
+                                                                                                                     'strikethrough': False, 'underline': False, 'code': False, 'color': 'default'}, 'plain_text': ') is a very useful one indeed', 'href': None}
+            ]
+        }}
+
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para(
+        [Str('$${\\displaystyle'), Space(), Str('i\\hbar'), Space(), Str('{\\frac'), Space(), Str('{d}{dt}}\\vert'), Space(), Str(
+            '\\Psi'), Space(), Str('(t)\\rangle={\\hat'), Space(), Str('{H}}\\vert'), Space(), Str('\\Psi'), Space(), Str('(t)\\rangle}$$')]
+    )
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "$${\\\\displaystyle i\\\\hbar {\\\\frac {d}{dt}}\\\\vert \\\\Psi\n(t)\\\\rangle={\\\\hat {H}}\\\\vert \\\\Psi (t)\\\\rangle}$$\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
 def test_code_inline():
     input = {
         "type": "paragraph",
@@ -594,7 +623,7 @@ def test_equation_block():
     input = {
         'type': 'equation',
         'equation': {
-            'expression': '{\\displaystyle i\\hbar {\\frac {d}{dt}}\\vert \\Psi (t)\\rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}'
+            'expression': default_equation
         }
     }
 
