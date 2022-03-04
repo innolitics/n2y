@@ -60,6 +60,10 @@ def load_block(client: Client, id, get_children=True):
 #   2. In some cases a block may choose not to get child blocks.
 #      Currently, all blocks load all children.
 def parse_block(client: Client, block, get_children=True):
+    print('BLOCK')
+    print(block)
+    print()
+    print()
     if block['type'] == "child_page":
         return ChildPageBlock(client, block, get_children)
     elif block['type'] == "paragraph":

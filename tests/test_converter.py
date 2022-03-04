@@ -590,6 +590,27 @@ def test_image_external_without_caption():
     assert newline_lf(markdown_output) == expected_markdown
 
 
+def test_equation_block():
+    input = {
+        'type': 'equation',
+        'equation': {
+            'expression': '{\\displaystyle i\\hbar {\\frac {d}{dt}}\\vert \\Psi (t)\\rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}'
+        }
+    }
+
+    obj = converter.parse_block(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == Para(
+        [Str('$${\\displaystyle'), Space(), Str('i\\hbar'), Space(), Str('{\\frac'), Space(), Str('{d}{dt}}\\vert'), Space(), Str(
+            '\\Psi'), Space(), Str('(t)\\rangle={\\hat'), Space(), Str('{H}}\\vert'), Space(), Str('\\Psi'), Space(), Str('(t)\\rangle}$$')]
+    )
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = "$${\\\\displaystyle i\\\\hbar {\\\\frac {d}{dt}}\\\\vert \\\\Psi\n(t)\\\\rangle={\\\\hat {H}}\\\\vert \\\\Psi (t)\\\\rangle}$$\n"
+    assert newline_lf(markdown_output) == expected_markdown
+
+
 def test_code_block():
     input = {
         "type": "code",
