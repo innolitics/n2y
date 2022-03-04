@@ -87,7 +87,7 @@ def parse_block(client: Client, block, get_children=True):
     elif block['type'] == "toggle":
         return Toggle(client, block, get_children)
     elif block['type'] == "equation":
-        EquationBlock(client, block, get_children)
+        return EquationBlock(client, block, get_children)
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
@@ -187,7 +187,7 @@ class Annotations():
 
 class RichText():
     def __init__(self, block):
-        print(block)
+        print(block.keys())
         print()
         print()
         for key, value in block.items():
@@ -208,6 +208,9 @@ class RichText():
 
 class RichTextArray():
     def __init__(self, text):
+        print(text)
+        print()
+        print()
         self.text = [RichText(i) for i in text]
 
     def to_pandoc(self):
@@ -217,6 +220,9 @@ class RichTextArray():
 class ChildPageBlock(Block):
     def to_pandoc(self):
         if hasattr(self, 'children'):
+            print(self.children)
+            print()
+            print()
             children = [item.to_pandoc() for item in self.children]
             return Pandoc(Meta({'title': MetaString(self.title)}), children)
         else:
@@ -226,10 +232,14 @@ class ChildPageBlock(Block):
 class EquationBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        print(self.expression)
-        print()
-        print()
-        self.expression = RichTextArray(self.expression)
+        # print(self.expression)
+        # print()
+        # print()
+        self.expression = PlainText(f"${self.expression}$")
+
+    def to_pandoc(self):
+        content = self.expression.to_pandoc()
+        return Para(content)
 
 
 class ParagraphBlock(Block):
