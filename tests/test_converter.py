@@ -434,18 +434,19 @@ def test_equation_inline():
                 {'type': 'text', 'text': {'content': ') is a very useful one indeed', 'link': None}, 'annotations': {'bold': False, 'italic': False,
                                                                                                                      'strikethrough': False, 'underline': False, 'code': False, 'color': 'default'}, 'plain_text': ') is a very useful one indeed', 'href': None}
             ]
-        }}
+        }
+    }
 
     obj = converter.parse_block(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
 
     assert pandoc_output == Para(
-        [Str('$${\\displaystyle'), Space(), Str('i\\hbar'), Space(), Str('{\\frac'), Space(), Str('{d}{dt}}\\vert'), Space(), Str(
-            '\\Psi'), Space(), Str('(t)\\rangle={\\hat'), Space(), Str('{H}}\\vert'), Space(), Str('\\Psi'), Space(), Str('(t)\\rangle}$$')]
+        [Str('Schrödinger'), Space(), Str('Equation'), Space(), Str('('), Str('${\\displaystyle'), Space(), Str('i\\hbar'), Space(), Str('{\\frac'), Space(), Str('{d}{dt}}\\vert'), Space(), Str('\\Psi'), Space(), Str(
+            '(t)\\rangle={\\hat'), Space(), Str('{H}}\\vert'), Space(), Str('\\Psi'), Space(), Str('(t)\\rangle}$'), Str(')'), Space(), Str('is'), Space(), Str('a'), Space(), Str('very'), Space(), Str('useful'), Space(), Str('one'), Space(), Str('indeed')]
     )
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "$${\\\\displaystyle i\\\\hbar {\\\\frac {d}{dt}}\\\\vert \\\\Psi\n(t)\\\\rangle={\\\\hat {H}}\\\\vert \\\\Psi (t)\\\\rangle}$$\n"
+    expected_markdown = "Schrödinger Equation (${\\\\displaystyle i\\\\hbar {\\\\frac {d}{dt}}\\\\vert\n\\\\Psi (t)\\\\rangle={\\\\hat {H}}\\\\vert \\\\Psi (t)\\\\rangle}$) is a very\nuseful one indeed\n"
     assert newline_lf(markdown_output) == expected_markdown
 
 
@@ -454,14 +455,14 @@ def test_code_inline():
         "type": "paragraph",
         "has_children": False,
         "paragraph": {
-                "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
-                    {"annotations": {"bold": False, "italic": False, "strikethrough": False,
-                                     "underline": False, "code": True, "color": "default"},
-                        "href": None,
-                        "plain_text": "code"},
-                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
-                ]
+            "text": [
+                {"annotations": default_annotation, "href": None, "plain_text": "A "},
+                {"annotations": {"bold": False, "italic": False, "strikethrough": False,
+                                 "underline": False, "code": True, "color": "default"},
+                    "href": None,
+                    "plain_text": "code"},
+                {"annotations": default_annotation, "href": None, "plain_text": " word."},
+            ]
         }
     }
 
