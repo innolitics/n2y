@@ -68,6 +68,7 @@ Classes that can be extended (case sensitive):
 - NumberedListItem
 - ParagraphBlock
 - Quote
+- EquationBlock
 - RowBlock
 - TableBlock
 - ToDo
