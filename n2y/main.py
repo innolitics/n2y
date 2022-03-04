@@ -92,6 +92,8 @@ def export_markdown(client, raw_rows, options):
 
             pandoc_output = converter.load_block(client, row['id']).to_pandoc()
             # do not create markdown pages if there is no page in Notion
+            print()
+            print()
             if pandoc_output:
                 markdown = pandoc.write(pandoc_output, format='gfm') \
                     .replace('\r\n', '\n')  # Deal with Windows line endings

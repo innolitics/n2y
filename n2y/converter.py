@@ -86,6 +86,8 @@ def parse_block(client: Client, block, get_children=True):
         return RowBlock(client, block, get_children)
     elif block['type'] == "toggle":
         return Toggle(client, block, get_children)
+    elif block['type'] == "equation":
+        EquationBlock(client, block, get_children)
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
@@ -133,8 +135,15 @@ class Block():
                 previous_child_type = child['type']
 
 
+class Equation():
+    def __init__(self, text):
+        self.text = text
+
+
 class PlainText():
     def __init__(self, text):
+        if re.search(r"{\\displaystyle", text):
+            text = f"${text}$"
         self.text = text
 
     def to_pandoc(self):
@@ -152,6 +161,7 @@ class PlainText():
                 ast.append(SoftBreak())
             for _ in range(len(tab) * 4):  # 4 spaces per tab
                 ast.append(Space())
+        # print(ast)
         return ast
 
 
@@ -177,11 +187,15 @@ class Annotations():
 
 class RichText():
     def __init__(self, block):
+        print(block)
+        print()
+        print()
         for key, value in block.items():
             if key not in ['annotations', 'plain_text']:
                 self.__dict__[key] = value
-            self.annotations = Annotations(block['annotations'])
-            self.plain_text = PlainText(block['plain_text'])
+
+        self.annotations = Annotations(block['annotations'])
+        self.plain_text = PlainText(block['plain_text'])
 
     def to_pandoc(self):
         if self.annotations.code:
@@ -207,6 +221,15 @@ class ChildPageBlock(Block):
             return Pandoc(Meta({'title': MetaString(self.title)}), children)
         else:
             return None
+
+
+class EquationBlock(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        print(self.expression)
+        print()
+        print()
+        self.expression = RichTextArray(self.expression)
 
 
 class ParagraphBlock(Block):
