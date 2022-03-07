@@ -95,6 +95,11 @@ def export_markdown(client, raw_rows, options):
             if pandoc_output:
                 markdown = pandoc.write(pandoc_output, format='gfm') \
                     .replace('\r\n', '\n')  # Deal with Windows line endings
+                # reformat equations to have one backslash instead of 2
+                equations = re.findall(r'(\$[^\$]+\$)', markdown)
+                for equation in equations:
+                    format_fixed = equation.replace('\\\\', '\\')
+                    markdown = markdown.replace(equation, format_fixed)
                 # sanitize file name just a bit
                 # maybe use python-slugify in the future?
                 with open(f"{filename}.md", 'w') as f:
