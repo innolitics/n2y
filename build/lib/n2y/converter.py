@@ -60,6 +60,9 @@ def load_block(client: Client, id, get_children=True):
 #   2. In some cases a block may choose not to get child blocks.
 #      Currently, all blocks load all children.
 def parse_block(client: Client, block, get_children=True):
+    print(block['type'])
+    print()
+    print()
     if block['type'] == "child_page":
         return ChildPageBlock(client, block, get_children)
     elif block['type'] == "paragraph":
@@ -137,8 +140,8 @@ class Block():
 
 class PlainText():
     def __init__(self, text):
-        if re.search(r"{\\displaystyle", text):
-            text = f"${text}$"
+        # if re.search(r"{\\displaystyle", text):
+        #     text = f"${text}$"
         self.text = text
 
     def to_pandoc(self):
