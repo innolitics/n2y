@@ -5,7 +5,8 @@ import pandoc
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody, \
-    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption
+    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption, \
+    Math, InlineMath, DisplayMath
 
 from n2y import converter, notion
 
@@ -490,20 +491,24 @@ def test_equation_inline():
     assert pandoc_output == Para(
         [
             Str('Schrödinger'), Space(), Str('Equation'), Space(), Str('('),
-            Str('${\\displaystyle'), Space(), Str('i\\hbar'), Space(), Str('{\\frac'),
-            Space(), Str('{d}{dt}}\\vert'), Space(), Str('\\Psi'), Space(),
-            Str('(t)\\rangle={\\hat'), Space(), Str('{H}}\\vert'), Space(),
-            Str('\\Psi'), Space(), Str('(t)\\rangle}$'), Str(')'), Space(),
+            Math(InlineMath(), default_equation), Str(')'), Space(),
             Str('is'), Space(), Str('a'), Space(), Str('very'), Space(),
             Str('useful'), Space(), Str('one'), Space(), Str('indeed')
         ]
     )
 
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    md1 = "Schrödinger Equation (${\\\\displaystyle i\\\\hbar "
-    md2 = "{\\\\frac {d}{dt}}\\\\vert\n\\\\Psi (t)\\\\rangle={\\\\hat "
-    md3 = "{H}}\\\\vert \\\\Psi (t)\\\\rangle}$) is a very\nuseful one indeed\n"
+    markdown_output = pandoc.write(pandoc_output, format='gfm+tex_math_dollars')
+    md1 = "Schrödinger Equation\n(${\\displaystyle i\\hbar "
+    md2 = "{\\frac {d}{dt}}\\vert \\Psi (t)\\rangle={\\hat "
+    md3 = "{H}}\\vert \\Psi (t)\\rangle}$)\nis a very useful one indeed\n"
     expected_markdown = f"{md1}{md2}{md3}"
+    print()
+    print()
+    print('EXPECTED_MARKDOWN')
+    print(newline_lf(markdown_output))
+    print(expected_markdown)
+    print(newline_lf(markdown_output) == expected_markdown)
+    print()
     assert newline_lf(markdown_output) == expected_markdown
 
 
@@ -690,16 +695,13 @@ def test_equation_block():
 
     assert pandoc_output == Para(
         [
-            Str('$${\\displaystyle'), Space(), Str('i\\hbar'), Space(), Str('{\\frac'),
-            Space(), Str('{d}{dt}}\\vert'), Space(), Str('\\Psi'), Space(),
-            Str('(t)\\rangle={\\hat'), Space(), Str('{H}}\\vert'), Space(),
-            Str('\\Psi'), Space(), Str('(t)\\rangle}$$')
+            Math(DisplayMath(), default_equation)
         ]
     )
 
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    md1 = "$${\\\\displaystyle i\\\\hbar {\\\\frac {d}{dt}}\\\\vert "
-    md2 = "\\\\Psi\n(t)\\\\rangle={\\\\hat {H}}\\\\vert \\\\Psi (t)\\\\rangle}$$\n"
+    markdown_output = pandoc.write(pandoc_output, format='gfm+tex_math_dollars')
+    md1 = "$${\\displaystyle i\\hbar {\\frac {d}{dt}}\\vert \\Psi"
+    md2 = " (t)\\rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}$$\n"
     expected_markdown = f"{md1}{md2}"
     assert newline_lf(markdown_output) == expected_markdown
 

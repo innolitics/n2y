@@ -78,10 +78,9 @@ def main():
     return 0
 
 
-def export_markdown(client: notion.Client, raw_rows, options):
+def export_markdown(client, raw_rows, options):
     file_names = []
     for row in raw_rows:
-        block = client.get_block(row["id"])
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
         filename = re.sub(r"[/,\\]", '_', page_name.lower())
@@ -91,7 +90,7 @@ def export_markdown(client: notion.Client, raw_rows, options):
                 print("WARNING: duplicate file name \"{filename}.md\"", file=sys.stderr)
             file_names.append(filename)
 
-            pandoc_output = converter.load_block(client, block).to_pandoc()
+            pandoc_output = converter.load_block(client, row['id']).to_pandoc()
             # do not create markdown pages if there is no page in Notion
             if pandoc_output:
                 markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \

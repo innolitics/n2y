@@ -179,7 +179,7 @@ class Annotations():
 
 class RichText():
     def __init__(self, block):
-        if block['type'] == 'equation':
+        if 'type' in block and block['type'] == 'equation':
             self.scan_items(block, 'equation')
             equation = block['equation']['expression']
             self.equation = [Math(InlineMath(), equation)]
@@ -202,7 +202,7 @@ class RichText():
         elif self.href:
             return [Link(('', [], []), self.plain_text.to_pandoc(), (self.href, ''))]
         else:
-            if self.type == 'equation':
+            if 'type' in self.__dict__ and self.type == 'equation':
                 return self.annotations.apply_pandoc(self.equation)
             else:
                 return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
