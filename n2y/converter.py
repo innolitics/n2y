@@ -137,8 +137,6 @@ class Block():
 
 class PlainText():
     def __init__(self, text):
-        # if re.search(r"{\\displaystyle", text):
-        #     text = f"${text}$"
         self.text = text
 
     def to_pandoc(self):
@@ -179,30 +177,12 @@ class Annotations():
         return result
 
 
-class BlockEquation():
-    def __init__(self, expression):
-        self.expression = expression
-
-    def to_pandoc(self):
-        return [Math(DisplayMath(), self.expression)]
-
-
-class InlineEquation():
-    def __init__(self, expression):
-        self.expression = expression
-
-    def to_pandoc(self):
-        return [Math(InlineMath(), self.expression)]
-
-
 class RichText():
     def __init__(self, block):
         if block['type'] == 'equation':
             self.scan_items(block, 'equation')
-            if 'object' in block:
-                self.equation = BlockEquation(block['equation']['expression'])
-            else:
-                self.equation = InlineEquation(block['equation']['expression'])
+            equation = block['equation']['expression']
+            self.equation = [Math(InlineMath(), equation)]
 
         else:
             self.scan_items(block, 'plain_text')
@@ -223,7 +203,7 @@ class RichText():
             return [Link(('', [], []), self.plain_text.to_pandoc(), (self.href, ''))]
         else:
             if self.type == 'equation':
-                return self.annotations.apply_pandoc(self.equation.to_pandoc())
+                return self.annotations.apply_pandoc(self.equation)
             else:
                 return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
 
@@ -249,18 +229,9 @@ class ChildPageBlock(Block):
 class EquationBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        block['annotations'] = {
-            'bold': False,
-            'italic': False,
-            'strikethrough': False,
-            'underline': False,
-            'code': False,
-            'color': 'default'}
-        block['href'] = None
-        self.expression = RichTextArray([block])
 
     def to_pandoc(self):
-        content = self.expression.to_pandoc()
+        content = [Math(DisplayMath(), self.expression)]
         return Para(content)
 
 

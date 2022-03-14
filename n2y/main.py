@@ -94,14 +94,9 @@ def export_markdown(client: notion.Client, raw_rows, options):
             pandoc_output = converter.load_block(client, block).to_pandoc()
             # do not create markdown pages if there is no page in Notion
             if pandoc_output:
-                markdown = pandoc.write(pandoc_output, format='gfm') \
+                markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \
                     .replace('\r\n', '\n')  # Deal with Windows line endings
                 # reformat equations to have one backslash instead of 2
-
-                equations = re.findall(r'(\$[^\$]+\$)', markdown)
-                for equation in equations:
-                    format_fixed = equation.replace('\\\\', '\\')
-                    markdown = markdown.replace(equation, format_fixed)
 
                 # sanitize file name just a bit
                 # maybe use python-slugify in the future?
