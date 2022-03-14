@@ -7,7 +7,8 @@ import requests
 from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, Underline, MetaString, Table, TableHead, TableBody, \
-    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption
+    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption, \
+    Math, InlineMath, DisplayMath
 import re
 
 from n2y.notion import Client
@@ -60,7 +61,9 @@ def load_block(client: Client, id, get_children=True):
 #   2. In some cases a block may choose not to get child blocks.
 #      Currently, all blocks load all children.
 def parse_block(client: Client, block, get_children=True):
-    print(block['type'])
+    print()
+    print(block['type'].upper())
+    print(block)
     print()
     print()
     if block['type'] == "child_page":
@@ -182,14 +185,40 @@ class Annotations():
         return result
 
 
+class MathInline():
+    def __init__(self, expression):
+        self.expression = expression
+
+    def to_pandoc(self):
+        return [Math(InlineMath(), self.expression)]
+
+
 class RichText():
     def __init__(self, block):
-        for key, value in block.items():
-            if key not in ['annotations', 'plain_text']:
-                self.__dict__[key] = value
+        print()
+        print()
+        print("BLOCK")
+        print(block)
+        print(block['type'])
+        if block['type'] == 'equation':
+            for key, value in block.items():
+                print("Key  |  Val")
+                print(f"{key}  |  {value}")
+                print()
+                if key not in ['annotations', 'equation']:
+                    self.__dict__[key] = value
+            self.equation = MathInline(block['equation']['expression'])
+
+        else:
+            for key, value in block.items():
+                print("Key  |  Val")
+                print(f"{key}  |  {value}")
+                print()
+                if key not in ['annotations', 'plain_text']:
+                    self.__dict__[key] = value
+            self.plain_text = PlainText(block['plain_text'])
 
         self.annotations = Annotations(block['annotations'])
-        self.plain_text = PlainText(block['plain_text'])
 
     def to_pandoc(self):
         if self.annotations.code:
@@ -197,7 +226,10 @@ class RichText():
         elif self.href:
             return [Link(('', [], []), self.plain_text.to_pandoc(), (self.href, ''))]
         else:
-            return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
+            if self.type == 'equation':
+                return self.annotations.apply_pandoc(self.equation.to_pandoc())
+            else:
+                return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
 
 
 class RichTextArray():
@@ -205,6 +237,14 @@ class RichTextArray():
         self.text = [RichText(i) for i in text]
 
     def to_pandoc(self):
+        print("TEXT")
+        print(self.text)
+        print("TO_PANDOC")
+        print([item.to_pandoc() for item in self.text])
+        print("SUM")
+        print(sum([item.to_pandoc() for item in self.text], []))
+        print()
+        print()
         return sum([item.to_pandoc() for item in self.text], [])
 
 
