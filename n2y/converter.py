@@ -7,8 +7,8 @@ import requests
 from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, Underline, MetaString, Table, TableHead, TableBody, \
-    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption, \
-    Math, InlineMath, DisplayMath
+    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
+    Caption, Math, InlineMath, DisplayMath
 import re
 
 from n2y.notion import Client

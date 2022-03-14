@@ -5,8 +5,8 @@ import pandoc
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody, \
-    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, Caption, \
-    Math, InlineMath, DisplayMath
+    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
+    Caption, Math, InlineMath, DisplayMath
 
 from n2y import converter, notion
 
