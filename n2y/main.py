@@ -78,9 +78,10 @@ def main():
     return 0
 
 
-def export_markdown(client, raw_rows, options):
+def export_markdown(client: notion.Client, raw_rows, options):
     file_names = []
     for row in raw_rows:
+        block = client.get_block(row["id"])
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
         filename = re.sub(r"[/,\\]", '_', page_name.lower())
@@ -90,21 +91,17 @@ def export_markdown(client, raw_rows, options):
                 print("WARNING: duplicate file name \"{filename}.md\"", file=sys.stderr)
             file_names.append(filename)
 
-            pandoc_output = converter.load_block(client, row['id']).to_pandoc()
+            pandoc_output = converter.load_block(client, block).to_pandoc()
             # do not create markdown pages if there is no page in Notion
-            print("PANDOC_OUTPUT")
-            print(pandoc_output)
-            print()
-            print()
             if pandoc_output:
                 markdown = pandoc.write(pandoc_output, format='gfm') \
                     .replace('\r\n', '\n')  # Deal with Windows line endings
                 # reformat equations to have one backslash instead of 2
 
-                # equations = re.findall(r'(\$[^\$]+\$)', markdown)
-                # for equation in equations:
-                #     format_fixed = equation.replace('\\\\', '\\')
-                #     markdown = markdown.replace(equation, format_fixed)
+                equations = re.findall(r'(\$[^\$]+\$)', markdown)
+                for equation in equations:
+                    format_fixed = equation.replace('\\\\', '\\')
+                    markdown = markdown.replace(equation, format_fixed)
 
                 # sanitize file name just a bit
                 # maybe use python-slugify in the future?

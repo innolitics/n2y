@@ -50,8 +50,7 @@ def load_plugins(filename):
             raise NotImplementedError(f"Unknown plugin type {key}.")
 
 
-def load_block(client: Client, id, get_children=True):
-    block = client.get_block(id)
+def load_block(client: Client, block, get_children=True):
     return parse_block(client, block, get_children)
 
 
@@ -61,11 +60,6 @@ def load_block(client: Client, id, get_children=True):
 #   2. In some cases a block may choose not to get child blocks.
 #      Currently, all blocks load all children.
 def parse_block(client: Client, block, get_children=True):
-    print()
-    print(block['type'].upper())
-    print(block)
-    print()
-    print()
     if block['type'] == "child_page":
         return ChildPageBlock(client, block, get_children)
     elif block['type'] == "paragraph":
@@ -185,7 +179,15 @@ class Annotations():
         return result
 
 
-class MathInline():
+class BlockEquation():
+    def __init__(self, expression):
+        self.expression = expression
+
+    def to_pandoc(self):
+        return [Math(DisplayMath(), self.expression)]
+
+
+class InlineEquation():
     def __init__(self, expression):
         self.expression = expression
 
@@ -195,30 +197,24 @@ class MathInline():
 
 class RichText():
     def __init__(self, block):
-        print()
-        print()
-        print("BLOCK")
-        print(block)
-        print(block['type'])
         if block['type'] == 'equation':
-            for key, value in block.items():
-                print("Key  |  Val")
-                print(f"{key}  |  {value}")
-                print()
-                if key not in ['annotations', 'equation']:
-                    self.__dict__[key] = value
-            self.equation = MathInline(block['equation']['expression'])
+            self.scan_items(block, 'equation')
+            if 'object' in block:
+                self.equation = BlockEquation(block['equation']['expression'])
+            else:
+                self.equation = InlineEquation(block['equation']['expression'])
 
         else:
-            for key, value in block.items():
-                print("Key  |  Val")
-                print(f"{key}  |  {value}")
-                print()
-                if key not in ['annotations', 'plain_text']:
-                    self.__dict__[key] = value
+            self.scan_items(block, 'plain_text')
             self.plain_text = PlainText(block['plain_text'])
 
-        self.annotations = Annotations(block['annotations'])
+        if 'annotations' in block:
+            self.annotations = Annotations(block['annotations'])
+
+    def scan_items(self, block, type):
+        for key, value in block.items():
+            if key not in ['annotations', type]:
+                self.__dict__[key] = value
 
     def to_pandoc(self):
         if self.annotations.code:
@@ -234,17 +230,10 @@ class RichText():
 
 class RichTextArray():
     def __init__(self, text):
+
         self.text = [RichText(i) for i in text]
 
     def to_pandoc(self):
-        print("TEXT")
-        print(self.text)
-        print("TO_PANDOC")
-        print([item.to_pandoc() for item in self.text])
-        print("SUM")
-        print(sum([item.to_pandoc() for item in self.text], []))
-        print()
-        print()
         return sum([item.to_pandoc() for item in self.text], [])
 
 
@@ -260,7 +249,15 @@ class ChildPageBlock(Block):
 class EquationBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.expression = PlainText(f"${self.expression}$")
+        block['annotations'] = {
+            'bold': False,
+            'italic': False,
+            'strikethrough': False,
+            'underline': False,
+            'code': False,
+            'color': 'default'}
+        block['href'] = None
+        self.expression = RichTextArray([block])
 
     def to_pandoc(self):
         content = self.expression.to_pandoc()
