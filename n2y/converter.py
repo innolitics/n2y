@@ -50,7 +50,8 @@ def load_plugins(filename):
             raise NotImplementedError(f"Unknown plugin type {key}.")
 
 
-def load_block(client: Client, block, get_children=True):
+def load_block(client: Client, id, get_children=True):
+    block = client.get_block(id)
     return parse_block(client, block, get_children)
 
 
