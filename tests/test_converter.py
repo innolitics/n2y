@@ -37,6 +37,7 @@ def test_paragraph(mock_get_block):
              "paragraph": {
                  "text": [
                      {
+                         "type": "text",
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "paragraph text"}
@@ -58,6 +59,7 @@ def test_heading_1(mock_get_block):
              "heading_1": {
                  "text": [
                      {
+                         "type": "text",
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Heading One"}
@@ -80,6 +82,7 @@ def test_heading_2(mock_get_block):
              "heading_2": {
                  "text": [
                      {
+                         "type": "text",
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Heading One"}
@@ -102,6 +105,7 @@ def test_heading_3(mock_get_block):
              "heading_3": {
                  "text": [
                      {
+                         "type": "text",
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Heading One"}
@@ -127,6 +131,7 @@ def test_bulleted_list(mock_get_block, mock_get_block_children):
                  "has_children": True,
                  "text": [
                      {
+                         "type": "text",
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Bulleted List"}
@@ -138,6 +143,7 @@ def test_bulleted_list(mock_get_block, mock_get_block_children):
             "has_children": False,
             "bulleted_list_item": {
                 "text": [{
+                    "type": "text",
                     "annotations": default_annotation,
                     "href": None,
                     "plain_text": "Item One"
@@ -149,6 +155,7 @@ def test_bulleted_list(mock_get_block, mock_get_block_children):
             "has_children": False,
             "bulleted_list_item": {
                 "text": [{
+                    "type": "text",
                     "annotations": default_annotation,
                     "href": None,
                     "plain_text": "Item Two"
@@ -181,6 +188,7 @@ def test_numbered_list(mock_get_block, mock_get_block_children):
                  "has_children": True,
                  "text": [
                      {
+                         "type": "text",
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Numbered List"}
@@ -192,6 +200,7 @@ def test_numbered_list(mock_get_block, mock_get_block_children):
             "has_children": False,
             "numbered_list_item": {
                 "text": [{
+                    "type": "text",
                     "annotations": default_annotation,
                     "href": None,
                     "plain_text": "Item One"
@@ -203,6 +212,7 @@ def test_numbered_list(mock_get_block, mock_get_block_children):
             "has_children": False,
             "numbered_list_item": {
                 "text": [{
+                    "type": "text",
                     "annotations": default_annotation,
                     "href": None,
                     "plain_text": "Item Two"
@@ -242,6 +252,7 @@ def test_page(mock_get_block, mock_get_block_children):
         "has_children": False,
         "paragraph": {
             "text": [{
+                "type": "text",
                 "annotations": default_annotation,
                 "href": None,
                 "plain_text": "Simple page"
@@ -269,12 +280,15 @@ def test_bold_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
-                    {"annotations": {"bold": True, "italic": False, "strikethrough": False,
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": "A "},
+                    {"type": "text",
+                     "annotations": {"bold": True, "italic": False, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
                         "href": None,
                         "plain_text": "bold"},
-                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
+                    {"type": "text", "annotations": default_annotation,
+                        "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -296,12 +310,15 @@ def test_bold_letter():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
-                    {"annotations": {"bold": True, "italic": False, "strikethrough": False,
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": "A "},
+                    {"type": "text",
+                     "annotations": {"bold": True, "italic": False, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
                         "href": None,
                         "plain_text": "b"},
-                    {"annotations": default_annotation, "href": None, "plain_text": "old word."},
+                    {"type": "text", "annotations": default_annotation,
+                        "href": None, "plain_text": "old word."},
                 ]
         }
     }
@@ -323,12 +340,15 @@ def test_italic_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "An "},
-                    {"annotations": {"bold": False, "italic": True, "strikethrough": False,
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": "An "},
+                    {"type": "text",
+                     "annotations": {"bold": False, "italic": True, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
                         "href": None,
                         "plain_text": "italic"},
-                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -350,12 +370,15 @@ def test_italic_letter():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "An "},
-                    {"annotations": {"bold": False, "italic": True, "strikethrough": False,
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": "An "},
+                    {"type": "text",
+                     "annotations": {"bold": False, "italic": True, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
                         "href": None,
                         "plain_text": "i"},
-                    {"annotations": default_annotation, "href": None, "plain_text": "talic word."},
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": "talic word."},
                 ]
         }
     }
@@ -377,12 +400,15 @@ def test_bold_italic_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
-                    {"annotations": {"bold": True, "italic": True, "strikethrough": False,
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": "A "},
+                    {"type": "text",
+                     "annotations": {"bold": True, "italic": True, "strikethrough": False,
                                      "underline": False, "code": False, "color": "default"},
                         "href": None,
                         "plain_text": "bold-italic"},
-                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -404,12 +430,15 @@ def test_strikeout_word():
         "has_children": False,
         "paragraph": {
                 "text": [
-                    {"annotations": default_annotation, "href": None, "plain_text": "A "},
-                    {"annotations": {"bold": False, "italic": False, "strikethrough": True,
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": "A "},
+                    {"type": "text",
+                     "annotations": {"bold": False, "italic": False, "strikethrough": True,
                                      "underline": False, "code": False, "color": "default"},
                         "href": None,
                         "plain_text": "deleted"},
-                    {"annotations": default_annotation, "href": None, "plain_text": " word."},
+                    {"type": "text", "annotations": default_annotation,
+                     "href": None, "plain_text": " word."},
                 ]
         }
     }
@@ -518,12 +547,15 @@ def test_code_inline():
         "has_children": False,
         "paragraph": {
             "text": [
-                {"annotations": default_annotation, "href": None, "plain_text": "A "},
-                {"annotations": {"bold": False, "italic": False, "strikethrough": False,
+                {"type": "text", "annotations": default_annotation,
+                 "href": None, "plain_text": "A "},
+                {"type": "text",
+                 "annotations": {"bold": False, "italic": False, "strikethrough": False,
                                  "underline": False, "code": True, "color": "default"},
                     "href": None,
                     "plain_text": "code"},
-                {"annotations": default_annotation, "href": None, "plain_text": " word."},
+                {"type": "text", "annotations": default_annotation,
+                 "href": None, "plain_text": " word."},
             ]
         }
     }
@@ -539,13 +571,59 @@ def test_code_inline():
     assert newline_lf(markdown_output) == expected_markdown
 
 
+def test_link_inline():
+    input = {
+        "type": "paragraph",
+        "has_children": False,
+        "paragraph": {
+            "text": [
+                {
+                    "type": "text",
+                    "annotations": default_annotation,
+                    "plain_text": "This is a ",
+                },
+                {
+                    "type": "text",
+                    "annotations": {
+                        "bold": True,
+                        "italic": False,
+                        "strikethrough": False,
+                        "underline": False,
+                        "code": False,
+                        "color": "default"
+                    },
+                    "plain_text": "link",
+                    "href": "https://example.com"
+                },
+                {
+                    "type": "text",
+                    "annotations": default_annotation,
+                    "plain_text": "."
+                }
+            ]
+        }
+    }
+
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+
+    assert pandoc_output == \
+        Para([Str('This'), Space(), Str('is'), Space(), Str('a'), Space(),
+              Link(('', [], []), [Strong([Str('link')])], ('https://example.com', '')), Str('.')])
+
+    markdown_output = pandoc.write(pandoc_output, format='gfm')
+    expected_markdown = 'This is a [**link**](https://example.com).\n'
+    assert newline_lf(markdown_output) == expected_markdown
+
+
 def test_bookmark_with_caption():
     input = {
         "type": "bookmark",
         "has_children": False,
         "bookmark": {
             "caption": [
-                {"annotations": default_annotation,
+                {"type": "text",
+                 "annotations": default_annotation,
                  "href": None,
                  "plain_text": "Innolitics"}],
             "url": "https://innolotics.com"
@@ -606,7 +684,7 @@ def test_block_quote():
         "type": "quote",
         "has_children": False,
         "quote": {
-            "text": [{"annotations": default_annotation, "href": None, "plain_text":
+            "text": [{"type": "text", "annotations": default_annotation, "href": None, "plain_text":
                       "In a time of deceit telling the truth is a revolutionary act."}]
         }
     }
@@ -632,7 +710,8 @@ def test_image_internal_with_caption(mock_download):
         "image": {
             'type': 'file',
             'caption': [
-                {"annotations": default_annotation,
+                {"type": "text",
+                 "annotations": default_annotation,
                  "href": None,
                  "plain_text": "test image"}],
             'file': {
@@ -661,7 +740,8 @@ def test_image_external_without_caption():
         "image": {
             'type': 'external',
             'caption': [
-                {"annotations": default_annotation,
+                {"type": "text",
+                 "annotations": default_annotation,
                  "href": None,
                  "plain_text": "test image"}],
             'external': {
@@ -910,6 +990,7 @@ def test_todo(mock_get_block_children):
              "paragraph": {
                  "text": [
                      {
+                         "type": "text",
                          "annotations": default_annotation,
                          "href": None,
                          "plain_text": "Task List"}
@@ -922,6 +1003,7 @@ def test_todo(mock_get_block_children):
             "checked": True,
             "to_do": {
                 "text": [{
+                    "type": "text",
                     "annotations": default_annotation,
                     "href": None,
                     "plain_text": "Task One"
@@ -934,6 +1016,7 @@ def test_todo(mock_get_block_children):
             "checked": False,
             "to_do": {
                 "text": [{
+                    "type": "text",
                     "annotations": default_annotation,
                     "href": None,
                     "plain_text": "Task Two"

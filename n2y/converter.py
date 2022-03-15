@@ -88,7 +88,7 @@ def parse_block(client: Client, block, get_children=True):
     elif block['type'] == "toggle":
         return Toggle(client, block, get_children)
     elif block['type'] == "equation":
-        return EquationBlock(client, block, get_children)
+        return Equation(client, block, get_children)
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f"Unknown block type {block['type']}")
@@ -178,35 +178,44 @@ class Annotations():
         return result
 
 
+class InlineEquation():
+    def __init__(self, block):
+        for key, value in block.items():
+            self.__dict__[key] = value
+
+    def to_pandoc(self):
+        return [Math(InlineMath(), self.expression)]
+
+
 class RichText():
     def __init__(self, block):
-        if 'type' in block and block['type'] == 'equation':
-            self.scan_items(block, 'equation')
-            equation = block['equation']['expression']
-            self.equation = [Math(InlineMath(), equation)]
-
-        else:
-            self.scan_items(block, 'plain_text')
-            self.plain_text = PlainText(block['plain_text'])
-
-        if 'annotations' in block:
-            self.annotations = Annotations(block['annotations'])
-
-    def scan_items(self, block, type):
+        handlers = {
+            'annotations': Annotations,
+            'plain_text': PlainText,
+            'equation': InlineEquation}
         for key, value in block.items():
-            if key not in ['annotations', type]:
+            if key in handlers.keys():
+                self.__dict__[key] = handlers[key](value)
+            else:
                 self.__dict__[key] = value
 
     def to_pandoc(self):
-        if self.annotations.code:
-            return self.annotations.apply_pandoc(self.plain_text.text)
-        elif self.href:
-            return [Link(('', [], []), self.plain_text.to_pandoc(), (self.href, ''))]
-        else:
-            if 'type' in self.__dict__ and self.type == 'equation':
-                return self.annotations.apply_pandoc(self.equation)
+        if self.type == 'text':
+            if self.annotations.code:
+                # Send raw text if it's code.
+                return self.annotations.apply_pandoc(self.plain_text.text)
+            elif 'href' in self.__dict__ and self.href:
+                # links
+                return [Link(('', [], []),
+                             self.annotations.apply_pandoc(self.plain_text.to_pandoc()),
+                             (self.href, ''))]
             else:
+                # regular text
                 return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
+        elif self.type == 'equation':
+            return self.equation.to_pandoc()
+        else:
+            raise NotImplementedError(f"Unknown rich text object type: {self.type}")
 
 
 class RichTextArray():
@@ -227,7 +236,7 @@ class ChildPageBlock(Block):
             return None
 
 
-class EquationBlock(Block):
+class Equation(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
 
