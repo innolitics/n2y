@@ -100,7 +100,7 @@ def export_markdown(client, raw_rows, options):
 
                 # normalize target path and create it if it doesn't exist
                 target = options.target
-                if not target[(len(target)-1)] == '/':
+                if not target[-1] == '/':
                     target += '/'
                     options.target = target
                 if not os.path.exists(target):
