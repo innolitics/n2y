@@ -35,6 +35,8 @@ def main():
 
     database_id = notion.id_from_share_link(args.database)
 
+    if not args.image_path:
+        args.image_path = args.target
     converter.IMAGE_PATH = args.image_path
     converter.IMAGE_WEB_PATH = args.image_web_path
     if args.plugins:
