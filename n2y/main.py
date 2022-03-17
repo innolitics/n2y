@@ -98,18 +98,13 @@ def export_markdown(client, raw_rows, options):
                 markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \
                     .replace('\r\n', '\n')  # Deal with Windows line endings
 
-                # normalize target path and create it if it doesn't exist
-                target = options.target
-                if not target[-1] == '/':
-                    target += '/'
-                    options.target = target
-                if not os.path.exists(target):
-                    os.makedirs(target)
-                    options.target = target
+                # create target path if it doesn't exist
+                if not os.path.exists(options.target):
+                    os.makedirs(options.target)
 
                 # sanitize file name just a bit
                 # maybe use python-slugify in the future?
-                with open(f"{options.target}{filename}.md", 'w') as f:
+                with open(os.path.join(options.target, f"{filename}.md"), 'w') as f:
                     f.write('---\n')
                     f.write(yaml.dump(meta))
                     f.write('---\n\n')
