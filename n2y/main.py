@@ -101,8 +101,8 @@ def export_markdown(client, raw_rows, options):
                     .replace('\r\n', '\n')  # Deal with Windows line endings
 
                 # create target path if it doesn't exist
-                if not os.path.exists(options.target):
-                    os.makedirs(options.target)
+                # if not os.path.exists(options.target):
+                os.makedirs(options.target, exist_ok = True)
 
                 # sanitize file name just a bit
                 # maybe use python-slugify in the future?
