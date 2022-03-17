@@ -21,6 +21,8 @@ def main():
     parser.add_argument("--image-path", help="Specify path where to save images")
     parser.add_argument("--image-web-path", help="Web path for images")
     parser.add_argument("--plugins", help="Plugin file")
+    parser.add_argument("--target", '-t', default='./',
+                        help="relative path to target directory")
     parser.add_argument("--name-column", default='title',
                         help=("Name of column containing the page name."
                               "Lowercase letter and numbers. Replace spaces with underscore."))
@@ -33,6 +35,8 @@ def main():
 
     database_id = notion.id_from_share_link(args.database)
 
+    if not args.image_path:
+        args.image_path = args.target
     converter.IMAGE_PATH = args.image_path
     converter.IMAGE_WEB_PATH = args.image_web_path
     if args.plugins:
@@ -95,11 +99,14 @@ def export_markdown(client, raw_rows, options):
             if pandoc_output:
                 markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \
                     .replace('\r\n', '\n')  # Deal with Windows line endings
-                # reformat equations to have one backslash instead of 2
+
+                # create target path if it doesn't exist
+                # if not os.path.exists(options.target):
+                os.makedirs(options.target, exist_ok=True)
 
                 # sanitize file name just a bit
                 # maybe use python-slugify in the future?
-                with open(f"{filename}.md", 'w') as f:
+                with open(os.path.join(options.target, f"{filename}.md"), 'w') as f:
                     f.write('---\n')
                     f.write(yaml.dump(meta))
                     f.write('---\n\n')
