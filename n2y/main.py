@@ -37,7 +37,6 @@ def main():
 
     if not args.image_path:
         args.image_path = args.target
-    converter.IMAGE_PATH = args.image_path
     converter.IMAGE_WEB_PATH = args.image_web_path
     if args.plugins:
         converter.load_plugins(args.plugins)
@@ -88,11 +87,19 @@ def export_markdown(client, raw_rows, options):
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
         filename = re.sub(r"[/,\\]", '_', page_name.lower())
-        if page_name is not None:
+        if page_name:
             print(f"Processing {meta[options.name_column]}", file=sys.stderr)
             if filename in file_names:
-                print("WARNING: duplicate file name \"{filename}.md\"", file=sys.stderr)
+                count = 2
+                while filename + f"-{count}" in file_names:
+                    count += 1
+                new_filename = filename + f"-{count}"
+                print(f"WARNING: duplicate file name \"{filename}.md\", renaming \"{new_filename}.md\"", file=sys.stderr)
+                filename = new_filename
             file_names.append(filename)
+
+            #set subdirectory for images
+            converter.IMAGE_PATH = os.path.join(options.image_path, filename)
 
             pandoc_output = converter.load_block(client, row['id']).to_pandoc()
             # do not create markdown pages if there is no page in Notion
