@@ -94,11 +94,13 @@ def export_markdown(client, raw_rows, options):
                 while filename + f"-{count}" in file_names:
                     count += 1
                 new_filename = filename + f"-{count}"
-                print(f"WARNING: duplicate file name \"{filename}.md\", renaming \"{new_filename}.md\"", file=sys.stderr)
+                msg1 = f"WARNING: duplicate file name \"{filename}.md\""
+                msg2 = f", renaming \"{new_filename}.md\""
+                print(f"{msg1}{msg2}", file=sys.stderr)
                 filename = new_filename
             file_names.append(filename)
 
-            #set subdirectory for images
+            # set subdirectory for images
             converter.IMAGE_PATH = os.path.join(options.image_path, filename)
 
             pandoc_output = converter.load_block(client, row['id']).to_pandoc()
