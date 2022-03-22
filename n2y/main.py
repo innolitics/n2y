@@ -37,6 +37,7 @@ def main():
 
     if not args.image_path:
         args.image_path = args.target
+    converter.IMAGE_PATH = args.image_path
     converter.IMAGE_WEB_PATH = args.image_web_path
     if args.plugins:
         converter.load_plugins(args.plugins)
@@ -100,8 +101,6 @@ def export_markdown(client, raw_rows, options):
                 filename = new_filename
             file_names.append(filename)
 
-            # set subdirectory for images
-            converter.IMAGE_PATH = os.path.join(options.image_path, filename)
 
             pandoc_output = converter.load_block(client, row['id']).to_pandoc()
             # do not create markdown pages if there is no page in Notion
