@@ -29,6 +29,7 @@ from n2y.notion import Client
 
 IMAGE_PATH = None
 IMAGE_WEB_PATH = None
+IMAGE_FILES = {}
 
 
 def load_plugins(filename):
@@ -386,6 +387,7 @@ class Quote(Block):
 class ImageBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
+        print(f"BLOCK: {block['image']}")
         self.file = File(block['image'])
 
     def to_pandoc(self):
@@ -395,6 +397,25 @@ class ImageBlock(Block):
         elif self.file.type == "file":
             url = self.file.download()
         caption = RichTextArray(self.caption)
+        def save_url():
+            if self.file.type == "file":
+                IMAGE_FILES[url] = self.file.url
+            else:
+                IMAGE_FILES[url] = 1
+
+        if url in IMAGE_FILES:
+            if self.file.type == "external" or \
+                self.file.type == "file" and self.file.url != IMAGE_FILES[url]:
+                    count = 2
+                    last_dot = url.rfind('.')
+                    while url[:last_dot] + f"-{count}" + url[last_dot:] in IMAGE_FILES:
+                        count += 1
+                    url = url[:last_dot] + f"-{count}" + url[last_dot:]
+                    save_url()
+        else:
+            save_url()
+        
+        print(f"IMG_URL: {url}")
         return Para([Image(('', [], []), caption.to_pandoc(), (url, ''))])
 
 
@@ -403,9 +424,12 @@ class File():
         if obj['type'] == "file":
             self.type = "file"
             self.url = obj['file']['url']
+            IMAGE_FILES['file_urls'][self.url] = 1
+
             self.expiry_time = obj['file']['expiry_time']
         elif obj['type'] == "external":
             self.type = "external"
+            print(f"EXTERNAL: {obj['external']['url']}")
             self.url = obj['external']['url']
 
     def download(self):
@@ -420,6 +444,7 @@ class File():
         with requests.get(self.url, stream=True) as request_stream:
             with open(local_filename, 'wb') as file_stream:
                 copyfileobj(request_stream.raw, file_stream)
+                print(f"FILE: {path.basename(parsed_url.path)}")
                 if IMAGE_WEB_PATH:
                     return IMAGE_WEB_PATH + path.basename(parsed_url.path)
                 else:
