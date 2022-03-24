@@ -414,11 +414,12 @@ class File():
         count = 1
         last_dot = url.rfind('.')
         suffix = f"-{count}" if count > 1 else ""
-        while url[:last_dot] + suffix + url[last_dot:] in IMAGE_FILES \
-         and IMAGE_FILES[url[:last_dot] + suffix + url[last_dot:]] != self.url:
+        name = url[:last_dot] + suffix + url[last_dot:]
+        while name in IMAGE_FILES and IMAGE_FILES[name] != self.url:
             count += 1
             suffix = f"-{count}" if count > 1 else ""
-        url = url[:last_dot] + suffix + url[last_dot:]
+            name = url[:last_dot] + suffix + url[last_dot:]
+        url = name
         IMAGE_FILES[url] = self.url
         return url
 
