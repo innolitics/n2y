@@ -29,7 +29,7 @@ from n2y.notion import Client
 
 IMAGE_PATH = None
 IMAGE_WEB_PATH = None
-IMAGE_FILES = {}
+NAMING_SYSTEM = {}
 
 
 def load_plugins(filename):
@@ -395,7 +395,7 @@ class ImageBlock(Block):
         file = self.file.type == "file"
 
         if external:
-            url = self.file.create_unique_url(self.file.url)
+            url = self.file.create_unique_filename(self.file.url)
         elif file:
             url = self.file.download()
 
@@ -410,22 +410,21 @@ class File():
                 self.url = obj[type]['url']
                 self.expiry_time = obj[type]['expiry_time'] if type == "file" else None
 
-    def create_unique_url(self, url):
+    def create_unique_filename(self, url):
         count = 1
         last_dot = url.rfind('.')
         suffix = f"-{count}" if count > 1 else ""
         name = url[:last_dot] + suffix + url[last_dot:]
-        while name in IMAGE_FILES and IMAGE_FILES[name] != self.url:
+        while name in NAMING_SYSTEM and NAMING_SYSTEM[name] != self.url:
             count += 1
             suffix = f"-{count}" if count > 1 else ""
             name = url[:last_dot] + suffix + url[last_dot:]
-        url = name
-        IMAGE_FILES[url] = self.url
-        return url
+        NAMING_SYSTEM[name] = self.url
+        return name
 
     def download(self):
         parsed_url = urlparse(self.url)
-        basename = self.create_unique_url(path.basename(parsed_url.path))
+        basename = self.create_unique_filename(path.basename(parsed_url.path))
         if IMAGE_PATH:
             path.exists(IMAGE_PATH) or makedirs(IMAGE_PATH)
             local_filename = path.join(IMAGE_PATH, basename)
