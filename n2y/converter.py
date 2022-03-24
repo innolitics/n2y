@@ -385,64 +385,68 @@ class Quote(Block):
 
 
 class ImageBlock(Block):
+    # `ImageBlock` Class Object Initialization
     def __init__(self, client: Client, block, get_children=True):
+        # Initialize Inherited `Block` Class
         super().__init__(client, block, get_children)
-        print(f"BLOCK: {block['image']}")
         self.file = File(block['image'])
-    
-    # def save_url(self, url):
-    #         if self.file.type == "file":
-    #             IMAGE_FILES[url] = self.file.url
-    #         else:
-    #             IMAGE_FILES[url] = 1
 
+    # Returns Block Information In Pandoc Format 
     def to_pandoc(self):
         caption = RichTextArray(self.caption)
         external = self.file.type == "external"
         file = self.file.type == "file"
+
         if external:
-            url = self.file.create_unique_name(self.file.url)
+            url = self.file.create_unique_url(self.file.url)
         elif file:
             url = self.file.download()
         
-        print(f"IMG_URL: {url}")
         return Para([Image(('', [], []), caption.to_pandoc(), (url, ''))])
 
 
 class File():
+    # `File` Class Object Initialization
     def __init__(self, obj):
+        # Set Values For The `type` And `url` Keys Based On That Of `obj` Param
         for type in ["file", "external"]:
             if obj['type'] == type:
-                self.expiry_time = obj[type]['expiry_time'] if type == "file" else None
                 self.type = type
                 self.url = obj[type]['url']
-                print(f"SELF_URL: {self.url}")
-    
-    def create_unique_name(self, url):
+                # Only "file" Typed `obj`s Have `expiry_time`, So Set That Key If It's There
+                self.expiry_time = obj[type]['expiry_time'] if type == "file" else None
+
+    # Pevents Collisions In The File Paths N2Y Creates
+    def create_unique_url(self, url):
         count = 1
         last_dot = url.rfind('.')
         suffix = f"-{count}" if count > 1 else ""
+        # Add A Numeric Suffix If A Different Image Is At The Current Url
         while url[:last_dot] + suffix + url[last_dot:] in IMAGE_FILES \
             and IMAGE_FILES[url[:last_dot] + suffix + url[last_dot:]] != self.url:
                 count += 1
                 suffix = f"-{count}" if count > 1 else ""
         url = url[:last_dot] + suffix + url[last_dot:]
+        # Save The Unique URL Into The Rolodex And Return It
         IMAGE_FILES[url] = self.url
         return url
 
+    # Downloads Original File Content Into Local File
     def download(self):
-        # TODO: append created time as hex to end of file to prevent collisions?
-        if IMAGE_PATH and not path.exists(IMAGE_PATH):
-            makedirs(IMAGE_PATH)
         parsed_url = urlparse(self.url)
-        print(f'PARSED: {path.basename(parsed_url.path)}')
-        basename = self.create_unique_name(path.basename(parsed_url.path))
+        # Create Unique Local Name For File
+        basename = self.create_unique_url(path.basename(parsed_url.path))
         if IMAGE_PATH:
+            # Create Any Nonexistant Directories In Image Path, If Necessary
+            path.exists(IMAGE_PATH) or makedirs(IMAGE_PATH)
             local_filename = path.join(IMAGE_PATH, basename)
         else:
             local_filename = basename
+        # Save Information Retrieved From File Source As `request_stream`
         with requests.get(self.url, stream=True) as request_stream:
+            # Save Local File Location As `file_stream`
             with open(local_filename, 'wb') as file_stream:
+                # Copy Image At Original Source To Local File
                 copyfileobj(request_stream.raw, file_stream)
                 if IMAGE_WEB_PATH:
                     return IMAGE_WEB_PATH + basename
