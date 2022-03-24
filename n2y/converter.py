@@ -389,31 +389,21 @@ class ImageBlock(Block):
         super().__init__(client, block, get_children)
         print(f"BLOCK: {block['image']}")
         self.file = File(block['image'])
+    
+    # def save_url(self, url):
+    #         if self.file.type == "file":
+    #             IMAGE_FILES[url] = self.file.url
+    #         else:
+    #             IMAGE_FILES[url] = 1
 
     def to_pandoc(self):
-        url = None
-        if self.file.type == "external":
-            url = self.file.url
-        elif self.file.type == "file":
-            url = self.file.download()
         caption = RichTextArray(self.caption)
-        def save_url():
-            if self.file.type == "file":
-                IMAGE_FILES[url] = self.file.url
-            else:
-                IMAGE_FILES[url] = 1
-
-        if url in IMAGE_FILES:
-            if self.file.type == "external" or \
-                self.file.type == "file" and self.file.url != IMAGE_FILES[url]:
-                    count = 2
-                    last_dot = url.rfind('.')
-                    while url[:last_dot] + f"-{count}" + url[last_dot:] in IMAGE_FILES:
-                        count += 1
-                    url = url[:last_dot] + f"-{count}" + url[last_dot:]
-                    save_url()
-        else:
-            save_url()
+        external = self.file.type == "external"
+        file = self.file.type == "file"
+        if external:
+            url = self.file.create_unique_name(self.file.url)
+        elif file:
+            url = self.file.download()
         
         print(f"IMG_URL: {url}")
         return Para([Image(('', [], []), caption.to_pandoc(), (url, ''))])
@@ -421,34 +411,43 @@ class ImageBlock(Block):
 
 class File():
     def __init__(self, obj):
-        if obj['type'] == "file":
-            self.type = "file"
-            self.url = obj['file']['url']
-            IMAGE_FILES['file_urls'][self.url] = 1
-
-            self.expiry_time = obj['file']['expiry_time']
-        elif obj['type'] == "external":
-            self.type = "external"
-            print(f"EXTERNAL: {obj['external']['url']}")
-            self.url = obj['external']['url']
+        for type in ["file", "external"]:
+            if obj['type'] == type:
+                self.expiry_time = obj[type]['expiry_time'] if type == "file" else None
+                self.type = type
+                self.url = obj[type]['url']
+                print(f"SELF_URL: {self.url}")
+    
+    def create_unique_name(self, url):
+        count = 1
+        last_dot = url.rfind('.')
+        suffix = f"-{count}" if count > 1 else ""
+        while url[:last_dot] + suffix + url[last_dot:] in IMAGE_FILES \
+            and IMAGE_FILES[url[:last_dot] + suffix + url[last_dot:]] != self.url:
+                count += 1
+                suffix = f"-{count}" if count > 1 else ""
+        url = url[:last_dot] + suffix + url[last_dot:]
+        IMAGE_FILES[url] = self.url
+        return url
 
     def download(self):
         # TODO: append created time as hex to end of file to prevent collisions?
         if IMAGE_PATH and not path.exists(IMAGE_PATH):
             makedirs(IMAGE_PATH)
         parsed_url = urlparse(self.url)
+        print(f'PARSED: {path.basename(parsed_url.path)}')
+        basename = self.create_unique_name(path.basename(parsed_url.path))
         if IMAGE_PATH:
-            local_filename = path.join(IMAGE_PATH, path.basename(parsed_url.path))
+            local_filename = path.join(IMAGE_PATH, basename)
         else:
-            local_filename = path.basename(parsed_url.path)
+            local_filename = basename
         with requests.get(self.url, stream=True) as request_stream:
             with open(local_filename, 'wb') as file_stream:
                 copyfileobj(request_stream.raw, file_stream)
-                print(f"FILE: {path.basename(parsed_url.path)}")
                 if IMAGE_WEB_PATH:
-                    return IMAGE_WEB_PATH + path.basename(parsed_url.path)
+                    return IMAGE_WEB_PATH + basename
                 else:
-                    return path.basename(parsed_url.path)
+                    return basename
 
 
 class TableBlock(Block):
