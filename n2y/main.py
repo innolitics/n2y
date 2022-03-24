@@ -100,8 +100,6 @@ def export_markdown(client, raw_rows, options):
                 print(f"{msg1}{msg2}", file=sys.stderr)
                 filename = new_filename
             file_names.append(filename)
-
-
             pandoc_output = converter.load_block(client, row['id']).to_pandoc()
             # do not create markdown pages if there is no page in Notion
             if pandoc_output:

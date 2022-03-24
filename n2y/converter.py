@@ -391,7 +391,7 @@ class ImageBlock(Block):
         super().__init__(client, block, get_children)
         self.file = File(block['image'])
 
-    # Returns Block Information In Pandoc Format 
+    # Returns Block Information In Pandoc Format
     def to_pandoc(self):
         caption = RichTextArray(self.caption)
         external = self.file.type == "external"
@@ -401,7 +401,7 @@ class ImageBlock(Block):
             url = self.file.create_unique_url(self.file.url)
         elif file:
             url = self.file.download()
-        
+
         return Para([Image(('', [], []), caption.to_pandoc(), (url, ''))])
 
 
@@ -423,9 +423,9 @@ class File():
         suffix = f"-{count}" if count > 1 else ""
         # Add A Numeric Suffix If A Different Image Is At The Current Url
         while url[:last_dot] + suffix + url[last_dot:] in IMAGE_FILES \
-            and IMAGE_FILES[url[:last_dot] + suffix + url[last_dot:]] != self.url:
-                count += 1
-                suffix = f"-{count}" if count > 1 else ""
+        and IMAGE_FILES[url[:last_dot] + suffix + url[last_dot:]] != self.url:
+            count += 1
+            suffix = f"-{count}" if count > 1 else ""
         url = url[:last_dot] + suffix + url[last_dot:]
         # Save The Unique URL Into The Rolodex And Return It
         IMAGE_FILES[url] = self.url
