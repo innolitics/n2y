@@ -91,7 +91,7 @@ def export_markdown(client, raw_rows, options):
         if page_name is not None:
             print(f"Processing {meta[options.name_column]}", file=sys.stderr)
             if filename in file_names:
-                print("WARNING: duplicate file name \"{filename}.md\"", file=sys.stderr)
+                print(f'WARNING: duplicate file name "{filename}.md"', file=sys.stderr)
             file_names.append(filename)
 
             pandoc_output = converter.load_block(client, row['id']).to_pandoc()
