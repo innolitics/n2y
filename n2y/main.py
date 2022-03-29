@@ -46,7 +46,6 @@ def main():
     client = notion.Client(ACCESS_TOKEN)
 
     raw_rows = client.get_database(database_id)
-    print(raw_rows)
     if args.output == 'markdown':
         if name_column_valid(raw_rows, args.name_column):
             export_markdown(client, raw_rows, options=args)
