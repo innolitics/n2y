@@ -46,7 +46,7 @@ class ParagraphBlockOverride(ParagraphBlock):
         # Add custom code here. Call super().to_pandoc() to get default implementation.
         return super().to_pandoc()
 
-# Add classes to override here 
+# Add classes to override here
 exports = {
     'ParagraphBlock': ParagraphBlockOverride
 }
