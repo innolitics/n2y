@@ -24,8 +24,9 @@ def main():
     parser.add_argument("--target", '-t', default='./',
                         help="relative path to target directory")
     parser.add_argument("--name-column", default='title',
-                        help=("Name of column containing the page name."
-                              "Lowercase letter and numbers. Replace spaces with underscore."))
+                        help=("Database column that will be used to generate the filename "
+                              "for each row. Column names are normalized to lowercase letters, "
+                              "numbers, and underscores. Only used when generating markdown."))
     args = parser.parse_args()
 
     ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
@@ -45,6 +46,18 @@ def main():
     client = notion.Client(ACCESS_TOKEN)
 
     raw_rows = client.get_database(database_id)
+    if args.output == 'markdown':
+        if name_column_valid(raw_rows, args.name_column):
+            export_markdown(client, raw_rows, options=args)
+        else:
+            return 1
+    elif args.output == 'yaml':
+        export_yaml(client, raw_rows)
+
+    return 0
+
+
+def name_column_valid(raw_rows, name_column):
     first_row_flattened = simplify.flatten_database_row(raw_rows[0])
 
     def available_columns():
@@ -52,34 +65,28 @@ def main():
                       first_row_flattened.keys())
 
     # make sure the title column exists
-    if args.name_column not in first_row_flattened:
-        print(f"Database does not contain the column \"{args.name_column}\". "
+    if name_column not in first_row_flattened:
+        print(f"Database does not contain the column \"{name_column}\". "
               f"Please specify the correct name column using the --name-column flag.",
               file=sys.stderr)
         print("Available column(s): ",
               # only show columns that have strings as possible options
               ", ".join(available_columns()), file=sys.stderr)
-        return 1
+        return False
 
     # make sure title column is not empty (only the first row is checked)
-    if first_row_flattened[args.name_column] is None:
-        print(f"Column \"{args.name_column}\" cannot be empty.", file=sys.stderr)
-        return 1
+    if first_row_flattened[name_column] is None:
+        print(f"Column \"{name_column}\" cannot be empty.", file=sys.stderr)
+        return False
 
     # make sure the title column is a string
-    if not isinstance(first_row_flattened[args.name_column], str):
-        print(f"Column \"{args.name_column}\" does not contain a string.", file=sys.stderr)
+    if not isinstance(first_row_flattened[name_column], str):
+        print(f"Column \"{name_column}\" does not contain a string.", file=sys.stderr)
         print("Available column(s): ",
               # only show columns that have strings as possible options
               ", ".join(available_columns()), file=sys.stderr)
-        return 1
-
-    if args.output == 'markdown':
-        export_markdown(client, raw_rows, options=args)
-    elif args.output == 'yaml':
-        export_yaml(client, raw_rows, options=args)
-
-    return 0
+        return False
+    return True
 
 
 def export_markdown(client, raw_rows, options):
@@ -117,16 +124,14 @@ def export_markdown(client, raw_rows, options):
             print("WARNING: skipping page with no name", file=sys.stderr)
 
 
-def export_yaml(client, raw_rows, options):
+def export_yaml(client, raw_rows):
     result = []
     for row in raw_rows:
         pandoc_output = converter.load_block(client, row['id']).to_pandoc()
         markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else None
-        result.append({options.name_column: None,
-                       **simplify.flatten_database_row(row),
-                       'content': markdown})
+        result.append({**simplify.flatten_database_row(row), 'content': markdown})
 
-    print(yaml.dump_all(result, sort_keys=False))
+    print(yaml.dump(result, sort_keys=False))
 
 
 if __name__ == "__main__":
