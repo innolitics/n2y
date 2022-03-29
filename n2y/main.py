@@ -131,7 +131,7 @@ def export_yaml(client, raw_rows):
         markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else None
         result.append({**simplify.flatten_database_row(row), 'content': markdown})
 
-    print(yaml.dump_all(result, sort_keys=False))
+    print(yaml.dump(result, sort_keys=False))
 
 
 if __name__ == "__main__":
