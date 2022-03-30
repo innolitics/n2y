@@ -415,9 +415,8 @@ def test_bold_italic_word():
 
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
-
-    assert pandoc_output == Para([Str("A"), Space(), Emph([Strong([Str("bold-italic")])]),
-                                 Space(), Str("word.")])
+    print(f"PANDOC_OUTPUT: {pandoc_output}")
+    assert pandoc_output == Para([Str('A'), Space(), Strong([Emph([Str('bold-italic')])]), Space(), Str('word.')])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A ***bold-italic*** word.\n"
@@ -452,6 +451,10 @@ def test_strikeout_word():
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A ~~deleted~~ word.\n"
     assert newline_lf(markdown_output) == expected_markdown
+
+
+def test_annotated_spaces():
+    input = {}
 
 
 def test_equation_inline():

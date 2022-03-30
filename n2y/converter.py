@@ -166,10 +166,8 @@ class Annotations():
 
     def handler(self, annotation, target):
         handler = {
-            'code': [Code(("", [], []), [target]), Code(("", [], []), target)],
             'bold': [Strong([target]), Strong(target)],
             'italic': [Emph([target]), Emph(target)],
-            'underline': [Underline([target]), Emph(target)],
             'strikethrough': [Strikeout([target]), Strikeout(target)]
         }
         return handler[annotation]
@@ -184,7 +182,7 @@ class Annotations():
             prependages.appendleft(target.pop(0))
         while target[-1] in blank_space:
             appendages.appendleft(target.pop(-1))
-        for key in ['strikethrough', 'underline', 'italic', 'bold', 'code']:
+        for key in ['strikethrough', 'italic', 'bold']:
             if self.__dict__[key]:
                 handler = self.handler(key, target)
                 target = handler[0] if nested_annotations else handler[1]
@@ -200,9 +198,14 @@ class Annotations():
 
     def apply_pandoc(self, target):
         result = target
-        annotations = [self.code, self.bold, self.italic, self.underline, self.strikethrough]
+        annotations = [self.bold, self.italic, self.strikethrough]
+        # Only strips spaces when md can't annotate spaces in that in order to preserve accuracy
+        if self.code:
+            result = [Code(("", [], []), result)]
         if True in annotations:
             result = self.strip(result)
+        if self.underline:
+            result = [Underline(result)]
         return result
 
 
@@ -234,9 +237,10 @@ class RichText():
                 return self.annotations.apply_pandoc(self.plain_text.text)
             elif 'href' in self.__dict__ and self.href:
                 # links
-                return [Link(('', [], []),
-                             self.annotations.apply_pandoc(self.plain_text.to_pandoc()),
-                             (self.href, ''))]
+                return [
+                    Link(('', [], []),
+                    self.annotations.apply_pandoc(self.plain_text.to_pandoc()),
+                    (self.href, ''))]
             else:
                 # regular text
                 return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
@@ -468,23 +472,24 @@ class TableBlock(Block):
             row_header_columns = 0
         # Notion does not have cell alignment or width options, sticking with defaults.
         colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(self.table_width)]
-        table = Table(('', [], []),  # attr
-                      Caption(None, []),  # caption
-                      colspec,
-                      TableHead(('', [], []), header_rows),  # table header
-                      [TableBody(('', [], []), RowHeadColumns(
-                          row_header_columns), [], children)],   # table body
-                      TableFoot(('', [], []), []))  # table footer
+        table = Table(
+            ('', [], []), # attr
+            Caption(None, []), # caption
+            colspec,
+            TableHead(('', [], []), header_rows), # table header
+            [TableBody(('', [], []), RowHeadColumns(row_header_columns), [], children)], # table body
+            TableFoot(('', [], []), [])) # table footer
         return table
 
 
 class RowBlock(Block):
     def to_pandoc(self):
-        cells = [Cell(('', [], []),
-                      AlignDefault(),
-                      RowSpan(1),
-                      ColSpan(1),
-                      [Plain(RichTextArray(cell).to_pandoc())]) for cell in self.cells]
+        cells = [
+            Cell(('', [], []),
+            AlignDefault(),
+            RowSpan(1),
+            ColSpan(1),
+            [Plain(RichTextArray(cell).to_pandoc())]) for cell in self.cells]
         row = Row(('', [], []), cells)
         return row
 
