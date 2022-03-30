@@ -416,7 +416,12 @@ def test_bold_italic_word():
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
     print(f"PANDOC_OUTPUT: {pandoc_output}")
-    assert pandoc_output == Para([Str('A'), Space(), Strong([Emph([Str('bold-italic')])]), Space(), Str('word.')])
+    assert pandoc_output == Para([
+        Str('A'),
+        Space(),
+        Strong([Emph([Str('bold-italic')])]),
+        Space(),
+        Str('word.')])
 
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "A ***bold-italic*** word.\n"
@@ -527,48 +532,48 @@ def test_annotated_spaces():
                         'color': 'default'},
                     'plain_text': ' test',
                     'href': None},
-                    {
-                        'type': 'text',
-                        'text': {
-                            'content': ' did',
-                            'link': None},
-                        'annotations': {
-                            'bold': True,
-                            'italic': False,
-                            'strikethrough': False,
-                            'underline': True,
-                            'code': True,
-                            'color': 'default'},
-                        'plain_text': ' did',
-                        'href': None},
-                    {
-                        'type': 'text',
-                        'text': {
-                            'content': ' i pass',
-                            'link': None},
-                        'annotations': {
-                            'bold': False,
-                            'italic': False,
-                            'strikethrough': False,
-                            'underline': True,
-                            'code': True,
-                            'color': 'default'},
-                        'plain_text': ' i pass',
-                        'href': None},
-                    {
-                        'type': 'text',
-                        'text': {
-                            'content': '?',
-                            'link': None},
-                        'annotations': {
-                            'bold': False,
-                            'italic': False,
-                            'strikethrough': False,
-                            'underline': False,
-                            'code': False,
-                            'color': 'default'},
-                        'plain_text': '?',
-                        'href': None}]}}
+                {
+                    'type': 'text',
+                    'text': {
+                        'content': ' did',
+                        'link': None},
+                    'annotations': {
+                        'bold': True,
+                        'italic': False,
+                        'strikethrough': False,
+                        'underline': True,
+                        'code': True,
+                        'color': 'default'},
+                    'plain_text': ' did',
+                    'href': None},
+                {
+                    'type': 'text',
+                    'text': {
+                        'content': ' i pass',
+                        'link': None},
+                    'annotations': {
+                        'bold': False,
+                        'italic': False,
+                        'strikethrough': False,
+                        'underline': True,
+                        'code': True,
+                        'color': 'default'},
+                    'plain_text': ' i pass',
+                    'href': None},
+                {
+                    'type': 'text',
+                    'text': {
+                        'content': '?',
+                        'link': None},
+                    'annotations': {
+                        'bold': False,
+                        'italic': False,
+                        'strikethrough': False,
+                        'underline': False,
+                        'code': False,
+                        'color': 'default'},
+                    'plain_text': '?',
+                    'href': None}]}}
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
     print(pandoc_output)

@@ -237,8 +237,8 @@ class RichText():
                 return self.annotations.apply_pandoc(self.plain_text.text)
             elif 'href' in self.__dict__ and self.href:
                 # links
-                return [
-                    Link(('', [], []),
+                return [Link(
+                    ('', [], []),
                     self.annotations.apply_pandoc(self.plain_text.to_pandoc()),
                     (self.href, ''))]
             else:
@@ -473,19 +473,23 @@ class TableBlock(Block):
         # Notion does not have cell alignment or width options, sticking with defaults.
         colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(self.table_width)]
         table = Table(
-            ('', [], []), # attr
-            Caption(None, []), # caption
+            ('', [], []),  # attr
+            Caption(None, []),  # caption
             colspec,
-            TableHead(('', [], []), header_rows), # table header
-            [TableBody(('', [], []), RowHeadColumns(row_header_columns), [], children)], # table body
-            TableFoot(('', [], []), [])) # table footer
+            TableHead(('', [], []), header_rows),  # table header
+            [TableBody(
+                ('', [], []),
+                RowHeadColumns(row_header_columns),
+                [],
+                children)],  # table body
+            TableFoot(('', [], []), []))  # table footer
         return table
 
 
 class RowBlock(Block):
     def to_pandoc(self):
-        cells = [
-            Cell(('', [], []),
+        cells = [Cell(
+            ('', [], []),
             AlignDefault(),
             RowSpan(1),
             ColSpan(1),
