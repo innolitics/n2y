@@ -181,9 +181,9 @@ class Annotations():
         blank_space = [Space(), SoftBreak()]
         nested_annotations = False
         while target[0] in blank_space:
-            prependages.appendleft( target.pop(0))
+            prependages.appendleft(target.pop(0))
         while target[-1] in blank_space:
-            appendages.appendleft( target.pop(-1))
+            appendages.appendleft(target.pop(-1))
         for key in ['strikethrough', 'underline', 'italic', 'bold', 'code']:
             if self.__dict__[key]:
                 handler = self.handler(key, target)
