@@ -1,4 +1,4 @@
-from __future__ import annotations
+from collections import deque
 import importlib.util
 from os import path, makedirs
 from shutil import copyfileobj
@@ -164,11 +164,7 @@ class Annotations():
         for key, value in block.items():
             self.__dict__[key] = value
 
-    def strip(self, target):
-        prependages = []
-        appendages = []
-        result = []
-        blank_space = [Space(), SoftBreak()]
+    def handler(self, annotation, target):
         handler = {
             'code': [Code(("", [], []), [target]), Code(("", [], []), target)],
             'bold': [Strong([target]), Strong(target)],
@@ -176,22 +172,30 @@ class Annotations():
             'underline': [Underline([target]), Emph(target)],
             'strikethrough': [Strikeout([target]), Strikeout(target)]
         }
-        while target[0] in blank_space:
-            prependages.append(target.pop(0))
-        while target[-1] in blank_space:
-            appendages.append(target.pop(-1))
-        if prependages:
-            for i in range(len(prependages) - 1, -1, -1):
-                result.append(prependages[i])
+        return handler[annotation]
+
+    def strip(self, target):
+        prependages = deque()
+        appendages = deque()
+        result = []
+        blank_space = [Space(), SoftBreak()]
         nested_annotations = False
-        for key in handler.keys():
+        while target[0] in blank_space:
+            prependages.appendleft( target.pop(0))
+        while target[-1] in blank_space:
+            appendages.appendleft( target.pop(-1))
+        for key in ['strikethrough', 'underline', 'italic', 'bold', 'code']:
             if self.__dict__[key]:
-                target = handler[key][0] if nested_annotations else handler[key][1]
+                handler = self.handler(key, target)
+                target = handler[0] if nested_annotations else handler[1]
                 nested_annotations = True
+        if prependages:
+            for i in prependages:
+                result.append(i)
         result.append(target)
         if appendages:
-            for i in range(len(appendages) - 1, -1, -1):
-                result.append(appendages[i])
+            for i in appendages:
+                result.append(i)
         return result
 
     def apply_pandoc(self, target):
