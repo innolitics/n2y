@@ -460,15 +460,6 @@ def test_strikeout_word():
 def test_annotated_spaces():
     input = {
         'object': 'block',
-        'id': 'b0e9b35d-1c97-49d6-944d-feb9beb6c83c',
-        'created_time': '2022-03-30T02:50:00.000Z',
-        'last_edited_time': '2022-03-30T03:25:00.000Z',
-        'created_by': {
-            'object': 'user',
-            'id': 'ad6d20a2-36e9-4b6d-a49a-7f71f8ba9af6'},
-        'last_edited_by': {
-            'object': 'user',
-            'id': 'ad6d20a2-36e9-4b6d-a49a-7f71f8ba9af6'},
         'has_children': False,
         'archived': False,
         'type': 'paragraph',
