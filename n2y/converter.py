@@ -163,49 +163,42 @@ class Annotations():
     def __init__(self, block):
         for key, value in block.items():
             self.__dict__[key] = value
-    
-    def strip(self, target, annotations):
+
+    def strip(self, target):
         prependages = []
         appendages = []
-        print(f"TARGET 1: {target}")
+        result = []
         blank_space = [Space(), SoftBreak()]
+        handler = {
+            'code': [Code(("", [], []), [target]), Code(("", [], []), target)],
+            'bold': [Strong([target]), Strong(target)],
+            'italic': [Emph([target]), Emph(target)],
+            'underline': [Underline([target]), Emph(target)],
+            'strikethrough': [Strikeout([target]), Strikeout(target)]
+        }
         while target[0] in blank_space:
             prependages.append(target.pop(0))
         while target[-1] in blank_space:
             appendages.append(target.pop(-1))
-        result = []
-        print(f"TARGET 2: {target}")
         if prependages:
             for i in range(len(prependages) - 1, -1, -1):
                 result.append(prependages[i])
         nested_annotations = False
-        if self.code:
-            target = Code(("", [], []), target)
-            nested_annotations = True
-        if self.bold:
-            target = Strong([target]) if nested_annotations else Strong(target)
-            nested_annotations = True
-        if self.italic:
-            target = Emph([target]) if nested_annotations else Emph(target)
-            nested_annotations = True
-        if self.underline:
-            target = Underline([target]) if nested_annotations else Underline(target)
-            nested_annotations = True
-        if self.strikethrough:
-            target = Strikeout([target]) if nested_annotations else Strikeout(target)
-            nested_annotations = True
+        for key in handler.keys():
+            if self.__dict__[key]:
+                target = handler[key][0] if nested_annotations else handler[key][1]
+                nested_annotations = True
         result.append(target)
         if appendages:
             for i in range(len(appendages) - 1, -1, -1):
                 result.append(appendages[i])
-        print(f"RESULT: {result}")
         return result
 
     def apply_pandoc(self, target):
         result = target
         annotations = [self.code, self.bold, self.italic, self.underline, self.strikethrough]
         if True in annotations:
-            result = self.strip(result, annotations)
+            result = self.strip(result)
         return result
 
 
