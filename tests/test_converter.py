@@ -6,7 +6,7 @@ from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody, \
     TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
-    Caption, Math, InlineMath, DisplayMath
+    Caption, Math, InlineMath, DisplayMath, Underline
 
 from n2y import converter, notion
 
@@ -454,7 +454,137 @@ def test_strikeout_word():
 
 
 def test_annotated_spaces():
-    input = {}
+    input = {
+        'object': 'block',
+        'id': 'b0e9b35d-1c97-49d6-944d-feb9beb6c83c',
+        'created_time': '2022-03-30T02:50:00.000Z',
+        'last_edited_time': '2022-03-30T03:25:00.000Z',
+        'created_by': {
+            'object': 'user',
+            'id': 'ad6d20a2-36e9-4b6d-a49a-7f71f8ba9af6'},
+        'last_edited_by': {
+            'object': 'user',
+            'id': 'ad6d20a2-36e9-4b6d-a49a-7f71f8ba9af6'},
+        'has_children': False,
+        'archived': False,
+        'type': 'paragraph',
+        'paragraph': {
+            'color': 'default',
+            'text': [
+                {
+                    'type': 'text',
+                    'text': {
+                        'content': 'this ',
+                        'link': None},
+                    'annotations': {
+                        'bold': True,
+                        'italic': False,
+                        'strikethrough': False,
+                        'underline': False,
+                        'code': False,
+                        'color': 'default'},
+                    'plain_text': 'this ',
+                    'href': None},
+                {
+                    'type': 'text',
+                    'text': {
+                        'content': 'is ',
+                        'link': None},
+                    'annotations': {
+                        'bold': True,
+                        'italic': True,
+                        'strikethrough': False,
+                        'underline': False,
+                        'code': False,
+                        'color': 'default'},
+                    'plain_text': 'is ',
+                    'href': None},
+                {
+                    'type': 'text',
+                    'text': {
+                        'content': 'a',
+                        'link': None},
+                    'annotations': {
+                        'bold': False,
+                        'italic': True,
+                        'strikethrough': False,
+                        'underline': False,
+                        'code': False,
+                        'color': 'default'},
+                    'plain_text': 'a',
+                    'href': None},
+                {
+                    'type': 'text',
+                    'text': {
+                        'content': ' test',
+                        'link': None},
+                    'annotations': {
+                        'bold': False,
+                        'italic': False,
+                        'strikethrough': True,
+                        'underline': False,
+                        'code': False,
+                        'color': 'default'},
+                    'plain_text': ' test',
+                    'href': None},
+                    {
+                        'type': 'text',
+                        'text': {
+                            'content': ' did',
+                            'link': None},
+                        'annotations': {
+                            'bold': True,
+                            'italic': False,
+                            'strikethrough': False,
+                            'underline': True,
+                            'code': True,
+                            'color': 'default'},
+                        'plain_text': ' did',
+                        'href': None},
+                    {
+                        'type': 'text',
+                        'text': {
+                            'content': ' i pass',
+                            'link': None},
+                        'annotations': {
+                            'bold': False,
+                            'italic': False,
+                            'strikethrough': False,
+                            'underline': True,
+                            'code': True,
+                            'color': 'default'},
+                        'plain_text': ' i pass',
+                        'href': None},
+                    {
+                        'type': 'text',
+                        'text': {
+                            'content': '?',
+                            'link': None},
+                        'annotations': {
+                            'bold': False,
+                            'italic': False,
+                            'strikethrough': False,
+                            'underline': False,
+                            'code': False,
+                            'color': 'default'},
+                        'plain_text': '?',
+                        'href': None}]}}
+    obj = converter.ParagraphBlock(None, input, get_children=False)
+    pandoc_output = obj.to_pandoc()
+    print(pandoc_output)
+
+    assert pandoc_output == Para(
+        [
+            Strong([Str('this')]),
+            Space(),
+            Strong([Emph([Str('is')])]),
+            Space(),
+            Emph([Str('a')]),
+            Space(),
+            Strikeout([Str('test')]),
+            Underline([Strong([Code(('', [], []), ' did')])]),
+            Underline([Code(('', [], []), ' i pass')]),
+            Str('?')])
 
 
 def test_equation_inline():
