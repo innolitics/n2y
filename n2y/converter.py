@@ -1,3 +1,4 @@
+from __future__ import annotations
 import importlib.util
 from os import path, makedirs
 from shutil import copyfileobj
@@ -162,19 +163,49 @@ class Annotations():
     def __init__(self, block):
         for key, value in block.items():
             self.__dict__[key] = value
+    
+    def strip(self, target, annotations):
+        prependages = []
+        appendages = []
+        print(f"TARGET 1: {target}")
+        blank_space = [Space(), SoftBreak()]
+        while target[0] in blank_space:
+            prependages.append(target.pop(0))
+        while target[-1] in blank_space:
+            appendages.append(target.pop(-1))
+        result = []
+        print(f"TARGET 2: {target}")
+        if prependages:
+            for i in range(len(prependages) - 1, -1, -1):
+                result.append(prependages[i])
+        nested_annotations = False
+        if self.code:
+            target = Code(("", [], []), target)
+            nested_annotations = True
+        if self.bold:
+            target = Strong([target]) if nested_annotations else Strong(target)
+            nested_annotations = True
+        if self.italic:
+            target = Emph([target]) if nested_annotations else Emph(target)
+            nested_annotations = True
+        if self.underline:
+            target = Underline([target]) if nested_annotations else Underline(target)
+            nested_annotations = True
+        if self.strikethrough:
+            target = Strikeout([target]) if nested_annotations else Strikeout(target)
+            nested_annotations = True
+        result.append(target)
+        if appendages:
+            for i in range(len(appendages) - 1, -1, -1):
+                result.append(appendages[i])
+        print(f"RESULT: {result}")
+        return result
 
     def apply_pandoc(self, target):
         result = target
-        if self.code:
-            result = [Code(("", [], []), result)]
-        if self.bold:
-            result = [Strong(result)]
-        if self.italic:
-            result = [Emph(result)]
-        if self.underline:
-            result = [Underline(result)]
-        if self.strikethrough:
-            result = [Strikeout(result)]
+        annotations = [self.code, self.bold, self.italic, self.underline, self.strikethrough]
+        if True in annotations:
+            result = self.strip(result, annotations)
         return result
 
 
