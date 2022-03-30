@@ -415,7 +415,6 @@ def test_bold_italic_word():
 
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
-    print(f"PANDOC_OUTPUT: {pandoc_output}")
     assert pandoc_output == Para([
         Str('A'),
         Space(),
@@ -576,7 +575,6 @@ def test_annotated_spaces():
                     'href': None}]}}
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
-    print(pandoc_output)
 
     assert pandoc_output == Para(
         [
@@ -669,13 +667,6 @@ def test_equation_inline():
     md2 = "{\\frac {d}{dt}}\\vert \\Psi (t)\\rangle={\\hat "
     md3 = "{H}}\\vert \\Psi (t)\\rangle}$)\nis a very useful one indeed\n"
     expected_markdown = f"{md1}{md2}{md3}"
-    print()
-    print()
-    print('EXPECTED_MARKDOWN')
-    print(newline_lf(markdown_output))
-    print(expected_markdown)
-    print(newline_lf(markdown_output) == expected_markdown)
-    print()
     assert newline_lf(markdown_output) == expected_markdown
 
 
