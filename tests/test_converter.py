@@ -272,7 +272,7 @@ def test_page(mock_get_block, mock_get_block_children):
 
 
 def test_bold_word():
-    input = generate_annotated_obj([('A ', []),('bold', ['bold']), (' word.', [])])
+    input = generate_annotated_obj([('A ', []), ('bold', ['bold']), (' word.', [])])
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
     assert pandoc_output == Para([
@@ -298,7 +298,7 @@ def test_italic_word():
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
     assert pandoc_output == Para(
-        [Str("An"), Space(),Emph([Str("italic")]), Space(), Str("word.")])
+        [Str("An"), Space(), Emph([Str("italic")]), Space(), Str("word.")])
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     expected_markdown = "An *italic* word.\n"
     assert newline_lf(markdown_output) == expected_markdown
@@ -433,7 +433,7 @@ def test_link_inline():
             {
                 "type": "text",
                 "annotations": default_annotation,
-                "plain_text": "This is a ",},
+                "plain_text": "This is a "},
             {
                 "type": "text",
                 "annotations": {
@@ -688,23 +688,24 @@ def test_table_block(mock_get_block_children):
         ('', [], []),
         Caption(None, []),
         [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
-        TableHead(('', [], []),
-        [Row(('', [], []),
-            [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
-                    [Plain([Str('header1')])]),
-            Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
-                    [Plain([Str('header2')])])])]),
-        [TableBody(('', [], []), RowHeadColumns(0), [], [
-            Row(('', [], []),
-                [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
-                    [Plain([Str('one')])]),
-                Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
-                    [Plain([Str('two')])])]),
-            Row(('', [], []),
-                [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
-                    [Plain([Str('three')])]),
-                Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1),
-                    [Plain([Str('four')])])])])],
+        TableHead(
+            ('', [], []), 
+            [Row(('', [], []),[
+                Cell(('', [], []), AlignDefault(), RowSpan(1),
+                    ColSpan(1), [Plain([Str('header1')])]),
+                Cell(('', [], []), AlignDefault(), RowSpan(1),
+                    ColSpan(1), [Plain([Str('header2')])])])]),
+        [TableBody(('', [], []), RowHeadColumns(0), [],[
+            Row(('', [], []), [
+                Cell(('', [], []), AlignDefault(), RowSpan(1),
+                    ColSpan(1), [Plain([Str('one')])]),
+                Cell(('', [], []), AlignDefault(), RowSpan(1),
+                    ColSpan(1),[Plain([Str('two')])])]),
+            Row(('', [], []), [
+                Cell(('', [], []), AlignDefault(), RowSpan(1),
+                    ColSpan(1), [Plain([Str('three')])]),
+                Cell(('', [], []), AlignDefault(), RowSpan(1),
+                    ColSpan(1), [Plain([Str('four')])])])])],
         TableFoot(('', [], []), []))
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     assert newline_lf(markdown_output) == (
@@ -740,8 +741,8 @@ def test_toggle(mock_get_block_children):
     obj = converter.parse_block(client, input)
     pandoc_output = obj.to_pandoc()
     assert pandoc_output == BulletList([[
-            Para([Str('Toggle'), Space(), Str('Header')]),
-            Para([Str('Toggle'), Space(), Str('Content')])]])
+        Para([Str('Toggle'), Space(), Str('Header')]),
+        Para([Str('Toggle'), Space(), Str('Content')])]])
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     assert newline_lf(markdown_output) == (
         '-   Toggle Header\n'
