@@ -689,23 +689,23 @@ def test_table_block(mock_get_block_children):
         Caption(None, []),
         [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
         TableHead(
-            ('', [], []), 
-            [Row(('', [], []),[
+            ('', [], []),
+            [Row(('', [], []), [
                 Cell(('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('header1')])]),
+                        ColSpan(1), [Plain([Str('header1')])]),
                 Cell(('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('header2')])])])]),
-        [TableBody(('', [], []), RowHeadColumns(0), [],[
+                        ColSpan(1), [Plain([Str('header2')])])])]),
+        [TableBody(('', [], []), RowHeadColumns(0), [], [
             Row(('', [], []), [
                 Cell(('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('one')])]),
+                        ColSpan(1), [Plain([Str('one')])]),
                 Cell(('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1),[Plain([Str('two')])])]),
+                        ColSpan(1), [Plain([Str('two')])])]),
             Row(('', [], []), [
                 Cell(('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('three')])]),
+                        ColSpan(1), [Plain([Str('three')])]),
                 Cell(('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('four')])])])])],
+                        ColSpan(1), [Plain([Str('four')])])])])],
         TableFoot(('', [], []), []))
     markdown_output = pandoc.write(pandoc_output, format='gfm')
     assert newline_lf(markdown_output) == (
