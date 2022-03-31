@@ -1,4 +1,5 @@
 import importlib.util
+from logging import warning
 from os import path, makedirs
 from shutil import copyfileobj
 from urllib.parse import urlparse
@@ -45,7 +46,9 @@ def load_plugins(filename):
                     and issubclass(class_to_replace, Block):
                 globals()[key] = value
             else:
-                print(f"Cannot import plugin \"{key}\" since it not derrived from a known class.")
+                warning(
+                    f"cannot import plugin \"{key}\" since it not derrived from a known class.",
+                    extra={'pre': 'WARNING: '})
         else:
             raise NotImplementedError(f"Unknown plugin type {key}.")
 

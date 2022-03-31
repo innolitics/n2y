@@ -1,3 +1,5 @@
+from logging import error, log, warning
+import logging
 import os
 import sys
 import argparse
@@ -9,6 +11,9 @@ import pandoc
 from n2y import converter, notion, simplify
 
 
+logging.basicConfig(format="%(pre)s%(message)s")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Move data from Notion into YAML/markdown",
                                      formatter_class=argparse.RawTextHelpFormatter)
@@ -16,7 +21,7 @@ def main():
     parser.add_argument("--output", '-o',
                         choices=["yaml", "markdown"], default="yaml",
                         help=("Select output type\n"
-                              "  yaml - print yaml to stdout\n"
+                              "  yaml - log yaml to stdout\n"
                               "  markdown - create a markdown file per page"))
     parser.add_argument("--image-path", help="Specify path where to save images")
     parser.add_argument("--image-web-path", help="Web path for images")
@@ -31,7 +36,7 @@ def main():
 
     ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
     if ACCESS_TOKEN is None:
-        print("No NOTION_ACCESS_TOKEN environment variable is set", file=sys.stderr)
+        warning(f"no NOTION_ACCESS_TOKEN environment variable is set", extra={'pre': 'WARNING: '})
         return 1
 
     database_id = notion.id_from_share_link(args.database)
@@ -61,30 +66,30 @@ def name_column_valid(raw_rows, name_column):
     first_row_flattened = simplify.flatten_database_row(raw_rows[0])
 
     def available_columns():
-        return filter(lambda c: isinstance(first_row_flattened[c], str),
-                      first_row_flattened.keys())
+        return filter(
+            lambda c: isinstance(first_row_flattened[c], str),
+            first_row_flattened.keys())
 
     # make sure the title column exists
     if name_column not in first_row_flattened:
-        print(f"Database does not contain the column \"{name_column}\". "
-              f"Please specify the correct name column using the --name-column flag.",
-              file=sys.stderr)
-        print("Available column(s): ",
-              # only show columns that have strings as possible options
-              ", ".join(available_columns()), file=sys.stderr)
+        error(
+            f"Database does not contain the column \"{name_column}\".\n" +
+            f"Please specify the correct name column using the --name-column flag.\n" +
+            # only show columns that have strings as possible options
+            "Available column(s): " + ", ".join(available_columns()), extra={'pre': 'ERROR: '})
         return False
 
     # make sure title column is not empty (only the first row is checked)
     if first_row_flattened[name_column] is None:
-        print(f"Column \"{name_column}\" cannot be empty.", file=sys.stderr)
+        error(f"Column \"{name_column}\" cannot be empty.", extra={'pre': 'ERROR: '})
         return False
 
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
-        print(f"Column \"{name_column}\" does not contain a string.", file=sys.stderr)
-        print("Available column(s): ",
-              # only show columns that have strings as possible options
-              ", ".join(available_columns()), file=sys.stderr)
+        error(
+            f"Column \"{name_column}\" does not contain a string.\n" +
+            # only show columns that have strings as possible options
+            "Available column(s): " + ", ".join(available_columns()), extra={'pre': 'ERROR: '})
         return False
     return True
 
@@ -96,9 +101,9 @@ def export_markdown(client, raw_rows, options):
         page_name = meta[options.name_column]
         filename = re.sub(r"[/,\\]", '_', page_name.lower())
         if page_name is not None:
-            print(f"Processing {meta[options.name_column]}", file=sys.stderr)
+            log(f"{meta[options.name_column]}", extra={'pre': 'Processing'})
             if filename in file_names:
-                print(f'WARNING: duplicate file name "{filename}.md"', file=sys.stderr)
+                warning(f'duplicate file name "{filename}.md"', extra={'pre': 'WARNING: '})
             file_names.append(filename)
 
             pandoc_output = converter.load_block(client, row['id']).to_pandoc()
@@ -119,9 +124,9 @@ def export_markdown(client, raw_rows, options):
                     f.write('---\n\n')
                     f.write(markdown)
             else:
-                print(f"WARNING: skipping empty page: {page_name}", file=sys.stderr)
+                warning(f"skipping empty page: {page_name}", extra={'pre': 'WARNING: '})
         else:
-            print("WARNING: skipping page with no name", file=sys.stderr)
+            warning("skipping page with no name", extra={'pre': 'WARNING: '})
 
 
 def export_yaml(client, raw_rows):
@@ -131,7 +136,7 @@ def export_yaml(client, raw_rows):
         markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else None
         result.append({**simplify.flatten_database_row(row), 'content': markdown})
 
-    print(yaml.dump(result, sort_keys=False))
+    log(yaml.dump(result, sort_keys=False))
 
 
 if __name__ == "__main__":

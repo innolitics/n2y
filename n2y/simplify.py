@@ -1,6 +1,7 @@
 """
 Simplify data that has been returned from the Notion API.
 """
+from logging import warning
 import re
 import sys
 
@@ -45,17 +46,17 @@ def simplify_property(prop):
     elif prop["type"] == "multi_select":
         return [option["name"] for option in prop["multi_select"]]
     elif prop["type"] == "relation":
-        print("WARNING: field type 'relation' is not fully implemented", file=sys.stderr)
+        warning("field type 'relation' is not fully implemented", extra={'pre': 'WARNING: '})
         return [relation["id"] for relation in prop["relation"]]
     elif prop["type"] == "rollup":
-        print("WARNING: field type 'rollup' is not fully implemented", file=sys.stderr)
+        warning("field type 'rollup' is not fully implemented", extra={'pre': 'WARNING: '})
         r = prop["rollup"]
         return {"type": r["type"], "function": r["function"], r["type"]: r[r["type"]]}
     elif prop["type"] == "formula":
-        print("WARNING: field type 'formula' is not fully implemented", file=sys.stderr)
+        warning("field type 'formula' is not fully implemented", extra={'pre': 'WARNING: '})
         return prop["formula"]["string"]
     elif prop["type"] == "files":
-        print("WARNING: field type 'files' is not fully implemented", file=sys.stderr)
+        warning("field type 'files' is not fully implemented", extra={'pre': 'WARNING: '})
         return prop["files"]
     else:
         # TODO: add remaining column types
