@@ -345,7 +345,11 @@ def test_strikeout_word():
 
 
 def test_annotated_spaces():
-    input = generate_annotated_obj([
+    input1 = generate_annotated_obj([(' strikethrough ', ['strikethrough'])])
+    input2 = generate_annotated_obj([(' bold ', ['bold'])])
+    input3 = generate_annotated_obj([(' italic ', ['italic'])])
+    input4 = generate_annotated_obj([(' blended ', ['strikethrough', 'italic', 'bold'])])
+    input5 = generate_annotated_obj([
         ('this ', ['bold']),
         ('is ', ['bold', 'italic']),
         ('a', ['italic']),
@@ -353,9 +357,24 @@ def test_annotated_spaces():
         (' did', ['bold', 'underline', 'code']),
         (' i pass', ['underline', 'code']),
         ('?', [])])
-    obj = converter.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([
+    obj1 = converter.ParagraphBlock(None, input1, get_children=False)
+    obj2 = converter.ParagraphBlock(None, input2, get_children=False)
+    obj3 = converter.ParagraphBlock(None, input3, get_children=False)
+    obj4 = converter.ParagraphBlock(None, input4, get_children=False)
+    obj5 = converter.ParagraphBlock(None, input5, get_children=False)
+    pandoc_output1 = obj1.to_pandoc()
+    pandoc_output2 = obj2.to_pandoc()
+    pandoc_output3 = obj3.to_pandoc()
+    pandoc_output4 = obj4.to_pandoc()
+    pandoc_output5 = obj5.to_pandoc()
+    assert pandoc_output1 == Para([Space(), Strikeout([Str('strikethrough')]), Space()])
+    assert pandoc_output2 == Para([Space(), Strong([Str('bold')]), Space()])
+    assert pandoc_output3 == Para([Space(), Emph([Str('italic')]), Space()])
+    assert pandoc_output4 == Para([
+        Space(),
+        Strong([Emph([Strikeout([Str('blended')])])]),
+        Space()])
+    assert pandoc_output5 == Para([
         Strong([Str('this')]),
         Space(),
         Strong([Emph([Str('is')])]),
