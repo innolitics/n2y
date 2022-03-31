@@ -29,17 +29,18 @@ def generate_annotated_obj(arr):
             'color': 'default',
             'text': []}}
     for block in arr:
+        (text, annotations) = block
         text_block = {
             'type': 'text',
-            'text': {'content': block[0], 'link': None},
+            'text': {'content': text, 'link': None},
             'annotations': {
-                'bold': True if 'bold' in block[1] else False,
-                'italic': True if 'italic' in block[1] else False,
-                'strikethrough': True if 'strikethrough' in block[1] else False,
-                'underline': True if 'underline' in block[1] else False,
-                'code': True if 'code' in block[1] else False,
+                'bold': True if 'bold' in annotations else False,
+                'italic': True if 'italic' in annotations else False,
+                'strikethrough': True if 'strikethrough' in annotations else False,
+                'underline': True if 'underline' in annotations else False,
+                'code': True if 'code' in annotations else False,
                 'color': 'default'},
-            'plain_text': block[0],
+            'plain_text': text,
             'href': None}
         obj['paragraph']['text'].append(text_block)
     return obj
