@@ -456,114 +456,43 @@ def test_strikeout_word():
     expected_markdown = "A ~~deleted~~ word.\n"
     assert newline_lf(markdown_output) == expected_markdown
 
-
-def test_annotated_spaces():
-    input = {
+def generate_annotated_obj(arr):
+    obj = {
         'object': 'block',
         'has_children': False,
         'archived': False,
         'type': 'paragraph',
         'paragraph': {
             'color': 'default',
-            'text': [
-                {
-                    'type': 'text',
-                    'text': {
-                        'content': 'this ',
-                        'link': None},
-                    'annotations': {
-                        'bold': True,
-                        'italic': False,
-                        'strikethrough': False,
-                        'underline': False,
-                        'code': False,
-                        'color': 'default'},
-                    'plain_text': 'this ',
-                    'href': None},
-                {
-                    'type': 'text',
-                    'text': {
-                        'content': 'is ',
-                        'link': None},
-                    'annotations': {
-                        'bold': True,
-                        'italic': True,
-                        'strikethrough': False,
-                        'underline': False,
-                        'code': False,
-                        'color': 'default'},
-                    'plain_text': 'is ',
-                    'href': None},
-                {
-                    'type': 'text',
-                    'text': {
-                        'content': 'a',
-                        'link': None},
-                    'annotations': {
-                        'bold': False,
-                        'italic': True,
-                        'strikethrough': False,
-                        'underline': False,
-                        'code': False,
-                        'color': 'default'},
-                    'plain_text': 'a',
-                    'href': None},
-                {
-                    'type': 'text',
-                    'text': {
-                        'content': ' test',
-                        'link': None},
-                    'annotations': {
-                        'bold': False,
-                        'italic': False,
-                        'strikethrough': True,
-                        'underline': False,
-                        'code': False,
-                        'color': 'default'},
-                    'plain_text': ' test',
-                    'href': None},
-                {
-                    'type': 'text',
-                    'text': {
-                        'content': ' did',
-                        'link': None},
-                    'annotations': {
-                        'bold': True,
-                        'italic': False,
-                        'strikethrough': False,
-                        'underline': True,
-                        'code': True,
-                        'color': 'default'},
-                    'plain_text': ' did',
-                    'href': None},
-                {
-                    'type': 'text',
-                    'text': {
-                        'content': ' i pass',
-                        'link': None},
-                    'annotations': {
-                        'bold': False,
-                        'italic': False,
-                        'strikethrough': False,
-                        'underline': True,
-                        'code': True,
-                        'color': 'default'},
-                    'plain_text': ' i pass',
-                    'href': None},
-                {
-                    'type': 'text',
-                    'text': {
-                        'content': '?',
-                        'link': None},
-                    'annotations': {
-                        'bold': False,
-                        'italic': False,
-                        'strikethrough': False,
-                        'underline': False,
-                        'code': False,
-                        'color': 'default'},
-                    'plain_text': '?',
-                    'href': None}]}}
+            'text': []}}
+    for block in arr:
+        text_block = {
+            'type': 'text',
+            'text': {
+                'content': block[0],
+                'link': None},
+            'annotations': {
+                'bold': True if 'bold' in block[1] else False,
+                'italic': True if 'italic' in block[1] else False,
+                'strikethrough': True if 'strikethrough' in block[1] else False,
+                'underline': True if 'underline' in block[1] else False,
+                'code': True if 'code' in block[1] else False,
+                'color': 'default'},
+            'plain_text': block[0],
+            'href': None}
+        obj['paragraph']['text'].append(text_block)
+    return obj
+
+
+def test_annotated_spaces():
+    input = generate_annotated_obj([
+        ('this ', ['bold']),
+        ('is ', ['bold', 'italic']),
+        ('a', ['italic']),
+        (' test', ['strikethrough']),
+        (' did', ['bold', 'underline', 'code']),
+        (' i pass', ['underline', 'code']),
+        ('?', [])])
     obj = converter.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
 
