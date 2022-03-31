@@ -456,6 +456,7 @@ def test_strikeout_word():
     expected_markdown = "A ~~deleted~~ word.\n"
     assert newline_lf(markdown_output) == expected_markdown
 
+
 def generate_annotated_obj(arr):
     obj = {
         'object': 'block',
