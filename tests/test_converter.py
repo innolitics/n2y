@@ -19,7 +19,7 @@ eq2 = "\\Psi (t)\\rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}"
 default_equation = f"{eq1}{eq2}"
 
 
-def generate_annotated_obj(arr):
+def generate_annotated_obj(text_blocks_descriptors):
     obj = {
         'object': 'block',
         'has_children': False,
@@ -28,8 +28,7 @@ def generate_annotated_obj(arr):
         'paragraph': {
             'color': 'default',
             'text': []}}
-    for block in arr:
-        (text, annotations) = block
+    for (text, annotations) in text_blocks_descriptors:
         text_block = {
             'type': 'text',
             'text': {'content': text, 'link': None},

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from collections import deque
 import importlib.util
 from os import path, makedirs
@@ -164,49 +165,36 @@ class Annotations():
         for key, value in block.items():
             self.__dict__[key] = value
 
-    def handler(self, annotation, target):
-        handler = {
-            'bold': [Strong([target]), Strong(target)],
-            'italic': [Emph([target]), Emph(target)],
-            'strikethrough': [Strikeout([target]), Strikeout(target)]
-        }
-        return handler[annotation]
-
-    def strip(self, target):
-        prependages = deque()
-        appendages = deque()
-        result = []
-        blank_space = [Space(), SoftBreak()]
-        nested_annotations = False
-        while target[0] in blank_space:
-            prependages.appendleft(target.pop(0))
-        while target[-1] in blank_space:
-            appendages.appendleft(target.pop(-1))
-        for key in ['strikethrough', 'italic', 'bold']:
-            if self.__dict__[key]:
-                handler = self.handler(key, target)
-                target = handler[0] if nested_annotations else handler[1]
-                nested_annotations = True
-        if prependages:
-            for i in prependages:
-                result.append(i)
-        result.append(target)
-        if appendages:
-            for i in appendages:
-                result.append(i)
-        return result
+    def listify(self, obj):
+        return obj if type(obj) == list else [obj]
 
     def apply_pandoc(self, target):
+        prependages = deque()
+        appendages = deque()
+        problematic_annotations = [
+            self.bold, self.italic, self.strikethrough
+        ]
+
+        if True in problematic_annotations:
+            blank_space = [Space(), SoftBreak()]
+            while target[0] in blank_space:
+                prependages.append(target.pop(0))
+            while target[-1] in blank_space:
+                appendages.appendleft(target.pop(-1))
+
         result = target
-        annotations = [self.bold, self.italic, self.strikethrough]
-        # Only strips spaces when md can't annotate spaces in that in order to preserve accuracy
         if self.code:
-            result = [Code(("", [], []), result)]
-        if True in annotations:
-            result = self.strip(result)
+            result = self.listify(Code(("", [], []), result))
+        if self.bold:
+            result = self.listify(Strong(result))
+        if self.italic:
+            result = self.listify(Emph(result))
         if self.underline:
-            result = [Underline(result)]
-        return result
+            result = self.listify(Underline(result))
+        if self.strikethrough:
+            result = self.listify(Strikeout(result))
+
+        return list(prependages) + result + list(appendages)
 
 
 class InlineEquation():
