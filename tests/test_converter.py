@@ -332,7 +332,7 @@ def test_bold_italic_word():
     assert pandoc_output == Para([
         Str('A'),
         Space(),
-        Strong([Emph([Str('bold-italic')])]),
+        Emph([Strong([Str('bold-italic')])]),
         Space(),
         Str('word.')])
     markdown_output = pandoc.write(pandoc_output, format='gfm')
@@ -386,7 +386,7 @@ def test_blended_annotated_spaces():
     assert pandoc_output == Para([
         Strong([Str('this')]),
         Space(),
-        Strong([Emph([Str('is')])]),
+        Emph([Strong([Str('is')])]),
         Space(),
         Emph([Str('a')]),
         Space(),
