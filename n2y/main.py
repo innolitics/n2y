@@ -125,7 +125,7 @@ def export_markdown(client, raw_rows, options):
             else:
                 logger.debug(
                     "%s %s",
-                    f'Skipping Empty Page: "{page_name}",',
+                    f'Skipping Duplicate Page: "{page_name}",',
                     'Name Has Already Been Used. Please Rename')
                 skips['Duplicate'] += 1
         else:
