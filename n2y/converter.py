@@ -48,9 +48,10 @@ def load_plugins(filename):
                 globals()[key] = value
             else:
                 logger.warning(
-                    f"Warning: Cannot import plugin \"{key}\" because it is not derrived from a known class.")
+                    f"Warning: Cannot Import Plugin \"{key}\" " +
+                    "Because It Is Not Derrived From A Known Class.")
         else:
-            raise NotImplementedError(f"Unknown plugin type {key}.")
+            raise NotImplementedError(f"Unknown Plugin Type \"{key}\".")
 
 
 def load_block(client: Client, id, get_children=True):

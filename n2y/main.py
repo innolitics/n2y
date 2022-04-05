@@ -35,7 +35,7 @@ def main():
 
     ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
     if ACCESS_TOKEN is None:
-        logger.warning(f"No NOTION_ACCESS_TOKEN environment variable is set")
+        logger.error("ERROR: No NOTION_ACCESS_TOKEN environment variable is set")
         return 1
 
     database_id = notion.id_from_share_link(args.database)
@@ -71,25 +71,22 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure the title column exists
     if name_column not in first_row_flattened:
-        logger.error(
-            f"ERROR: Database does not contain the column \"{name_column}\".\n" +
-            f"Please specify the correct name column using the --name-column flag.\n" +
+        raise NotImplementedError(
+            f"ERROR: Database Does Not Contain The Column \"{name_column}\".\n" +
+            f"Please Specify The Correct Name Column Using The --name-column Flag.\n" +
             # only show columns that have strings as possible options
-            "Available column(s): " + ", ".join(available_columns()))
-        return False
+            "Available Column(s): " + ", ".join(available_columns()))
 
     # make sure title column is not empty (only the first row is checked)
     if first_row_flattened[name_column] is None:
-        logger.error(f"ERROR: Column \"{name_column}\" cannot be empty.")
-        return False
+        raise NotImplementedError(f"ERROR: Column \"{name_column}\" Cannot Be Empty.")
 
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
-        logger.error(
-            f"ERROR: Column \"{name_column}\" does not contain a string.\n" +
+        raise NotImplementedError(
+            f"ERROR: Column \"{name_column}\" Does Not Contain A String.\n" +
             # only show columns that have strings as possible options
-            "Available column(s): " + ", ".join(available_columns()))
-        return False
+            "Available Column(s): " + ", ".join(available_columns()))
     return True
 
 
