@@ -95,7 +95,8 @@ def name_column_valid(raw_rows, name_column):
 
 def export_markdown(client, raw_rows, options):
     file_names = []
-    count = 0
+    skips = {'Empty': 0, 'Unnamed': 0, 'Duplicate': 0}
+    keys_in_skips = skips.keys()
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
@@ -124,15 +125,20 @@ def export_markdown(client, raw_rows, options):
                         f.write(markdown)
                 else:
                     logger.debug(f"Skipping Empty Page: {page_name}")
-                    count += 1
+                    skips['Empty'] += 1
             else:
                 logger.debug(
                     f'Duplicate File Name (i.e. {filename}.md), Rename Page "{page_name}"')
-                count += 1
+                skips['Duplicate'] += 1
         else:
             logger.debug("Skipping Page With No Name")
-            count += 1
-    logger.warning(f"WARNING: {count} Pages Were Skipped")
+            skips['Unnamed'] += 1
+    if not all(0 == key for key in keys_in_skips):
+        number_of_zeros = [*skips.values()].count(0)
+        print(f"ZEROS: {number_of_zeros}")
+        msg = ""
+
+        logger.warning(f"Pages Skipped: {skips} Pages Were Skipped")
 
 
 def export_yaml(client, raw_rows):
