@@ -72,7 +72,7 @@ def name_column_valid(raw_rows, name_column):
     # make sure the title column exists
     if name_column not in first_row_flattened:
         logger.error(
-            f"Database does not contain the column \"{name_column}\".\n" +
+            f"ERROR: Database does not contain the column \"{name_column}\".\n" +
             f"Please specify the correct name column using the --name-column flag.\n" +
             # only show columns that have strings as possible options
             "Available column(s): " + ", ".join(available_columns()))
@@ -80,13 +80,13 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure title column is not empty (only the first row is checked)
     if first_row_flattened[name_column] is None:
-        logger.error(f"Column \"{name_column}\" cannot be empty.")
+        logger.error(f"ERROR: Column \"{name_column}\" cannot be empty.")
         return False
 
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
         logger.error(
-            f"Column \"{name_column}\" does not contain a string.\n" +
+            f"ERROR: Column \"{name_column}\" does not contain a string.\n" +
             # only show columns that have strings as possible options
             "Available column(s): " + ", ".join(available_columns()))
         return False
@@ -96,7 +96,6 @@ def name_column_valid(raw_rows, name_column):
 def export_markdown(client, raw_rows, options):
     file_names = []
     skips = {'Empty': 0, 'Unnamed': 0, 'Duplicate': 0}
-    keys_in_skips = skips.keys()
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
@@ -128,17 +127,23 @@ def export_markdown(client, raw_rows, options):
                     skips['Empty'] += 1
             else:
                 logger.debug(
-                    f'Duplicate File Name (i.e. {filename}.md), Rename Page "{page_name}"')
+                    'Skipping Empty Page: "{page_name}", ' +
+                    f'Name Has Already Been Used. Please Rename')
                 skips['Duplicate'] += 1
         else:
             logger.debug("Skipping Page With No Name")
             skips['Unnamed'] += 1
-    if not all(0 == key for key in keys_in_skips):
-        number_of_zeros = [*skips.values()].count(0)
-        print(f"ZEROS: {number_of_zeros}")
-        msg = ""
+    msg = ""
+    types_skipped = 0
+    prefixes = ("", " & ", ", & ")
+    for key in skips.keys():
+        count = skips[key]
+        if count > 0:
+            msg = msg if key != "Duplicate" and types_skipped < 2 else msg.replace(" &", ",")
+            msg += f"{prefixes[types_skipped]}{count} {key}"
+            types_skipped += 1
 
-        logger.warning(f"Pages Skipped: {skips} Pages Were Skipped")
+    msg == "" or logger.warning(f"WARNING: {msg} Page(s) Skipped")
 
 
 def export_yaml(client, raw_rows):
