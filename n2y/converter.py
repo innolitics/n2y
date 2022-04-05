@@ -1,4 +1,3 @@
-from __future__ import annotations
 from collections import deque
 import importlib.util
 from os import path, makedirs
