@@ -46,9 +46,9 @@ def load_plugins(filename):
                     and issubclass(class_to_replace, Block):
                 globals()[key] = value
             else:
-                logger.warning(
-                    f"Warning: Cannot Import Plugin \"{key}\" " +
-                    "Because It Is Not Derrived From A Known Class.")
+                logger.warning("%s %s" % (
+                    f"Warning: Cannot Import Plugin \"{key}\"",
+                    "Because It Is Not Derrived From A Known Class."))
         else:
             raise NotImplementedError(f"Unknown Plugin Type \"{key}\".")
 
