@@ -1,36 +1,36 @@
-import logging
 import os
-import sys
-import argparse
 import re
-
+import sys
 import yaml
 import pandoc
-
+import logging
+import argparse
 from n2y import converter, notion, simplify
 
-# logging.basicConfig(format="%(pre)s%(message)s")
 logger = logging.getLogger('n2y.main')
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Move data from Notion into YAML/markdown",
-                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Move data from Notion into YAML/markdown",
+        formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("database", help="The Notion database id or share url")
     parser.add_argument("--output", '-o',
                         choices=["yaml", "markdown"], default="yaml",
-                        help=("Select output type\n"
-                              "  yaml - log yaml to stdout\n"
-                              "  markdown - create a markdown file per page"))
+                        help=(
+                            "Select output type\n"
+                            "  yaml - log yaml to stdout\n"
+                            "  markdown - create a markdown file per page"))
     parser.add_argument("--image-path", help="Specify path where to save images")
     parser.add_argument("--image-web-path", help="Web path for images")
     parser.add_argument("--plugins", help="Plugin file")
     parser.add_argument("--target", '-t', default='./',
                         help="relative path to target directory")
     parser.add_argument("--name-column", default='title',
-                        help=("Database column that will be used to generate the filename "
-                              "for each row. Column names are normalized to lowercase letters, "
-                              "numbers, and underscores. Only used when generating markdown."))
+                        help=(
+                            "Database column that will be used to generate the filename "
+                            "for each row. Column names are normalized to lowercase letters, "
+                            "numbers, and underscores. Only used when generating markdown."))
     args = parser.parse_args()
 
     ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
@@ -71,11 +71,11 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure the title column exists
     if name_column not in first_row_flattened:
-        raise NotImplementedError(
-            f"ERROR: Database Does Not Contain The Column \"{name_column}\".\n" +
-            f"Please Specify The Correct Name Column Using The --name-column Flag.\n" +
+        raise NotImplementedError("%s%s%s" % (
+            f"ERROR: Database Does Not Contain The Column \"{name_column}\".\n",
+            "Please Specify The Correct Name Column Using The --name-column Flag.\n",
             # only show columns that have strings as possible options
-            "Available Column(s): " + ", ".join(available_columns()))
+            "Available Column(s): " + ", ".join(available_columns())))
 
     # make sure title column is not empty (only the first row is checked)
     if first_row_flattened[name_column] is None:
@@ -83,10 +83,10 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
-        raise NotImplementedError(
-            f"ERROR: Column \"{name_column}\" Does Not Contain A String.\n" +
+        raise NotImplementedError("%s%s" % (
+            f"ERROR: Column \"{name_column}\" Does Not Contain A String.\n",
             # only show columns that have strings as possible options
-            "Available Column(s): " + ", ".join(available_columns()))
+            "Available Column(s): " + ", ".join(available_columns())))
     return True
 
 
@@ -124,8 +124,9 @@ def export_markdown(client, raw_rows, options):
                     skips['Empty'] += 1
             else:
                 logger.debug(
-                    'Skipping Empty Page: "{page_name}", ' +
-                    f'Name Has Already Been Used. Please Rename')
+                    "%s %s",
+                    f'Skipping Empty Page: "{page_name}",',
+                    'Name Has Already Been Used. Please Rename')
                 skips['Duplicate'] += 1
         else:
             logger.debug("Skipping Page With No Name")
