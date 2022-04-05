@@ -2,6 +2,7 @@ import re
 import logging
 import requests
 import importlib.util
+from collections import deque
 from n2y.notion import Client
 from os import path, makedirs
 from shutil import copyfileobj
@@ -166,19 +167,36 @@ class Annotations():
         for key, value in block.items():
             self.__dict__[key] = value
 
+    def listify(self, obj):
+        return obj if type(obj) == list else [obj]
+
     def apply_pandoc(self, target):
+        prependages = deque()
+        appendages = deque()
+        problematic_annotations = [
+            self.bold, self.italic, self.strikethrough
+        ]
+
+        if True in problematic_annotations:
+            blank_space = [Space(), SoftBreak()]
+            while target[0] in blank_space:
+                prependages.append(target.pop(0))
+            while target[-1] in blank_space:
+                appendages.appendleft(target.pop(-1))
+
         result = target
         if self.code:
-            result = [Code(("", [], []), result)]
+            result = self.listify(Code(("", [], []), result))
         if self.bold:
-            result = [Strong(result)]
+            result = self.listify(Strong(result))
         if self.italic:
-            result = [Emph(result)]
+            result = self.listify(Emph(result))
         if self.underline:
-            result = [Underline(result)]
+            result = self.listify(Underline(result))
         if self.strikethrough:
-            result = [Strikeout(result)]
-        return result
+            result = self.listify(Strikeout(result))
+
+        return list(prependages) + result + list(appendages)
 
 
 class InlineEquation():
@@ -209,9 +227,10 @@ class RichText():
                 return self.annotations.apply_pandoc(self.plain_text.text)
             elif 'href' in self.__dict__ and self.href:
                 # links
-                return [Link(('', [], []),
-                             self.annotations.apply_pandoc(self.plain_text.to_pandoc()),
-                             (self.href, ''))]
+                return [Link(
+                    ('', [], []),
+                    self.annotations.apply_pandoc(self.plain_text.to_pandoc()),
+                    (self.href, ''))]
             else:
                 # regular text
                 return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
@@ -443,23 +462,28 @@ class TableBlock(Block):
             row_header_columns = 0
         # Notion does not have cell alignment or width options, sticking with defaults.
         colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(self.table_width)]
-        table = Table(('', [], []),  # attr
-                      Caption(None, []),  # caption
-                      colspec,
-                      TableHead(('', [], []), header_rows),  # table header
-                      [TableBody(('', [], []), RowHeadColumns(
-                          row_header_columns), [], children)],   # table body
-                      TableFoot(('', [], []), []))  # table footer
+        table = Table(
+            ('', [], []),  # attr
+            Caption(None, []),  # caption
+            colspec,
+            TableHead(('', [], []), header_rows),  # table header
+            [TableBody(
+                ('', [], []),
+                RowHeadColumns(row_header_columns),
+                [],
+                children)],  # table body
+            TableFoot(('', [], []), []))  # table footer
         return table
 
 
 class RowBlock(Block):
     def to_pandoc(self):
-        cells = [Cell(('', [], []),
-                      AlignDefault(),
-                      RowSpan(1),
-                      ColSpan(1),
-                      [Plain(RichTextArray(cell).to_pandoc())]) for cell in self.cells]
+        cells = [Cell(
+            ('', [], []),
+            AlignDefault(),
+            RowSpan(1),
+            ColSpan(1),
+            [Plain(RichTextArray(cell).to_pandoc())]) for cell in self.cells]
         row = Row(('', [], []), cells)
         return row
 
