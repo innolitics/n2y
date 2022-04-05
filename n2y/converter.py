@@ -1,4 +1,5 @@
 import importlib.util
+import logging
 from os import path, makedirs
 from shutil import copyfileobj
 from urllib.parse import urlparse
@@ -29,7 +30,7 @@ from n2y.notion import Client
 
 IMAGE_PATH = None
 IMAGE_WEB_PATH = None
-LOGGER = None
+logger = logging.getLogger('n2y.converter')
 
 
 def load_plugins(filename):
@@ -46,9 +47,8 @@ def load_plugins(filename):
                     and issubclass(class_to_replace, Block):
                 globals()[key] = value
             else:
-                LOGGER.warning(
-                    f"Cannot import plugin \"{key}\" since it not derrived from a known class.",
-                    extra={'pre': 'WARNING: '})
+                logger.warning(
+                    f"Warning: Cannot import plugin \"{key}\" because it is not derrived from a known class.")
         else:
             raise NotImplementedError(f"Unknown plugin type {key}.")
 

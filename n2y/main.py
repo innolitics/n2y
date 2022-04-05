@@ -1,4 +1,3 @@
-from logging import error, info, log, warning
 import logging
 import os
 import sys
@@ -10,9 +9,8 @@ import pandoc
 
 from n2y import converter, notion, simplify
 
-logging.basicConfig(format="%(pre)s%(message)s")
-LOGGER = logging.getLogger('n2y')
-LOGGER.setLevel(20)
+# logging.basicConfig(format="%(pre)s%(message)s")
+logger = logging.getLogger('n2y.main')
 
 
 def main():
@@ -37,7 +35,7 @@ def main():
 
     ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
     if ACCESS_TOKEN is None:
-        warning(f"No NOTION_ACCESS_TOKEN environment variable is set", extra={'pre': 'WARNING: '})
+        logger.warning(f"No NOTION_ACCESS_TOKEN environment variable is set")
         return 1
 
     database_id = notion.id_from_share_link(args.database)
@@ -48,8 +46,6 @@ def main():
     converter.IMAGE_WEB_PATH = args.image_web_path
     if args.plugins:
         converter.load_plugins(args.plugins)
-
-    converter.LOGGER = LOGGER
 
     client = notion.Client(ACCESS_TOKEN)
 
@@ -75,30 +71,31 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure the title column exists
     if name_column not in first_row_flattened:
-        LOGGER.error(
+        logger.error(
             f"Database does not contain the column \"{name_column}\".\n" +
             f"Please specify the correct name column using the --name-column flag.\n" +
             # only show columns that have strings as possible options
-            "Available column(s): " + ", ".join(available_columns()), extra={'pre': 'ERROR: '})
+            "Available column(s): " + ", ".join(available_columns()))
         return False
 
     # make sure title column is not empty (only the first row is checked)
     if first_row_flattened[name_column] is None:
-        LOGGER.error(f"Column \"{name_column}\" cannot be empty.", extra={'pre': 'ERROR: '})
+        logger.error(f"Column \"{name_column}\" cannot be empty.")
         return False
 
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
-        LOGGER.error(
+        logger.error(
             f"Column \"{name_column}\" does not contain a string.\n" +
             # only show columns that have strings as possible options
-            "Available column(s): " + ", ".join(available_columns()), extra={'pre': 'ERROR: '})
+            "Available column(s): " + ", ".join(available_columns()))
         return False
     return True
 
 
 def export_markdown(client, raw_rows, options):
     file_names = []
+    count = 0
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
@@ -110,7 +107,7 @@ def export_markdown(client, raw_rows, options):
                 pandoc_output = converter.load_block(client, row['id']).to_pandoc()
                 # do not create markdown pages if there is no page in Notion
                 if pandoc_output:
-                    LOGGER.info(f"{meta[options.name_column]}", extra={'pre': 'Processing Row: '})
+                    logger.warning(f'Processing Page "{meta[options.name_column]}"')
                     markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \
                         .replace('\r\n', '\n')  # Deal with Windows line endings
 
@@ -126,12 +123,16 @@ def export_markdown(client, raw_rows, options):
                         f.write('---\n\n')
                         f.write(markdown)
                 else:
-                    LOGGER.warning("Skipping empty page: %s", page_name, extra={'pre': 'WARNING: '})
+                    logger.debug(f"Skipping Empty Page: {page_name}")
+                    count += 1
             else:
-                LOGGER.warning(
-                    'Duplicate file name (i.e. %s.md), Rename Row "%s"', filename, page_name, extra={'pre': 'WARNING: '})
+                logger.debug(
+                    f'Duplicate File Name (i.e. {filename}.md), Rename Page "{page_name}"')
+                count += 1
         else:
-            LOGGER.warning("Skipping page with no name", extra={'pre': 'WARNING: '})
+            logger.debug("Skipping Page With No Name")
+            count += 1
+    logger.warning(f"WARNING: {count} Pages Were Skipped")
 
 
 def export_yaml(client, raw_rows):
@@ -141,7 +142,7 @@ def export_yaml(client, raw_rows):
         markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else None
         result.append({**simplify.flatten_database_row(row), 'content': markdown})
 
-    LOGGER.info(yaml.dump(result, sort_keys=False))
+    logger.info(yaml.dump(result, sort_keys=False))
 
 
 if __name__ == "__main__":
