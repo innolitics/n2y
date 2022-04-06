@@ -9,8 +9,7 @@ import pandoc
 
 from n2y import converter, notion, simplify
 
-logging.basicConfig(format='%(levelname)s: %(message)s', level=20)
-logger = logging.getLogger(__name__)
+logger = None
 
 
 def main():
@@ -23,26 +22,34 @@ def main():
                         help=(
                             "Select output type\n"
                             "  yaml - log yaml to stdout\n"
-                            "  markdown - create a markdown file per page"))
+                            "  markdown - create a markdown file for each page"))
     parser.add_argument("--image-path", help="Specify path where to save images")
     parser.add_argument("--image-web-path", help="Web path for images")
     parser.add_argument("--plugins", help="Plugin file")
     parser.add_argument("--target", '-t', default='./',
-                        help="relative path to target directory")
-    parser.add_argument("--name-column", default='title',
+                        help="Relative path to target directory")
+    parser.add_argument("--verbosity", '-v', default='WARNING',
+                        help="Level to set the root logging module to")
+    parser.add_argument("--logging-format", '-f', default='%(asctime)s - %(levelname)s: %(message)s',
+                        help="Default format used when logging")
+    parser.add_argument("--name-column", '-n', default='title',
                         help=(
                             "Database column that will be used to generate the filename "
                             "for each row. Column names are normalized to lowercase letters, "
                             "numbers, and underscores. Only used when generating markdown."))
     args = parser.parse_args()
 
-    ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
+    logging.basicConfig(
+        format=args.logging_format, level=logging.__dict__[args.verbosity])
+    global logger
+    logger = logging.getLogger(__name__)
+
+    ACCESS_TOKEN = os.environ.get('NOTION_ACCESS_TOKEN', None)
     if ACCESS_TOKEN is None:
-        logger.error("No NOTION_ACCESS_TOKEN environment variable is set")
+        logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
     database_id = notion.id_from_share_link(args.database)
-
     if not args.image_path:
         args.image_path = args.target
     converter.IMAGE_PATH = args.image_path
@@ -75,10 +82,10 @@ def name_column_valid(raw_rows, name_column):
     # make sure the title column exists
     if name_column not in first_row_flattened:
         logger.critical(
-            'Database does not contain the column "%s".\n%s%s', name_column,
-            "Please specify the correct name column using the --name-column flag.\n",
+            'Database does not contain the column "%s". Please specify '
+            'the correct name column using the --name-column (-n) flag. '
             # only show columns that have strings as possible options
-            "Available column(s): " + ", ".join(available_columns()))
+            'Available column(s): ' + ', '.join(available_columns()), name_column)
         return False
 
     # make sure title column is not empty (only the first row is checked)
@@ -89,9 +96,9 @@ def name_column_valid(raw_rows, name_column):
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
         logger.critical(
-            'Column "%s" does not contain a string.\n%s', name_column,
+            'Column "%s" does not contain a string. '
             # only show columns that have strings as possible options
-            "Available column(s): " + ", ".join(available_columns()))
+            'Available column(s): ' + ', '.join(available_columns()), name_column)
         return False
     return True
 
@@ -110,7 +117,7 @@ def export_markdown(client, raw_rows, options):
                 pandoc_output = converter.load_block(client, row['id']).to_pandoc()
                 # do not create markdown pages if there is no page in Notion
                 if pandoc_output:
-                    logger.info('Processing page "%s".', meta[options.name_column])
+                    logger.info('Processing page "%s".', page_name)
                     markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \
                         .replace('\r\n', '\n')  # Deal with Windows line endings
 
@@ -124,15 +131,15 @@ def export_markdown(client, raw_rows, options):
                         f.write('---\n\n')
                         f.write(markdown)
                 else:
-                    logger.debug('Skipping page "%s" because it is empty.', page_name)
+                    logger.info('Skipping page "%s" because it is empty.', page_name)
                     skips['empty'] += 1
             else:
-                logger.debug(
-                    'Skipping page "%s" because that %s', page_name,
-                    'name has already been used. Please rename.')
+                logger.info(
+                    'Skipping page "%s" because that name has already'
+                    ' been used. Please rename.', page_name)
                 skips['duplicate'] += 1
         else:
-            logger.debug("Skipping page with no name.")
+            logger.info("Skipping page with no name.")
             skips['unnamed'] += 1
     msg = ""
     types_skipped = 0
@@ -144,7 +151,7 @@ def export_markdown(client, raw_rows, options):
             msg += f"{prefixes[types_skipped]}{count} {key}"
             types_skipped += 1
 
-    msg == "" or logger.error(f"{msg} page(s) skipped")
+    msg == "" or logger.warning("%s page(s) skipped", msg)
 
 
 def export_yaml(client, raw_rows):
