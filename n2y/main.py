@@ -1,13 +1,46 @@
+import logging
 import os
 import re
 import sys
+import logging.config as logcon
+import argparse
+
 import yaml
 import pandoc
-import logging
-import argparse
+
 from n2y import converter, notion, simplify
 
-logger = logging.getLogger('n2y.main')
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'standard': {
+            'format': '%(levelname)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'default': {
+            'level': 'INFO',
+            'formatter': 'standard',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['default'],
+            'level': 'WARNING',
+            'propagate': False
+        },
+        'n2y': {
+            'handlers': ['default'],
+            'level': 'INFO',
+            'propagate': False
+        },
+    }
+}
+logcon.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -35,7 +68,7 @@ def main():
 
     ACCESS_TOKEN = os.environ.get("NOTION_ACCESS_TOKEN", None)
     if ACCESS_TOKEN is None:
-        logger.error("ERROR: No NOTION_ACCESS_TOKEN environment variable is set")
+        logger.error("No NOTION_ACCESS_TOKEN environment variable is set")
         return 1
 
     database_id = notion.id_from_share_link(args.database)
@@ -71,28 +104,31 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure the title column exists
     if name_column not in first_row_flattened:
-        raise NotImplementedError("%s%s%s" % (
-            f"ERROR: Database Does Not Contain The Column \"{name_column}\".\n",
-            "Please Specify The Correct Name Column Using The --name-column Flag.\n",
+        logger.error(
+            'Database does not contain the column "%s".\n%s%s', name_column,
+            "Please specify the correct name column using the --name-column flag.\n",
             # only show columns that have strings as possible options
-            "Available Column(s): " + ", ".join(available_columns())))
+            "Available column(s): " + ", ".join(available_columns()))
+        return False
 
     # make sure title column is not empty (only the first row is checked)
     if first_row_flattened[name_column] is None:
-        raise NotImplementedError(f"ERROR: Column \"{name_column}\" Cannot Be Empty.")
+        logger.error(f'Column "%s" Cannot Be Empty.', name_column)
+        return False
 
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
-        raise NotImplementedError("%s%s" % (
-            f"ERROR: Column \"{name_column}\" Does Not Contain A String.\n",
+        logger.error(
+            'Column "%s" does not contain a string.\n%s', name_column,
             # only show columns that have strings as possible options
-            "Available Column(s): " + ", ".join(available_columns())))
+            "Available column(s): " + ", ".join(available_columns()))
+        return False
     return True
 
 
 def export_markdown(client, raw_rows, options):
     file_names = []
-    skips = {'Empty': 0, 'Unnamed': 0, 'Duplicate': 0}
+    skips = {'empty': 0, 'unnamed': 0, 'duplicate': 0}
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
@@ -104,12 +140,10 @@ def export_markdown(client, raw_rows, options):
                 pandoc_output = converter.load_block(client, row['id']).to_pandoc()
                 # do not create markdown pages if there is no page in Notion
                 if pandoc_output:
-                    logger.warning(f'Processing Page "{meta[options.name_column]}"')
+                    logger.info('Processing page "%s".', meta[options.name_column])
                     markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \
                         .replace('\r\n', '\n')  # Deal with Windows line endings
 
-                    # create target path if it doesn't exist
-                    # if not os.path.exists(options.target):
                     os.makedirs(options.target, exist_ok=True)
 
                     # sanitize file name just a bit
@@ -120,28 +154,27 @@ def export_markdown(client, raw_rows, options):
                         f.write('---\n\n')
                         f.write(markdown)
                 else:
-                    logger.debug(f"Skipping Empty Page: {page_name}")
-                    skips['Empty'] += 1
+                    logger.debug('Skipping page "%s" because it is empty.', page_name)
+                    skips['empty'] += 1
             else:
                 logger.debug(
-                    "%s %s",
-                    f'Skipping Duplicate Page: "{page_name}",',
-                    'Name Has Already Been Used. Please Rename')
-                skips['Duplicate'] += 1
+                    'Skipping page "%s" because that %s', page_name,
+                    'name has already been used. Please rename.')
+                skips['duplicate'] += 1
         else:
-            logger.debug("Skipping Page With No Name")
-            skips['Unnamed'] += 1
+            logger.debug("Skipping page with no name.")
+            skips['unnamed'] += 1
     msg = ""
     types_skipped = 0
     prefixes = ("", " & ", ", & ")
     for key in skips.keys():
         count = skips[key]
         if count > 0:
-            msg = msg if key != "Duplicate" and types_skipped < 2 else msg.replace(" &", ",")
+            msg = msg if key != "duplicate" and types_skipped < 2 else msg.replace(" &", ",")
             msg += f"{prefixes[types_skipped]}{count} {key}"
             types_skipped += 1
 
-    msg == "" or logger.warning(f"WARNING: {msg} Page(s) Skipped")
+    msg == "" or logger.error(f"{msg} page(s) skipped")
 
 
 def export_yaml(client, raw_rows):
@@ -151,7 +184,7 @@ def export_yaml(client, raw_rows):
         markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else None
         result.append({**simplify.flatten_database_row(row), 'content': markdown})
 
-    logger.info(yaml.dump(result, sort_keys=False))
+    print(yaml.dump(result, sort_keys=False))
 
 
 if __name__ == "__main__":

@@ -1,18 +1,19 @@
 import re
 import logging
-import requests
 import importlib.util
 from collections import deque
-from n2y.notion import Client
 from os import path, makedirs
+
+import requests
 from shutil import copyfileobj
 from urllib.parse import urlparse
-
 from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, Underline, MetaString, Table, TableHead, TableBody, \
     TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
     Caption, Math, InlineMath, DisplayMath
+
+from n2y.notion import Client
 
 
 # Notes:
@@ -30,7 +31,7 @@ from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emp
 
 IMAGE_PATH = None
 IMAGE_WEB_PATH = None
-logger = logging.getLogger('n2y.converter')
+logger = logging.getLogger(__name__)
 
 
 def load_plugins(filename):
@@ -47,11 +48,11 @@ def load_plugins(filename):
                     and issubclass(class_to_replace, Block):
                 globals()[key] = value
             else:
-                logger.warning("%s %s" % (
-                    f"Warning: Cannot Import Plugin \"{key}\"",
-                    "Because It Is Not Derrived From A Known Class."))
+                logger.warning(
+                    'cannot import plugin "%s" %s', key,
+                    "because it is not derrived from a known class.")
         else:
-            raise NotImplementedError(f"Unknown Plugin Type \"{key}\".")
+            raise NotImplementedError(f"Unknown plugin type \"{key}\".")
 
 
 def load_block(client: Client, id, get_children=True):
@@ -95,7 +96,7 @@ def parse_block(client: Client, block, get_children=True):
         return Equation(client, block, get_children)
     else:
         # TODO: add remaining block types
-        raise NotImplementedError(f"Unknown block type {block['type']}")
+        raise NotImplementedError(f'Unknown block type: "{block["type"]}"')
 
 
 class Block():

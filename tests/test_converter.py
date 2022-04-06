@@ -1,6 +1,6 @@
+import pytest
 from unittest import mock
 
-import pytest
 import pandoc
 from pandoc.types import Str, Para, Plain, Space, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \

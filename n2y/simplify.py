@@ -4,7 +4,7 @@ Simplify data that has been returned from the Notion API.
 import logging
 import re
 
-logger = logging.getLogger('n2y.simplify')
+logger = logging.getLogger(__name__)
 
 
 def flatten_database_rows(raw_rows):
@@ -47,17 +47,17 @@ def simplify_property(prop):
     elif prop["type"] == "multi_select":
         return [option["name"] for option in prop["multi_select"]]
     elif prop["type"] == "relation":
-        logger.warning("WARNING: Field Type 'Relation' Is Not Fully Implemented")
+        logger.warning("field type 'relation' is not fully implemented")
         return [relation["id"] for relation in prop["relation"]]
     elif prop["type"] == "rollup":
-        logger.warning("WARNING: Field Type 'Rollup' Is Not Fully Implemented")
+        logger.warning("field type 'rollup' is not fully implemented")
         r = prop["rollup"]
         return {"type": r["type"], "function": r["function"], r["type"]: r[r["type"]]}
     elif prop["type"] == "formula":
-        logger.warning("WARNING: Field Type 'Formula' Is Not Fully Implemented")
+        logger.warning("field type 'formula' is not fully implemented")
         return prop["formula"]["string"]
     elif prop["type"] == "files":
-        logger.warning("WARNING: Field Type 'Files' Is Not Fully Implemented")
+        logger.warning("field type 'files' is not fully implemented")
         return prop["files"]
     else:
         # TODO: add remaining column types
