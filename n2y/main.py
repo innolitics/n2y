@@ -10,36 +10,7 @@ import pandoc
 
 from n2y import converter, notion, simplify
 
-LOGGING_CONFIG = {
-    'version': 1,
-    'disable_existing_loggers': True,
-    'formatters': {
-        'standard': {
-            'format': '%(levelname)s: %(message)s'
-        },
-    },
-    'handlers': {
-        'default': {
-            'level': 'INFO',
-            'formatter': 'standard',
-            'class': 'logging.StreamHandler',
-            'stream': 'ext://sys.stdout',
-        },
-    },
-    'loggers': {
-        '': {
-            'handlers': ['default'],
-            'level': 'WARNING',
-            'propagate': False
-        },
-        'n2y': {
-            'handlers': ['default'],
-            'level': 'INFO',
-            'propagate': False
-        },
-    }
-}
-logcon.dictConfig(LOGGING_CONFIG)
+logging.basicConfig(format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
 
