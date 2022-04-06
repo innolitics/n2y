@@ -30,6 +30,7 @@ n2y DATABASE_LINK > database.yml
 n2y -o markdown DATABASE_LINK
 ```
 
+This process will automatically skip empty pages, pages with duplicate names, and untitled pages.
 
 ## Plugins
 
