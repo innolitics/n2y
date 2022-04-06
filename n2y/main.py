@@ -17,26 +17,31 @@ def main():
         description="Move data from Notion into YAML/markdown",
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("database", help="The Notion database id or share url")
-    parser.add_argument("--output", '-o',
-                        choices=["yaml", "markdown"], default="yaml",
-                        help=(
-                            "Select output type\n"
-                            "  yaml - log yaml to stdout\n"
-                            "  markdown - create a markdown file for each page"))
+    parser.add_argument(
+        "--output", '-o',
+        choices=["yaml", "markdown"], default="yaml",
+        help=(
+            "Select output type\n"
+            "  yaml - log yaml to stdout\n"
+            "  markdown - create a markdown file for each page"))
     parser.add_argument("--image-path", help="Specify path where to save images")
     parser.add_argument("--image-web-path", help="Web path for images")
     parser.add_argument("--plugins", help="Plugin file")
-    parser.add_argument("--target", '-t', default='./',
-                        help="Relative path to target directory")
-    parser.add_argument("--verbosity", '-v', default='WARNING',
-                        help="Level to set the root logging module to")
-    parser.add_argument("--logging-format", '-f', default='%(asctime)s - %(levelname)s: %(message)s',
-                        help="Default format used when logging")
-    parser.add_argument("--name-column", '-n', default='title',
-                        help=(
-                            "Database column that will be used to generate the filename "
-                            "for each row. Column names are normalized to lowercase letters, "
-                            "numbers, and underscores. Only used when generating markdown."))
+    parser.add_argument(
+        "--target", '-t', default='./',
+        help="Relative path to target directory")
+    parser.add_argument(
+        "--verbosity", '-v', default='WARNING',
+        help="Level to set the root logging module to")
+    parser.add_argument(
+        "--logging-format", '-f', default='%(asctime)s - %(levelname)s: %(message)s',
+        help="Default format used when logging")
+    parser.add_argument(
+        "--name-column", '-n', default='title',
+        help=(
+            "Database column that will be used to generate the filename "
+            "for each row. Column names are normalized to lowercase letters, "
+            "numbers, and underscores. Only used when generating markdown."))
     args = parser.parse_args()
 
     logging.basicConfig(
