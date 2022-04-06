@@ -31,7 +31,7 @@ def main():
         "--target", '-t', default='./',
         help="Relative path to target directory")
     parser.add_argument(
-        "--verbosity", '-v', default='WARNING',
+        "--verbosity", '-v', default='INFO',
         help="Level to set the root logging module to")
     parser.add_argument(
         "--logging-format", '-f', default='%(asctime)s - %(levelname)s: %(message)s',
@@ -136,15 +136,15 @@ def export_markdown(client, raw_rows, options):
                         f.write('---\n\n')
                         f.write(markdown)
                 else:
-                    logger.info('Skipping page "%s" because it is empty.', page_name)
+                    logger.debug('Skipping page "%s" because it is empty.', page_name)
                     skips['empty'] += 1
             else:
-                logger.info(
+                logger.debug(
                     'Skipping page "%s" because that name has already'
                     ' been used. Please rename.', page_name)
                 skips['duplicate'] += 1
         else:
-            logger.info("Skipping page with no name.")
+            logger.debug("Skipping page with no name.")
             skips['unnamed'] += 1
     msg = ""
     types_skipped = 0
@@ -156,7 +156,7 @@ def export_markdown(client, raw_rows, options):
             msg += f"{prefixes[types_skipped]}{count} {key}"
             types_skipped += 1
 
-    msg == "" or logger.warning("%s page(s) skipped", msg)
+    msg == "" or logger.info("%s page(s) skipped", msg)
 
 
 def export_yaml(client, raw_rows):
