@@ -1,8 +1,7 @@
-import logging
 import os
 import re
 import sys
-import logging.config as logcon
+import logging
 import argparse
 
 import yaml
@@ -10,7 +9,7 @@ import pandoc
 
 from n2y import converter, notion, simplify
 
-logging.basicConfig(format='%(levelname)s: %(message)s')
+logging.basicConfig(format='%(levelname)s: %(message)s', level=20)
 logger = logging.getLogger(__name__)
 
 
@@ -75,7 +74,7 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure the title column exists
     if name_column not in first_row_flattened:
-        logger.error(
+        logger.critical(
             'Database does not contain the column "%s".\n%s%s', name_column,
             "Please specify the correct name column using the --name-column flag.\n",
             # only show columns that have strings as possible options
@@ -84,12 +83,12 @@ def name_column_valid(raw_rows, name_column):
 
     # make sure title column is not empty (only the first row is checked)
     if first_row_flattened[name_column] is None:
-        logger.error(f'Column "%s" Cannot Be Empty.', name_column)
+        logger.critical('Column "%s" Cannot Be Empty.', name_column)
         return False
 
     # make sure the title column is a string
     if not isinstance(first_row_flattened[name_column], str):
-        logger.error(
+        logger.critical(
             'Column "%s" does not contain a string.\n%s', name_column,
             # only show columns that have strings as possible options
             "Available column(s): " + ", ".join(available_columns()))

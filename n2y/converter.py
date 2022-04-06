@@ -48,7 +48,7 @@ def load_plugins(filename):
                     and issubclass(class_to_replace, Block):
                 globals()[key] = value
             else:
-                logger.warning(
+                logger.error(
                     'cannot import plugin "%s" %s', key,
                     "because it is not derrived from a known class.")
         else:
