@@ -1,16 +1,17 @@
-from collections import deque
+import re
+import logging
 import importlib.util
+from collections import deque
 from os import path, makedirs
+
+import requests
 from shutil import copyfileobj
 from urllib.parse import urlparse
-import requests
-
 from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emph, \
     Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, Underline, MetaString, Table, TableHead, TableBody, \
     TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
     Caption, Math, InlineMath, DisplayMath
-import re
 
 from n2y.notion import Client
 
@@ -30,6 +31,7 @@ from n2y.notion import Client
 
 IMAGE_PATH = None
 IMAGE_WEB_PATH = None
+logger = logging.getLogger(__name__)
 
 
 def load_plugins(filename):
@@ -46,9 +48,11 @@ def load_plugins(filename):
                     and issubclass(class_to_replace, Block):
                 globals()[key] = value
             else:
-                print(f"Cannot import plugin \"{key}\" since it not derrived from a known class.")
+                logger.warning(
+                    'Cannot import plugin "%s" because it is not '
+                    'derrived from a known class.', key)
         else:
-            raise NotImplementedError(f"Unknown plugin type {key}.")
+            raise NotImplementedError(f'Unknown plugin type "{key}".')
 
 
 def load_block(client: Client, id, get_children=True):
@@ -92,7 +96,7 @@ def parse_block(client: Client, block, get_children=True):
         return Equation(client, block, get_children)
     else:
         # TODO: add remaining block types
-        raise NotImplementedError(f"Unknown block type {block['type']}")
+        raise NotImplementedError(f'Unknown block type: "{block["type"]}"')
 
 
 class Block():
