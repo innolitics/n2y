@@ -98,5 +98,5 @@ Before pushing such commits, be sure to update the change log below.
 
 ### v0.2.3
 
-- Skip files with falsey page names.
-- Create shortcut flags for each parser arguement
+- Skip Notion pages with falsey names.
+- Create shortcut flags for each parser arguement.
