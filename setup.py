@@ -11,7 +11,7 @@ description = 'Notion to YAML'
 
 setup(
     name='n2y',
-    version='0.2.1',
+    version='0.2.3',
     description=description,
     long_description=description,
     long_description_content_type='text/x-rst',
