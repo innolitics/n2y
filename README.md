@@ -2,6 +2,12 @@
 
 This commandline tool pulls data from Notion into YAML and markdown.
 
+We use it at [Innolitics](https://innolitics.com) to generate pages in our website using Notion as a content management system.
+
+The goal of the project is to provide a flexible way to export data from Notion into various text formats since Notion's built in Markdown and CSV export options are limited. For example, they don't preserve colors, underlining, and various types of blocks that are present in Notion.
+
+We've evaluated tools like [Super.so](https://super.so), which also let you use Notion as a CMS, but none of them provide enough flexibility for our needs.
+
 ## Installation
 
 ```
@@ -75,3 +81,17 @@ Classes that can be extended (case sensitive):
 - ToDo
 - ToDoItem
 - Toggle
+
+## Releases
+
+Any git commit tagged with a string starting with "v" will automatically be pushed to pypi.
+
+Before pushing such commits, be sure to update the change log below.
+
+## Changelog
+
+### v0.2.2
+
+- Improve logging, including adding arguments to control the verbosity of the output.
+- Fix bug that occurs if Notion has bolded, italic or struckthrough text that includes a space on the ends. When this occured, the generated markdown would not work properly. For example, bolded text could end up producing a list.
+- Ignore the name column argument when generating YAML.
