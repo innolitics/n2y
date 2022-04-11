@@ -24,9 +24,9 @@ def main():
             "Select output type\n"
             "  yaml - log yaml to stdout\n"
             "  markdown - create a markdown file for each page"))
-    parser.add_argument("--image-path", help="Specify path where to save images")
-    parser.add_argument("--image-web-path", help="Web path for images")
-    parser.add_argument("--plugins", help="Plugin file")
+    parser.add_argument("--image-path", '-ip', help="Specify path where to save images")
+    parser.add_argument("--image-web-path", '-iw', help="Web path for images")
+    parser.add_argument("--plugins", '-p', help="Plugin file")
     parser.add_argument(
         "--target", '-t', default='./',
         help="Relative path to target directory")
@@ -114,7 +114,7 @@ def export_markdown(client, raw_rows, options):
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
-        if page_name is not None:
+        if page_name:
             filename = re.sub(r"[\s/,\\]", '_', page_name.lower())
             if filename not in file_names:
                 file_names.append(filename)

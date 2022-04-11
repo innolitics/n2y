@@ -95,3 +95,8 @@ Before pushing such commits, be sure to update the change log below.
 - Improve logging, including adding arguments to control the verbosity of the output.
 - Fix bug that occurs if Notion has bolded, italic or struckthrough text that includes a space on the ends. When this occured, the generated markdown would not work properly. For example, bolded text could end up producing a list.
 - Ignore the name column argument when generating YAML.
+
+### v0.2.3
+
+- Skip Notion pages with falsey names.
+- Create shortcut flags for each parser arguement.
