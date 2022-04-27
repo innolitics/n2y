@@ -101,10 +101,12 @@ def parse_block(client: Client, block, get_children=True):
 
 class Block():
     def __init__(self, client: Client, block, get_children=True):
+        logger.debug("Instatiating %s block", type(self).__name__)
         self.client = client
         # populate attributes
         for key, value in block.items():
             if key != block['type']:
+                logger.debug(" %s: %s", key, repr(value))
                 self.__dict__[key] = value
 
         # append attributes specific to block type
