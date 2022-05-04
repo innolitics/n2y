@@ -17,6 +17,10 @@ AUTH_TOKEN = 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r'
 
 
 def test_simple_database_to_yaml():
+    '''
+    The publically viewable database can be seen here:
+    https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4?v=130ffd3224fd4512871bb45dbceaa7b2
+    '''
     database = '176fa24d4b7f4256877e60a1035b45a4'
     pandoc_path = shutil.which('pandoc')
     assert pandoc_path is not None
