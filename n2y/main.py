@@ -110,6 +110,7 @@ def name_column_valid(raw_rows, name_column):
 
 
 def export_database_as_markdown_files(client, raw_rows, options):
+    os.makedirs(options.output, exist_ok=True)
     file_names = []
     skips = {'empty': 0, 'unnamed': 0, 'duplicate': 0}
     for row in raw_rows:
@@ -126,8 +127,6 @@ def export_database_as_markdown_files(client, raw_rows, options):
                     logger.info('Processing page "%s".', page_name)
 
                     markdown = pandoc_tree_to_markdown(pandoc_output)
-
-                    os.makedirs(options.output, exist_ok=True)
 
                     # sanitize file name just a bit
                     # maybe use python-slugify in the future?
