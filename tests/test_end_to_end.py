@@ -8,6 +8,7 @@ used to create them.
 import shutil
 import os
 import subprocess
+import pytest
 
 import yaml
 try:
@@ -48,6 +49,7 @@ def test_simple_database_to_yaml():
     assert database[0]["content"] is None
 
 
+@pytest.mark.xfail(reason="page export not yet supported")
 def test_simple_page_to_markdown():
     '''
     The page can be seen here:
