@@ -112,51 +112,35 @@ def name_column_valid(raw_rows, name_column):
 def export_database_as_markdown_files(client, raw_rows, options):
     os.makedirs(options.output, exist_ok=True)
     file_names = []
-    skips = {'empty': 0, 'unnamed': 0, 'duplicate': 0}
+    skips = {'unnamed': 0, 'duplicate': 0}
     for row in raw_rows:
         meta = simplify.flatten_database_row(row)
         page_name = meta[options.name_column]
         if page_name:
+            # sanitize file name just a bit
+            # maybe use python-slugify in the future?
             filename = re.sub(r"[\s/,\\]", '_', page_name.lower())
             if filename not in file_names:
                 file_names.append(filename)
 
                 pandoc_output = converter.load_block(client, row['id']).to_pandoc()
-                # do not create markdown pages if there is no page in Notion
-                if pandoc_output:
-                    logger.info('Processing page "%s".', page_name)
+                logger.info('Processing page "%s".', page_name)
 
-                    markdown = pandoc_tree_to_markdown(pandoc_output)
+                markdown = pandoc_tree_to_markdown(pandoc_output)
 
-                    # sanitize file name just a bit
-                    # maybe use python-slugify in the future?
-                    with open(os.path.join(options.output, f"{filename}.md"), 'w') as f:
-                        f.write('---\n')
-                        f.write(yaml.dump(meta))
-                        f.write('---\n\n')
-                        f.write(markdown)
-                else:
-                    logger.debug('Skipping page "%s" because it is empty.', page_name)
-                    skips['empty'] += 1
+                with open(os.path.join(options.output, f"{filename}.md"), 'w') as f:
+                    f.write('---\n')
+                    f.write(yaml.dump(meta))
+                    f.write('---\n\n')
+                    f.write(markdown)
             else:
-                logger.debug(
-                    'Skipping page "%s" because that name has already'
-                    ' been used. Please rename.', page_name)
+                logger.debug('Page name "%s" has been used', page_name)
                 skips['duplicate'] += 1
         else:
-            logger.debug("Skipping page with no name.")
             skips['unnamed'] += 1
-    msg = ""
-    types_skipped = 0
-    prefixes = ("", " & ", ", & ")
-    for key in skips.keys():
-        count = skips[key]
+    for key, count in skips.items():
         if count > 0:
-            msg = msg if key != "duplicate" and types_skipped < 2 else msg.replace(" &", ",")
-            msg += f"{prefixes[types_skipped]}{count} {key}"
-            types_skipped += 1
-
-    msg == "" or logger.info("%s page(s) skipped", msg)
+            logger.info("%d %s page(s) skipped", count, key)
 
 
 def export_database_as_yaml_file(client, raw_rows):
