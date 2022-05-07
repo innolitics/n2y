@@ -19,7 +19,7 @@ class Client:
 
         def depaginator(url):
             while True:
-                data = self._get_database(url, database_id)
+                data = self._get_object(url, database_id, 'database')
                 yield data["results"]
                 if not data["has_more"]:
                     return
@@ -28,16 +28,16 @@ class Client:
 
         return sum(depaginator(starting_url), [])
 
-    def _get_database(self, url, database_id):
+    def _get_object(self, url, object_id, object_type):
         response = requests.post(url, headers=self.headers)
         if response.status_code == 401:
             raise ValueError("The provided API token is invalid")
         if response.status_code == 404:
-            raise ValueError(f"Unable to find database with id '{database_id}'")
+            raise ValueError(f"Unable to find {object_type} with id '{object_id}'")
         if response.status_code == 400:
             raise ValueError("Invalid request")
         if response.status_code != 200:
-            raise ValueError(f"Unable to find database with id '{database_id}'")
+            raise ValueError(f"Unable to find {object_type} with id '{object_id}'")
         return response.json()
 
     # recursively get block children
