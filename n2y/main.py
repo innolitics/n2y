@@ -66,6 +66,13 @@ def main():
 
     # TODO: get database OR page
     raw_rows = client.get_database(object_id)
+
+    # TODO: in the future, determing the natural keys for each row in the
+    # database and calculate them up-front; prune out any pages where the
+    # natural key is empty. Furthermore, add duplicate handling here. Once the
+    # natural key handling is done, there should be no need for the
+    # `name_column_valid` since that will be handled here
+
     if args.output == 'markdown':
         if name_column_valid(raw_rows, args.name_column):
             export_database_as_markdown_files(client, raw_rows, options=args)
