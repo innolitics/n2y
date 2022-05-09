@@ -53,7 +53,6 @@ class Client:
         return sum(depaginator(starting_url), [])
 
     def get_page(self, page_id):
-        # TODO: get page properties and content
         return self._get_url(f"{self.base_url}pages/{page_id}")
 
     def get_block(self, block_id):

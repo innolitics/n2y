@@ -8,14 +8,13 @@ used to create them.
 import sys
 from io import StringIO
 
-import pytest
 import yaml
 try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
 
-from tests.utils import NOTION_ACCESS_TOKEN
+from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 from n2y.main import main
 
 
@@ -66,6 +65,9 @@ def test_all_blocks_page_to_markdown():
     assert "-   List block" in lines
     assert "1.  Number list block" in lines
     # TODO: add more blocks to the document, along with assertions
+
+
+# TODO: Add export database page with content; check for other properties
 
 
 def test_simple_page_to_markdown():
