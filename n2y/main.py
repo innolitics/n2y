@@ -12,7 +12,7 @@ from n2y import converter, notion, simplify
 logger = None
 
 
-def main():
+def main(raw_args, access_token):
     parser = argparse.ArgumentParser(
         description="Move data from Notion into YAML/markdown",
         formatter_class=argparse.RawTextHelpFormatter)
@@ -42,15 +42,14 @@ def main():
             "Database column that will be used to generate the filename "
             "for each row. Column names are normalized to lowercase letters, "
             "numbers, and underscores. Only used when generating markdown."))
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
 
     logging.basicConfig(
         format=args.logging_format, level=logging.__dict__[args.verbosity])
     global logger
     logger = logging.getLogger(__name__)
 
-    ACCESS_TOKEN = os.environ.get('NOTION_ACCESS_TOKEN', None)
-    if ACCESS_TOKEN is None:
+    if access_token is None:
         logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
@@ -62,7 +61,7 @@ def main():
     if args.plugins:
         converter.load_plugins(args.plugins)
 
-    client = notion.Client(ACCESS_TOKEN)
+    client = notion.Client(access_token)
 
     # TODO: get database OR page
     raw_rows = client.get_database(object_id)
@@ -160,10 +159,24 @@ def export_database_as_yaml_file(client, raw_rows):
     print(yaml.dump(result, sort_keys=False))
 
 
+def export_page_as_markdown(client, page):
+    pandoc_output = converter.load_block(client, page['id']).to_pandoc()
+    markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
+    # TODO: Include page properties as YAML front matter (even if it's just the title)
+
+    # For now, print the single page to standard output; eventually we'll need
+    # to re-thing this and likely write the result to a file. This is necessary
+    # if there are sub-pages or sub-databases which would need to go into
+    # separate files.
+    print(markdown)
+
+
 def pandoc_tree_to_markdown(pandoc_tree):
     return pandoc.write(pandoc_tree, format='gfm+tex_math_dollars') \
         .replace('\r\n', '\n')  # Deal with Windows line endings
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    args = sys.argv
+    access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
+    sys.exit(main(args, access_token))

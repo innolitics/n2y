@@ -5,33 +5,27 @@ in the codebase. The login for this throw-away account is in the Innolitics'
 1password "Everyone" vault. If new test pages are added, this will need to be
 used to create them.
 """
-import shutil
-import os
-import subprocess
-import pytest
+import sys
+from io import StringIO
 
+import pytest
 import yaml
 try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
 
+from tests.utils import NOTION_ACCESS_TOKEN
+from n2y.main import main
 
-def run_n2y(arguments, env=None):
-    if env is None:
-        env = {}
-    pandoc_path = shutil.which('pandoc')
-    assert pandoc_path is not None
-    default_env = {
-        # This is not a security risk because the integration token that
-        # provides read-only access to public notion pages in a throw-away
-        # notion account.
-        "NOTION_ACCESS_TOKEN": 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r',
-        "PATH": os.path.dirname(pandoc_path),  # ensures pandoc can be found
-    }
-    n2y_path = shutil.which('n2y')
-    assert n2y_path is not None
-    return subprocess.check_output([n2y_path, *arguments], env={**default_env, **env})
+
+def run_n2y(arguments):
+    old_stdout = sys.stdout
+    sys.stdout = StringIO()
+    status = main(arguments, NOTION_ACCESS_TOKEN)
+    captured_stdout = sys.stdout.getvalue()
+    sys.stdout = old_stdout
+    return status, captured_stdout
 
 
 def test_simple_database_to_yaml():
@@ -40,8 +34,9 @@ def test_simple_database_to_yaml():
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     '''
     object_id = '176fa24d4b7f4256877e60a1035b45a4'
-    output = run_n2y([object_id, '--output', 'yaml'])
-    unsorted_database = yaml.load(output, Loader=Loader)
+    status, stdoutput = run_n2y([object_id, '--output', 'yaml'])
+    assert status == 0
+    unsorted_database = yaml.load(stdoutput, Loader=Loader)
     database = sorted(unsorted_database, key=lambda row: row["name"])
     assert len(database) == 3
     assert database[0]["name"] == "A"
