@@ -21,7 +21,7 @@ def main(raw_args, access_token):
         "--format", '-f',
         choices=["yaml", "markdown"], default="yaml",
         help=(
-            "Select output type\n"
+            "Select output type (only applies to databases)\n"
             "  yaml - log yaml to stdout\n"
             "  markdown - create a markdown file for each page"))
     parser.add_argument("--image-path", help="Specify path where to save images")
