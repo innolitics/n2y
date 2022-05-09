@@ -21,6 +21,23 @@ class Client:
             "Notion-Version": "2021-08-16",
         }
 
+    def get_page_or_database(self, object_id):
+        """
+        First attempt to get the page corresponding with the object id; if
+        the page doesn't exist, then attempt to retrieve the database. This
+        trial-and-error is necessary because the API doesn't provide a means to
+        determining what type of object corresponds with an ID and we don't want
+        to make the user indicate if they are pulling down a database or a page.
+        """
+        # TODO: Consider having the
+        try:
+            return self.get_page(object_id), "page"
+        except APIResponseError as e:
+            if e.code == APIErrorCode.ObjectNotFound:
+                return self.get_database(object_id), "database"
+            else:
+                raise e
+
     def get_database(self, database_id):
         starting_url = f"{self.base_url}databases/{database_id}/query"
 

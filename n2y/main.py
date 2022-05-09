@@ -63,8 +63,7 @@ def main(raw_args, access_token):
 
     client = notion.Client(access_token)
 
-    # TODO: get database OR page
-    raw_rows = client.get_database(object_id)
+    object_data, object_type = client.get_page_or_database(object_id)
 
     # TODO: in the future, determing the natural keys for each row in the
     # database and calculate them up-front; prune out any pages where the
@@ -72,13 +71,15 @@ def main(raw_args, access_token):
     # natural key handling is done, there should be no need for the
     # `name_column_valid` since that will be handled here
 
-    if args.output == 'markdown':
-        if name_column_valid(raw_rows, args.name_column):
-            export_database_as_markdown_files(client, raw_rows, options=args)
+    if object_type == "database" and args.output == 'markdown':
+        if name_column_valid(object_data, args.name_column):
+            export_database_as_markdown_files(client, object_data, options=args)
         else:
             return 1
-    elif args.output == 'yaml':
-        export_database_as_yaml_file(client, raw_rows)
+    elif object_type == "database" and args.output == 'yaml':
+        export_database_as_yaml_file(client, object_data)
+    elif object_type == "page":
+        export_page_as_markdown(client, object_data)
 
     return 0
 

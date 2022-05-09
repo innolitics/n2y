@@ -44,19 +44,36 @@ def test_simple_database_to_yaml():
     assert database[0]["content"] is None
 
 
-@pytest.mark.xfail(reason="page export not yet supported")
-def test_simple_page_to_markdown():
+# TODO: add database to files
+
+
+def test_all_blocks_page_to_markdown():
     '''
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Test-Page-5f18c7d7eda44986ae7d938a12817cc0
     '''
     object_id = '5f18c7d7eda44986ae7d938a12817cc0'
-    document_as_markdown = run_n2y([object_id])
-    assert "Text block" in document_as_markdown
-    assert "- [ ] To do list block" in document_as_markdown
-    assert "# Heading 1" in document_as_markdown
-    assert "## Heading 2" in document_as_markdown
-    assert "### Heading 3" in document_as_markdown
-    assert "- List block" in document_as_markdown
-    assert "1. Number list block" in document_as_markdown
+    status, document_as_markdown = run_n2y([object_id])
+    lines = document_as_markdown.split('\n')
+
+    # TODO: look into why there's extra space in between the list entries
+    assert status == 0
+    assert "Text block" in lines
+    assert "-   [ ] To do list block" in lines
+    assert "# Heading 1" in lines
+    assert "## Heading 2" in lines
+    assert "### Heading 3" in lines
+    assert "-   List block" in lines
+    assert "1.  Number list block" in lines
     # TODO: add more blocks to the document, along with assertions
+
+
+def test_simple_page_to_markdown():
+    '''
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/Simple-Test-Page-6670dc17a7bc4426b91bca4cf3ac5623
+    '''
+    object_id = '6670dc17a7bc4426b91bca4cf3ac5623'
+    status, document_as_markdown = run_n2y([object_id])
+    assert status == 0
+    assert "Page content" in document_as_markdown
