@@ -6,6 +6,7 @@ in the codebase. The login for this throw-away account is in the Innolitics'
 used to create them.
 """
 import sys
+import os.path
 from io import StringIO
 
 import yaml
@@ -43,17 +44,19 @@ def test_simple_database_to_yaml():
     assert database[0]["content"] is None
 
 
-# TODO: add database to files
+# TODO: add test that dumps a database into a set of markdown files
 
 
-def test_all_blocks_page_to_markdown():
+def test_all_blocks_page_to_markdown(tmp_path):
     '''
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Test-Page-5f18c7d7eda44986ae7d938a12817cc0
     '''
     object_id = '5f18c7d7eda44986ae7d938a12817cc0'
-    status, document_as_markdown = run_n2y([object_id])
+    status, document_as_markdown = run_n2y([object_id, '--image-path', str(tmp_path)])
     lines = document_as_markdown.split('\n')
+    #metadata = parse_yaml_front_matter(document_as_markdown)
+    #assert metadata['Title'] == 'All Blocks Test Page'
 
     # TODO: look into why there's extra space in between the list entries
     assert status == 0
@@ -66,8 +69,27 @@ def test_all_blocks_page_to_markdown():
     assert "1.  Number list block" in lines
     # TODO: add more blocks to the document, along with assertions
 
+    # "Unknown.jpeg" is a file block in the Notion page
+    assert os.path.exists(tmp_path / "Unknown.jpeg")
 
-# TODO: Add export database page with content; check for other properties
+
+def test_page_in_database_to_markdown():
+    '''
+    This test exports a single page, or "row", that is in a database. Unlike
+    pages that are not in a databe, who only have a single "Title" property,
+    pages in a database will have properties for all of the "columns" in that
+    database.
+
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/C-7e967a44893f4b25917965896e81c137
+    '''
+    object_id = '7e967a44893f4b25917965896e81c137'
+    _, document_as_markdown = run_n2y([object_id])
+    lines = document_as_markdown.split('\n')
+    metadata = parse_yaml_front_matter(document_as_markdown)
+    assert metadata['Title'] == 'C'
+    assert metadata['Tags'] == ['d', 'a', 'b', 'c']
+    assert 'Has some basic content' in lines
 
 
 def test_simple_page_to_markdown():
