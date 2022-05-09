@@ -1,7 +1,14 @@
 """
 Grabbing data from the Notion API
 """
+import logging
+
 import requests
+
+from .errors import HTTPResponseError, APIResponseError, is_api_error_code, APIErrorCode
+
+
+logger = logging.getLogger(__name__)
 
 
 class Client:
@@ -19,7 +26,7 @@ class Client:
 
         def depaginator(url):
             while True:
-                data = self._get_object(url, database_id, 'database')
+                data = self._post_url(url)
                 yield data["results"]
                 if not data["has_more"]:
                     return
@@ -28,20 +35,17 @@ class Client:
 
         return sum(depaginator(starting_url), [])
 
-    def _get_object(self, url, object_id, object_type):
-        response = requests.post(url, headers=self.headers)
-        if response.status_code == 401:
-            raise ValueError("The provided API token is invalid")
-        if response.status_code == 404:
-            raise ValueError(f"Unable to find {object_type} with id '{object_id}'")
-        if response.status_code == 400:
-            raise ValueError("Invalid request")
-        if response.status_code != 200:
-            raise ValueError(f"Unable to find {object_type} with id '{object_id}'")
-        return response.json()
+    def get_page(self, page_id):
+        # TODO: get page properties and content
+        return self._get_url(f"{self.base_url}pages/{page_id}")
 
-    # recursively get block children
+    def get_block(self, block_id):
+        url = f"{self.base_url}blocks/{block_id}"
+        response = requests.get(url, headers=self.headers)
+        return self._parse_response(response)
+
     def get_block_children(self, block_id, recursive=False):
+        """Recursively get block children"""
         starting_url = f"{self.base_url}blocks/{block_id}/children"
 
         # Blocks that may have children.
@@ -63,7 +67,7 @@ class Client:
 
         def depaginator(url):
             while True:
-                data = self._get_block_children(url, block_id)
+                data = self._get_url(url)
                 yield data["results"]
                 if not data["has_more"]:
                     return
@@ -81,36 +85,30 @@ class Client:
 
         return result
 
-    def _get_block_children(self, url, block_id):
+    def _get_url(self, url):
         response = requests.get(url, headers=self.headers)
-        if response.status_code == 401:
-            raise ValueError("The provided API token is invalid")
-        if response.status_code == 404:
-            raise ValueError(f"Unable to find page with id '{block_id}'")
-        if response.status_code == 400:
-            raise ValueError("Invalid request")
-        if response.status_code != 200:
-            raise ValueError(f"Unable to find page with id '{block_id}'")
+        return self._parse_response(response)
 
-        return response.json()
+    def _post_url(self, url):
+        response = requests.post(url, headers=self.headers)
+        return self._parse_response(response)
 
-    def get_page(self, page_id):
-        page = self.get_block_children(page_id)
-        return page
-
-    def get_block(self, block_id):
-        url = f"{self.base_url}blocks/{block_id}"
-        response = requests.get(url, headers=self.headers)
-        if response.status_code == 401:
-            raise ValueError("The provided API token is invalid")
-        if response.status_code == 404:
-            raise ValueError(f"Unable to find block with id '{block_id}'")
-        if response.status_code == 400:
-            raise ValueError("Invalid request")
-        if response.status_code != 200:
-            raise ValueError(f"Unable to find block with id '{block_id}'")
-
-        return response.json()
+    def _parse_response(self, response):
+        """Taken from https://github.com/ramnes/notion-sdk-py"""
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as error:
+            try:
+                body = error.response.json()
+                code = body.get("code")
+            except json.JSONDecodeError:
+                code = None
+            if code and is_api_error_code(code):
+                raise APIResponseError(response, body["message"], code)
+            raise HTTPResponseError(error.response)
+        body = response.json()
+        logger.debug(f"=> %s", body)
+        return body
 
 
 def id_from_share_link(share_link):
