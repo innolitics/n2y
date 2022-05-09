@@ -14,6 +14,7 @@ from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emp
     Caption, Math, InlineMath, DisplayMath
 
 from n2y.notion import Client
+from n2y.simplify import simplify_date
 
 
 # Notes:
@@ -211,12 +212,48 @@ class InlineEquation():
         return [Math(InlineMath(), self.expression)]
 
 
+class Mention():
+    """
+    Just display the name of the mentions; one can imagine various other ways
+    one may want to display these; e.g., using links.
+    """
+
+    def __init__(self, block):
+        for key, value in block.items():
+            self.__dict__[key] = value
+
+    def to_pandoc(self):
+        if self.type == 'user':
+            return [Str(self.user["name"])]
+        if self.type == 'page':
+            # TODO: at least replace with the page title
+            # TODO: incorporate when implementing https://github.com/innolitics/n2y/issues/24
+            page_id = self.page['id']
+            return [Str(f'Link to page "{page_id}"')]
+        if self.type == 'database':
+            # TODO: at least replace with the database title
+            # TODO: incorporate when implementing https://github.com/innolitics/n2y/issues/24
+            database_id = self.database['id']
+            return [Str(f'Link to database "{database_id}"')]
+        if self.type == 'date':
+            return [Str(simplify_date(self.date))]
+        if self.type == 'link_preview':
+            return [Link(
+                ('', [], []),
+                self.plain_text.to_pandoc(),
+                (self.href, ''))]
+        else:
+            raise NotImplementedError(f'Unknown mention type: "{self.type}"')
+
+
 class RichText():
     def __init__(self, block):
         handlers = {
             'annotations': Annotations,
             'plain_text': PlainText,
-            'equation': InlineEquation}
+            'equation': InlineEquation,
+            'mention': Mention,
+        }
         for key, value in block.items():
             if key in handlers.keys():
                 self.__dict__[key] = handlers[key](value)
@@ -239,13 +276,14 @@ class RichText():
                 return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
         elif self.type == 'equation':
             return self.equation.to_pandoc()
+        elif self.type == 'mention':
+            return self.mention.to_pandoc()
         else:
-            raise NotImplementedError(f"Unknown rich text object type: {self.type}")
+            raise NotImplementedError(f'Unknown rich text object type: "{self.type}"')
 
 
 class RichTextArray():
     def __init__(self, text):
-
         self.text = [RichText(i) for i in text]
 
     def to_pandoc(self):
