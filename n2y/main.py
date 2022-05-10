@@ -169,7 +169,7 @@ def export_page_as_markdown(client, page):
     metadata = property_values.flatten_property_values(page)
 
     # For now, print the single page to standard output; eventually we'll need
-    # to re-thing this and likely write the result to a file. This is necessary
+    # to re-think this and likely write the result to a file. This is necessary
     # if there are sub-pages or sub-databases which would need to go into
     # separate files.
     write_yaml_frontmatter(sys.stdout, metadata)

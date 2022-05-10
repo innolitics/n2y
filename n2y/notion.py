@@ -9,7 +9,7 @@ from urllib.parse import urlparse, urljoin
 
 import requests
 
-from .errors import HTTPResponseError, APIResponseError, is_api_error_code, APIErrorCode
+from n2y.errors import HTTPResponseError, APIResponseError, is_api_error_code, APIErrorCode
 
 
 logger = logging.getLogger(__name__)
