@@ -24,8 +24,9 @@ def main(raw_args, access_token):
             "Select output type (only applies to databases)\n"
             "  yaml - log yaml to stdout\n"
             "  markdown - create a markdown file for each page"))
-    parser.add_argument("--image-path", help="Specify path where to save images")
-    parser.add_argument("--image-web-path", help="Web path for images")
+    parser.add_argument(
+        "--media-root", help="Filesystem path to directory where images and media are saved")
+    parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
     parser.add_argument("--plugins", '-p', help="Plugin file")
     parser.add_argument(
         "--output", '-o', default='./',
@@ -54,14 +55,11 @@ def main(raw_args, access_token):
         return 1
 
     object_id = notion.id_from_share_link(args.object_id)
-    if not args.image_path:
-        args.image_path = args.output
-    converter.IMAGE_PATH = args.image_path
-    converter.IMAGE_WEB_PATH = args.image_web_path
+    media_root = args.media_root or args.output
     if args.plugins:
         converter.load_plugins(args.plugins)
 
-    client = notion.Client(access_token)
+    client = notion.Client(access_token, media_root, args.media_url)
 
     object_data, object_type = client.get_page_or_database(object_id)
 

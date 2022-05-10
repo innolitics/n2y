@@ -1,10 +1,7 @@
 import logging
 import importlib.util
-from os import path, makedirs
+from os import path
 
-import requests
-from shutil import copyfileobj
-from urllib.parse import urlparse
 from pandoc.types import Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
     HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody, \
     TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
@@ -27,8 +24,6 @@ from n2y.rich_text import RichTextArray
 #   numbered_list - Notion has numbered_list_item, but no enclusing container
 
 
-IMAGE_PATH = None
-IMAGE_WEB_PATH = None
 logger = logging.getLogger(__name__)
 
 
@@ -97,7 +92,7 @@ def parse_block(client: Client, block, get_children=True):
         raise NotImplementedError(f'Unknown block type: "{block["type"]}"')
 
 
-class Block():
+class Block:
     def __init__(self, client: Client, block, get_children=True):
         logger.debug("Instatiating %s block", type(self).__name__)
         self.client = client
@@ -300,7 +295,7 @@ class Quote(Block):
 class ImageBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.file = File(block['image'])
+        self.file = File(client, block['image'])
 
     def to_pandoc(self):
         url = None
@@ -310,34 +305,6 @@ class ImageBlock(Block):
             url = self.file.download()
         caption = RichTextArray(self.caption)
         return Para([Image(('', [], []), caption.to_pandoc(), (url, ''))])
-
-
-class File():
-    def __init__(self, obj):
-        if obj['type'] == "file":
-            self.type = "file"
-            self.url = obj['file']['url']
-            self.expiry_time = obj['file']['expiry_time']
-        elif obj['type'] == "external":
-            self.type = "external"
-            self.url = obj['external']['url']
-
-    def download(self):
-        # TODO: append created time as hex to end of file to prevent collisions?
-        if IMAGE_PATH and not path.exists(IMAGE_PATH):
-            makedirs(IMAGE_PATH)
-        parsed_url = urlparse(self.url)
-        if IMAGE_PATH:
-            local_filename = path.join(IMAGE_PATH, path.basename(parsed_url.path))
-        else:
-            local_filename = path.basename(parsed_url.path)
-        with requests.get(self.url, stream=True) as request_stream:
-            with open(local_filename, 'wb') as file_stream:
-                copyfileobj(request_stream.raw, file_stream)
-                if IMAGE_WEB_PATH:
-                    return IMAGE_WEB_PATH + path.basename(parsed_url.path)
-                else:
-                    return path.basename(parsed_url.path)
 
 
 class TableBlock(Block):
@@ -390,3 +357,22 @@ class Toggle(Block):
         content.extend(children)
         output = BulletList([content])
         return output
+
+
+class File:
+    """
+    See https://developers.notion.com/reference/file-object
+    """
+
+    def __init__(self, client: Client, obj):
+        self.client = client
+        if obj['type'] == "file":
+            self.type = "file"
+            self.url = obj['file']['url']
+            self.expiry_time = obj['file']['expiry_time']
+        elif obj['type'] == "external":
+            self.type = "external"
+            self.url = obj['external']['url']
+
+    def download(self):
+        return self.client.download_file(self.url)

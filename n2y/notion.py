@@ -2,6 +2,9 @@
 Grabbing data from the Notion API
 """
 import logging
+from os import path, makedirs
+from shutil import copyfileobj
+from urllib.parse import urlparse, urljoin
 
 import requests
 
@@ -12,8 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class Client:
-    def __init__(self, access_token):
+    def __init__(self, access_token, media_root='.', media_url=''):
         self.access_token = access_token
+        self.media_root = media_root
+        self.media_url = media_url
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -122,6 +127,16 @@ class Client:
         body = response.json()
         logger.debug(f"=> %s", body)
         return body
+
+    def download_file(self, url):
+        # TODO: append created time as hex to end of file to prevent collisions?
+        makedirs(self.media_root, exist_ok=True)
+        url_path = path.basename(urlparse(url).path)
+        local_filename = path.join(self.media_root, url_path)
+        with requests.get(url, stream=True) as request_stream:
+            with open(local_filename, 'wb') as file_stream:
+                copyfileobj(request_stream.raw, file_stream)
+        return urljoin(self.media_url, url_path)
 
 
 def id_from_share_link(share_link):

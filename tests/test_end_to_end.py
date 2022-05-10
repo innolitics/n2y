@@ -53,7 +53,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     https://fresh-pencil-9f3.notion.site/Test-Page-5f18c7d7eda44986ae7d938a12817cc0
     '''
     object_id = '5f18c7d7eda44986ae7d938a12817cc0'
-    status, document_as_markdown = run_n2y([object_id, '--image-path', str(tmp_path)])
+    status, document_as_markdown = run_n2y([object_id, '--media-root', str(tmp_path)])
     lines = document_as_markdown.split('\n')
     #metadata = parse_yaml_front_matter(document_as_markdown)
     #assert metadata['Title'] == 'All Blocks Test Page'
