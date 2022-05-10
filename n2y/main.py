@@ -7,7 +7,7 @@ import argparse
 import yaml
 import pandoc
 
-from n2y import converter, notion, property_values
+from n2y import blocks, notion, property_values
 
 logger = None
 
@@ -57,7 +57,7 @@ def main(raw_args, access_token):
     object_id = notion.id_from_share_link(args.object_id)
     media_root = args.media_root or args.output
     if args.plugins:
-        converter.load_plugins(args.plugins)
+        blocks.load_plugins(args.plugins)
 
     client = notion.Client(access_token, media_root, args.media_url)
 
@@ -128,7 +128,7 @@ def export_database_as_markdown_files(client, raw_rows, options):
             if filename not in file_names:
                 file_names.append(filename)
 
-                pandoc_output = converter.load_block(client, row['id']).to_pandoc()
+                pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
                 logger.info('Processing page "%s".', page_name)
 
                 markdown = pandoc_tree_to_markdown(pandoc_output)
@@ -151,7 +151,7 @@ def export_database_as_markdown_files(client, raw_rows, options):
 def export_database_as_yaml_file(client, raw_rows):
     result = []
     for row in raw_rows:
-        pandoc_output = converter.load_block(client, row['id']).to_pandoc()
+        pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
         markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
         result.append({**property_values.flatten_database_row(row), 'content': markdown})
 
@@ -159,7 +159,7 @@ def export_database_as_yaml_file(client, raw_rows):
 
 
 def export_page_as_markdown(client, page):
-    pandoc_output = converter.load_block(client, page['id']).to_pandoc()
+    pandoc_output = blocks.load_block(client, page['id']).to_pandoc()
     markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
     # TODO: Include page properties as YAML front matter (even if it's just the title)
 
