@@ -37,10 +37,10 @@ def test_simple_database_to_yaml():
     status, stdoutput = run_n2y([object_id, '--output', 'yaml'])
     assert status == 0
     unsorted_database = yaml.load(stdoutput, Loader=Loader)
-    database = sorted(unsorted_database, key=lambda row: row["name"])
+    database = sorted(unsorted_database, key=lambda row: row["Name"])
     assert len(database) == 3
-    assert database[0]["name"] == "A"
-    assert database[0]["tags"] == ["a", "b"]
+    assert database[0]["Name"] == "A"
+    assert database[0]["Tags"] == ["a", "b"]
     assert database[0]["content"] is None
 
 
@@ -55,8 +55,8 @@ def test_all_blocks_page_to_markdown(tmp_path):
     object_id = '5f18c7d7eda44986ae7d938a12817cc0'
     status, document_as_markdown = run_n2y([object_id, '--media-root', str(tmp_path)])
     lines = document_as_markdown.split('\n')
-    #metadata = parse_yaml_front_matter(document_as_markdown)
-    #assert metadata['Title'] == 'All Blocks Test Page'
+    metadata = parse_yaml_front_matter(document_as_markdown)
+    assert metadata['title'] == 'All Blocks Test Page'
 
     # TODO: look into why there's extra space in between the list entries
     assert status == 0
@@ -87,8 +87,9 @@ def test_page_in_database_to_markdown():
     _, document_as_markdown = run_n2y([object_id])
     lines = document_as_markdown.split('\n')
     metadata = parse_yaml_front_matter(document_as_markdown)
-    assert metadata['Title'] == 'C'
+    assert metadata['Name'] == 'C'
     assert metadata['Tags'] == ['d', 'a', 'b', 'c']
+    assert "content" not in metadata
     assert 'Has some basic content' in lines
 
 

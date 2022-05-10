@@ -83,7 +83,7 @@ def main(raw_args, access_token):
 
 
 def name_column_valid(raw_rows, name_column):
-    first_row_flattened = property_values.flatten_database_row(raw_rows[0])
+    first_row_flattened = property_values.flatten_property_values(raw_rows[0])
 
     def available_columns():
         return filter(
@@ -119,7 +119,7 @@ def export_database_as_markdown_files(client, raw_rows, options):
     file_names = []
     skips = {'unnamed': 0, 'duplicate': 0}
     for row in raw_rows:
-        meta = property_values.flatten_database_row(row)
+        meta = property_values.flatten_property_values(row)
         page_name = meta[options.name_column]
         if page_name:
             # sanitize file name just a bit
@@ -134,9 +134,7 @@ def export_database_as_markdown_files(client, raw_rows, options):
                 markdown = pandoc_tree_to_markdown(pandoc_output)
 
                 with open(os.path.join(options.output, f"{filename}.md"), 'w') as f:
-                    f.write('---\n')
-                    f.write(yaml.dump(meta))
-                    f.write('---\n\n')
+                    write_yaml_frontmatter(f, meta)
                     f.write(markdown)
             else:
                 logger.debug('Page name "%s" has been used', page_name)
@@ -148,12 +146,19 @@ def export_database_as_markdown_files(client, raw_rows, options):
             logger.info("%d %s page(s) skipped", count, key)
 
 
+def write_yaml_frontmatter(open_file, metadata):
+    open_file.write('---\n')
+    # TODO: replace with nice clean YAML dumper
+    open_file.write(yaml.dump(metadata))
+    open_file.write('---\n\n')
+
+
 def export_database_as_yaml_file(client, raw_rows):
     result = []
     for row in raw_rows:
         pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
         markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
-        result.append({**property_values.flatten_database_row(row), 'content': markdown})
+        result.append({**property_values.flatten_property_values(row), 'content': markdown})
 
     print(yaml.dump(result, sort_keys=False))
 
@@ -161,12 +166,13 @@ def export_database_as_yaml_file(client, raw_rows):
 def export_page_as_markdown(client, page):
     pandoc_output = blocks.load_block(client, page['id']).to_pandoc()
     markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
-    # TODO: Include page properties as YAML front matter (even if it's just the title)
+    metadata = property_values.flatten_property_values(page)
 
     # For now, print the single page to standard output; eventually we'll need
     # to re-thing this and likely write the result to a file. This is necessary
     # if there are sub-pages or sub-databases which would need to go into
     # separate files.
+    write_yaml_frontmatter(sys.stdout, metadata)
     print(markdown)
 
 

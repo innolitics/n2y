@@ -8,19 +8,14 @@ logger = logging.getLogger(__name__)
 
 
 def flatten_database_rows(raw_rows):
-    return [flatten_database_row(r) for r in raw_rows]
+    return [flatten_property_values(r) for r in raw_rows]
 
 
-def flatten_database_row(raw_data):
+def flatten_property_values(raw_data):
     return {
-        simplify_property_name(k): simplify_property(v)
+        k: simplify_property(v)
         for k, v in raw_data["properties"].items()
     }
-
-
-def simplify_property_name(name):
-    lower = name.lower().replace(" ", "_")
-    return re.sub('[^a-z_0-9]+', '', lower)
 
 
 def simplify_property(prop):
