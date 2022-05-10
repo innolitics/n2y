@@ -50,11 +50,17 @@ n2y PAGE_LINK > page.md
 
 ## Plugins
 
-The default implementation can be extended or replaced with plugins. To specify a plugin add `--plugins path_to_plugin.py` as a command line argument.
+At the core of n2y are a set of python classes that subclass the `Block` class. These classes are responsible for converting the Notion data into pandoc abstract syntax tree objects. We use a python wrapper library that makes it easier to work with pandoc's AST. See [here](https://boisgera.github.io/pandoc/document/) for details. See the [Notion API documentation](https://developers.notion.com/reference/block) for details about their data structures.
 
-**Example plugin file:**
+The default implementation of these block classes can be modified using a plugin system. To create a plugin, follow these steps:
 
-``` python
+1. Create a new Python file.
+2. Subclass the various Block classes and modify the `to_pandoc` methods as desired
+3. Run n2y with the `--plugins` argument pointing to your python module.
+
+### Example Plugin File
+
+```python
 from n2y.converter import ParagraphBlock
 
 
@@ -69,29 +75,33 @@ exports = {
 }
 ```
 
-Classes that can be extended (case sensitive):
+### Default Block Class's
 
-- Bookmark
-- BulletedList
-- BulletedListItem
-- CalloutBlock
-- ChildPageBlock
-- CodeBlockFenced
-- Divider
-- HeadingOne
-- HeadingTwo
-- HeadingThree
-- ImageBlock
-- NumberedList
-- NumberedListItem
-- ParagraphBlock
-- Quote
-- EquationBlock
-- RowBlock
-- TableBlock
-- ToDo
-- ToDoItem
-- Toggle
+Here are the default block classes that can be extended:
+
+| Class Name | Noteworthy Behavior |
+| --- | --- |
+| Bookmark | |
+| BulletedList | |
+| BulletedListItem | |
+| CalloutBlock | The content of the callout block is extracted, but the emoji and background color are ignored. |
+| ChildPageBlock | |
+| CodeBlockFenced | |
+| Divider | |
+| HeadingOne | |
+| HeadingTwo | |
+| HeadingThree | |
+| ImageBlock | Use just the URL for external images; download uploaded images to the `MEDIA_ROOT` and replace with a url relative from `MEDIA_URL`. The "caption" is used for the alt text. |
+| NumberedList | |
+| NumberedListItem | |
+| ParagraphBlock | |
+| Quote | |
+| EquationBlock | Converted to "display math" using LaTeX; see the [pandoc](https://pandoc.org/MANUAL.html#math) documentation. |
+| RowBlock | |
+| TableBlock | |
+| ToDo | |
+| ToDoItem | |
+| Toggle | Convert the toggles into a bulleted list. |
 
 ## Releases
 
