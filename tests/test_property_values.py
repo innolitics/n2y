@@ -1,6 +1,6 @@
 import yaml
 
-from n2y.simplify import flatten_database_row, simplify_property_name, simplify_rich_text
+from n2y.property_values import flatten_property_values, simplify_rich_text
 
 
 def test_flatten_database_rows():
@@ -56,19 +56,7 @@ def test_flatten_database_rows():
         "phone": "555-555-5555",
     }
 
-    assert flatten_database_row(raw) == flattened
-
-
-def test_simplify_property_name_capitals():
-    assert simplify_property_name("Hello World") == "hello_world"
-
-
-def test_simplify_property_name_punctuation():
-    assert simplify_property_name("Misc. Items") == "misc_items"
-
-
-def test_simplify_property_name_numbers():
-    assert simplify_property_name("123 456") == "123_456"
+    assert flatten_property_values(raw) == flattened
 
 
 def test_simplify_rich_text_escape_specials():

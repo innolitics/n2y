@@ -1,12 +1,25 @@
 """
 Grabbing data from the Notion API
 """
+import logging
+import json
+from os import path, makedirs
+from shutil import copyfileobj
+from urllib.parse import urlparse, urljoin
+
 import requests
+
+from n2y.errors import HTTPResponseError, APIResponseError, is_api_error_code, APIErrorCode
+
+
+logger = logging.getLogger(__name__)
 
 
 class Client:
-    def __init__(self, access_token):
+    def __init__(self, access_token, media_root='.', media_url=''):
         self.access_token = access_token
+        self.media_root = media_root
+        self.media_url = media_url
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
@@ -14,12 +27,28 @@ class Client:
             "Notion-Version": "2021-08-16",
         }
 
+    def get_page_or_database(self, object_id):
+        """
+        First attempt to get the page corresponding with the object id; if
+        the page doesn't exist, then attempt to retrieve the database. This
+        trial-and-error is necessary because the API doesn't provide a means to
+        determining what type of object corresponds with an ID and we don't want
+        to make the user indicate if they are pulling down a database or a page.
+        """
+        try:
+            return self.get_page(object_id), "page"
+        except APIResponseError as e:
+            if e.code == APIErrorCode.ObjectNotFound:
+                return self.get_database(object_id), "database"
+            else:
+                raise e
+
     def get_database(self, database_id):
         starting_url = f"{self.base_url}databases/{database_id}/query"
 
         def depaginator(url):
             while True:
-                data = self._get_database(url, database_id)
+                data = self._post_url(url)
                 yield data["results"]
                 if not data["has_more"]:
                     return
@@ -28,20 +57,16 @@ class Client:
 
         return sum(depaginator(starting_url), [])
 
-    def _get_database(self, url, database_id):
-        response = requests.post(url, headers=self.headers)
-        if response.status_code == 401:
-            raise ValueError("The provided API token is invalid")
-        if response.status_code == 404:
-            raise ValueError(f"Unable to find database with id '{database_id}'")
-        if response.status_code == 400:
-            raise ValueError("Invalid request")
-        if response.status_code != 200:
-            raise ValueError(f"Unable to find database with id '{database_id}'")
-        return response.json()
+    def get_page(self, page_id):
+        return self._get_url(f"{self.base_url}pages/{page_id}")
 
-    # recursively get block children
+    def get_block(self, block_id):
+        url = f"{self.base_url}blocks/{block_id}"
+        response = requests.get(url, headers=self.headers)
+        return self._parse_response(response)
+
     def get_block_children(self, block_id, recursive=False):
+        """Recursively get block children"""
         starting_url = f"{self.base_url}blocks/{block_id}/children"
 
         # Blocks that may have children.
@@ -63,7 +88,7 @@ class Client:
 
         def depaginator(url):
             while True:
-                data = self._get_block_children(url, block_id)
+                data = self._get_url(url)
                 yield data["results"]
                 if not data["has_more"]:
                     return
@@ -72,45 +97,47 @@ class Client:
 
         result = sum(depaginator(starting_url), [])
 
-        # recurse for all blocks that have children
         if recursive:
             for item in result:
                 if item['has_children'] and item['type'] in blocks_to_expand:
-                    # populate child objects
                     item['children'] = self.get_block_children(item['id'])
 
         return result
 
-    def _get_block_children(self, url, block_id):
+    def _get_url(self, url):
         response = requests.get(url, headers=self.headers)
-        if response.status_code == 401:
-            raise ValueError("The provided API token is invalid")
-        if response.status_code == 404:
-            raise ValueError(f"Unable to find page with id '{block_id}'")
-        if response.status_code == 400:
-            raise ValueError("Invalid request")
-        if response.status_code != 200:
-            raise ValueError(f"Unable to find page with id '{block_id}'")
+        return self._parse_response(response)
 
-        return response.json()
+    def _post_url(self, url):
+        response = requests.post(url, headers=self.headers)
+        return self._parse_response(response)
 
-    def get_page(self, page_id):
-        page = self.get_block_children(page_id)
-        return page
+    def _parse_response(self, response):
+        """Taken from https://github.com/ramnes/notion-sdk-py"""
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as error:
+            try:
+                body = error.response.json()
+                code = body.get("code")
+            except json.JSONDecodeError:
+                code = None
+            if code and is_api_error_code(code):
+                raise APIResponseError(response, body["message"], code)
+            raise HTTPResponseError(error.response)
+        body = response.json()
+        logger.debug("=> %s", body)
+        return body
 
-    def get_block(self, block_id):
-        url = f"{self.base_url}blocks/{block_id}"
-        response = requests.get(url, headers=self.headers)
-        if response.status_code == 401:
-            raise ValueError("The provided API token is invalid")
-        if response.status_code == 404:
-            raise ValueError(f"Unable to find block with id '{block_id}'")
-        if response.status_code == 400:
-            raise ValueError("Invalid request")
-        if response.status_code != 200:
-            raise ValueError(f"Unable to find block with id '{block_id}'")
-
-        return response.json()
+    def download_file(self, url):
+        # TODO: append created time as hex to end of file to prevent collisions?
+        makedirs(self.media_root, exist_ok=True)
+        url_path = path.basename(urlparse(url).path)
+        local_filename = path.join(self.media_root, url_path)
+        with requests.get(url, stream=True) as request_stream:
+            with open(local_filename, 'wb') as file_stream:
+                copyfileobj(request_stream.raw, file_stream)
+        return urljoin(self.media_url, url_path)
 
 
 def id_from_share_link(share_link):

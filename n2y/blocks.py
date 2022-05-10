@@ -1,25 +1,22 @@
-import re
 import logging
 import importlib.util
-from collections import deque
-from os import path, makedirs
+from os import path
 
-import requests
-from shutil import copyfileobj
-from urllib.parse import urlparse
-from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emph, \
-    Strikeout, Code, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
-    HorizontalRule, BlockQuote, Image, Underline, MetaString, Table, TableHead, TableBody, \
-    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
-    Caption, Math, InlineMath, DisplayMath
+from pandoc.types import (
+    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
+    Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
+    Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
+)
 
 from n2y.notion import Client
+from n2y.rich_text import RichTextArray
 
 
 # Notes:
 # A single Notion block may have multiple lines of text.
-# A page is a block that puts children into "content" attribute.
-# We transform page block to resemble other block types.
+# A page is a block that puts children into its "content" attribute.
+# We transform page blocks into other block types.
 #
 # Pandoc makes each word a block, and spaces are blocks too!
 #
@@ -29,8 +26,6 @@ from n2y.notion import Client
 #   numbered_list - Notion has numbered_list_item, but no enclusing container
 
 
-IMAGE_PATH = None
-IMAGE_WEB_PATH = None
 logger = logging.getLogger(__name__)
 
 
@@ -99,7 +94,7 @@ def parse_block(client: Client, block, get_children=True):
         raise NotImplementedError(f'Unknown block type: "{block["type"]}"')
 
 
-class Block():
+class Block:
     def __init__(self, client: Client, block, get_children=True):
         logger.debug("Instatiating %s block", type(self).__name__)
         self.client = client
@@ -141,115 +136,6 @@ class Block():
                     self.children.append(parse_block(self.client, child, get_children=True))
 
                 previous_child_type = child['type']
-
-
-class PlainText():
-    def __init__(self, text):
-        self.text = text
-
-    def to_pandoc(self):
-        """Tokenize the text"""
-        ast = []
-        match = re.findall(r"( +)|(\S+)|(\n+)|(\t+)", self.text)
-
-        for m in match:
-            space, word, newline, tab = m
-            for _ in range(len(space)):
-                ast.append(Space())
-            if word:
-                ast.append(Str(word))
-            for _ in range(len(newline)):
-                ast.append(SoftBreak())
-            for _ in range(len(tab) * 4):  # 4 spaces per tab
-                ast.append(Space())
-        return ast
-
-
-class Annotations():
-    def __init__(self, block):
-        for key, value in block.items():
-            self.__dict__[key] = value
-
-    def listify(self, obj):
-        return obj if type(obj) == list else [obj]
-
-    def apply_pandoc(self, target):
-        prependages = deque()
-        appendages = deque()
-        problematic_annotations = [
-            self.bold, self.italic, self.strikethrough
-        ]
-
-        if True in problematic_annotations:
-            blank_space = [Space(), SoftBreak()]
-            while target[0] in blank_space:
-                prependages.append(target.pop(0))
-            while target[-1] in blank_space:
-                appendages.appendleft(target.pop(-1))
-
-        result = target
-        if self.code:
-            result = self.listify(Code(("", [], []), result))
-        if self.bold:
-            result = self.listify(Strong(result))
-        if self.italic:
-            result = self.listify(Emph(result))
-        if self.underline:
-            result = self.listify(Underline(result))
-        if self.strikethrough:
-            result = self.listify(Strikeout(result))
-
-        return list(prependages) + result + list(appendages)
-
-
-class InlineEquation():
-    def __init__(self, block):
-        for key, value in block.items():
-            self.__dict__[key] = value
-
-    def to_pandoc(self):
-        return [Math(InlineMath(), self.expression)]
-
-
-class RichText():
-    def __init__(self, block):
-        handlers = {
-            'annotations': Annotations,
-            'plain_text': PlainText,
-            'equation': InlineEquation}
-        for key, value in block.items():
-            if key in handlers.keys():
-                self.__dict__[key] = handlers[key](value)
-            else:
-                self.__dict__[key] = value
-
-    def to_pandoc(self):
-        if self.type == 'text':
-            if self.annotations.code:
-                # Send raw text if it's code.
-                return self.annotations.apply_pandoc(self.plain_text.text)
-            elif 'href' in self.__dict__ and self.href:
-                # links
-                return [Link(
-                    ('', [], []),
-                    self.annotations.apply_pandoc(self.plain_text.to_pandoc()),
-                    (self.href, ''))]
-            else:
-                # regular text
-                return self.annotations.apply_pandoc(self.plain_text.to_pandoc())
-        elif self.type == 'equation':
-            return self.equation.to_pandoc()
-        else:
-            raise NotImplementedError(f"Unknown rich text object type: {self.type}")
-
-
-class RichTextArray():
-    def __init__(self, text):
-
-        self.text = [RichText(i) for i in text]
-
-    def to_pandoc(self):
-        return sum([item.to_pandoc() for item in self.text], [])
 
 
 class ChildPageBlock(Block):
@@ -411,7 +297,7 @@ class Quote(Block):
 class ImageBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.file = File(block['image'])
+        self.file = File(client, block['image'])
 
     def to_pandoc(self):
         url = None
@@ -421,34 +307,6 @@ class ImageBlock(Block):
             url = self.file.download()
         caption = RichTextArray(self.caption)
         return Para([Image(('', [], []), caption.to_pandoc(), (url, ''))])
-
-
-class File():
-    def __init__(self, obj):
-        if obj['type'] == "file":
-            self.type = "file"
-            self.url = obj['file']['url']
-            self.expiry_time = obj['file']['expiry_time']
-        elif obj['type'] == "external":
-            self.type = "external"
-            self.url = obj['external']['url']
-
-    def download(self):
-        # TODO: append created time as hex to end of file to prevent collisions?
-        if IMAGE_PATH and not path.exists(IMAGE_PATH):
-            makedirs(IMAGE_PATH)
-        parsed_url = urlparse(self.url)
-        if IMAGE_PATH:
-            local_filename = path.join(IMAGE_PATH, path.basename(parsed_url.path))
-        else:
-            local_filename = path.basename(parsed_url.path)
-        with requests.get(self.url, stream=True) as request_stream:
-            with open(local_filename, 'wb') as file_stream:
-                copyfileobj(request_stream.raw, file_stream)
-                if IMAGE_WEB_PATH:
-                    return IMAGE_WEB_PATH + path.basename(parsed_url.path)
-                else:
-                    return path.basename(parsed_url.path)
 
 
 class TableBlock(Block):
@@ -501,3 +359,22 @@ class Toggle(Block):
         content.extend(children)
         output = BulletList([content])
         return output
+
+
+class File:
+    """
+    See https://developers.notion.com/reference/file-object
+    """
+
+    def __init__(self, client: Client, obj):
+        self.client = client
+        if obj['type'] == "file":
+            self.type = "file"
+            self.url = obj['file']['url']
+            self.expiry_time = obj['file']['expiry_time']
+        elif obj['type'] == "external":
+            self.type = "external"
+            self.url = obj['external']['url']
+
+    def download(self):
+        return self.client.download_file(self.url)

@@ -7,34 +7,35 @@ import argparse
 import yaml
 import pandoc
 
-from n2y import converter, notion, simplify
+from n2y import blocks, notion, property_values
 
 logger = None
 
 
-def main():
+def main(raw_args, access_token):
     parser = argparse.ArgumentParser(
         description="Move data from Notion into YAML/markdown",
         formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("database", help="The Notion database id or share url")
+    parser.add_argument("object_id", help="The id or url for a Notion database or page")
     parser.add_argument(
-        "--output", '-o',
+        "--format", '-f',
         choices=["yaml", "markdown"], default="yaml",
         help=(
-            "Select output type\n"
+            "Select output type (only applies to databases)\n"
             "  yaml - log yaml to stdout\n"
             "  markdown - create a markdown file for each page"))
-    parser.add_argument("--image-path", '-ip', help="Specify path where to save images")
-    parser.add_argument("--image-web-path", '-iw', help="Web path for images")
+    parser.add_argument(
+        "--media-root", help="Filesystem path to directory where images and media are saved")
+    parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
     parser.add_argument("--plugins", '-p', help="Plugin file")
     parser.add_argument(
-        "--target", '-t', default='./',
-        help="Relative path to target directory")
+        "--output", '-o', default='./',
+        help="Relative path to output directory")
     parser.add_argument(
         "--verbosity", '-v', default='INFO',
         help="Level to set the root logging module to")
     parser.add_argument(
-        "--logging-format", '-f', default='%(asctime)s - %(levelname)s: %(message)s',
+        "--logging-format", default='%(asctime)s - %(levelname)s: %(message)s',
         help="Default format used when logging")
     parser.add_argument(
         "--name-column", '-n', default='title',
@@ -42,42 +43,47 @@ def main():
             "Database column that will be used to generate the filename "
             "for each row. Column names are normalized to lowercase letters, "
             "numbers, and underscores. Only used when generating markdown."))
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
 
     logging.basicConfig(
         format=args.logging_format, level=logging.__dict__[args.verbosity])
     global logger
     logger = logging.getLogger(__name__)
 
-    ACCESS_TOKEN = os.environ.get('NOTION_ACCESS_TOKEN', None)
-    if ACCESS_TOKEN is None:
+    if access_token is None:
         logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
-    database_id = notion.id_from_share_link(args.database)
-    if not args.image_path:
-        args.image_path = args.target
-    converter.IMAGE_PATH = args.image_path
-    converter.IMAGE_WEB_PATH = args.image_web_path
+    object_id = notion.id_from_share_link(args.object_id)
+    media_root = args.media_root or args.output
     if args.plugins:
-        converter.load_plugins(args.plugins)
+        blocks.load_plugins(args.plugins)
 
-    client = notion.Client(ACCESS_TOKEN)
+    client = notion.Client(access_token, media_root, args.media_url)
 
-    raw_rows = client.get_database(database_id)
-    if args.output == 'markdown':
-        if name_column_valid(raw_rows, args.name_column):
-            export_markdown(client, raw_rows, options=args)
+    object_data, object_type = client.get_page_or_database(object_id)
+
+    # TODO: in the future, determing the natural keys for each row in the
+    # database and calculate them up-front; prune out any pages where the
+    # natural key is empty. Furthermore, add duplicate handling here. Once the
+    # natural key handling is done, there should be no need for the
+    # `name_column_valid` since that will be handled here
+
+    if object_type == "database" and args.output == 'markdown':
+        if name_column_valid(object_data, args.name_column):
+            export_database_as_markdown_files(client, object_data, options=args)
         else:
             return 1
-    elif args.output == 'yaml':
-        export_yaml(client, raw_rows)
+    elif object_type == "database" and args.output == 'yaml':
+        export_database_as_yaml_file(client, object_data)
+    elif object_type == "page":
+        export_page_as_markdown(client, object_data)
 
     return 0
 
 
 def name_column_valid(raw_rows, name_column):
-    first_row_flattened = simplify.flatten_database_row(raw_rows[0])
+    first_row_flattened = property_values.flatten_property_values(raw_rows[0])
 
     def available_columns():
         return filter(
@@ -108,66 +114,74 @@ def name_column_valid(raw_rows, name_column):
     return True
 
 
-def export_markdown(client, raw_rows, options):
+def export_database_as_markdown_files(client, raw_rows, options):
+    os.makedirs(options.output, exist_ok=True)
     file_names = []
-    skips = {'empty': 0, 'unnamed': 0, 'duplicate': 0}
+    skips = {'unnamed': 0, 'duplicate': 0}
     for row in raw_rows:
-        meta = simplify.flatten_database_row(row)
+        meta = property_values.flatten_property_values(row)
         page_name = meta[options.name_column]
         if page_name:
+            # sanitize file name just a bit
+            # maybe use python-slugify in the future?
             filename = re.sub(r"[\s/,\\]", '_', page_name.lower())
             if filename not in file_names:
                 file_names.append(filename)
 
-                pandoc_output = converter.load_block(client, row['id']).to_pandoc()
-                # do not create markdown pages if there is no page in Notion
-                if pandoc_output:
-                    logger.info('Processing page "%s".', page_name)
-                    markdown = pandoc.write(pandoc_output, format='gfm+tex_math_dollars') \
-                        .replace('\r\n', '\n')  # Deal with Windows line endings
+                pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
+                logger.info('Processing page "%s".', page_name)
 
-                    os.makedirs(options.target, exist_ok=True)
+                markdown = pandoc_tree_to_markdown(pandoc_output)
 
-                    # sanitize file name just a bit
-                    # maybe use python-slugify in the future?
-                    with open(os.path.join(options.target, f"{filename}.md"), 'w') as f:
-                        f.write('---\n')
-                        f.write(yaml.dump(meta))
-                        f.write('---\n\n')
-                        f.write(markdown)
-                else:
-                    logger.debug('Skipping page "%s" because it is empty.', page_name)
-                    skips['empty'] += 1
+                with open(os.path.join(options.output, f"{filename}.md"), 'w') as f:
+                    write_yaml_frontmatter(f, meta)
+                    f.write(markdown)
             else:
-                logger.debug(
-                    'Skipping page "%s" because that name has already'
-                    ' been used. Please rename.', page_name)
+                logger.debug('Page name "%s" has been used', page_name)
                 skips['duplicate'] += 1
         else:
-            logger.debug("Skipping page with no name.")
             skips['unnamed'] += 1
-    msg = ""
-    types_skipped = 0
-    prefixes = ("", " & ", ", & ")
-    for key in skips.keys():
-        count = skips[key]
+    for key, count in skips.items():
         if count > 0:
-            msg = msg if key != "duplicate" and types_skipped < 2 else msg.replace(" &", ",")
-            msg += f"{prefixes[types_skipped]}{count} {key}"
-            types_skipped += 1
-
-    msg == "" or logger.info("%s page(s) skipped", msg)
+            logger.info("%d %s page(s) skipped", count, key)
 
 
-def export_yaml(client, raw_rows):
+def write_yaml_frontmatter(open_file, metadata):
+    open_file.write('---\n')
+    # TODO: replace with nice clean YAML dumper
+    open_file.write(yaml.dump(metadata))
+    open_file.write('---\n\n')
+
+
+def export_database_as_yaml_file(client, raw_rows):
     result = []
     for row in raw_rows:
-        pandoc_output = converter.load_block(client, row['id']).to_pandoc()
-        markdown = pandoc.write(pandoc_output, format='gfm') if pandoc_output else None
-        result.append({**simplify.flatten_database_row(row), 'content': markdown})
+        pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
+        markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
+        result.append({**property_values.flatten_property_values(row), 'content': markdown})
 
     print(yaml.dump(result, sort_keys=False))
 
 
+def export_page_as_markdown(client, page):
+    pandoc_output = blocks.load_block(client, page['id']).to_pandoc()
+    markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
+    metadata = property_values.flatten_property_values(page)
+
+    # For now, print the single page to standard output; eventually we'll need
+    # to re-think this and likely write the result to a file. This is necessary
+    # if there are sub-pages or sub-databases which would need to go into
+    # separate files.
+    write_yaml_frontmatter(sys.stdout, metadata)
+    print(markdown)
+
+
+def pandoc_tree_to_markdown(pandoc_tree):
+    return pandoc.write(pandoc_tree, format='gfm+tex_math_dollars') \
+        .replace('\r\n', '\n')  # Deal with Windows line endings
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    args = sys.argv
+    access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
+    sys.exit(main(args, access_token))

@@ -1,28 +1,30 @@
 # Notion to YAML
 
-This commandline tool pulls data from Notion into YAML and markdown.
+This commandline tool exports data from selected Notion pages and databases into YAML and markdown files. Internally, it converts the Notion pages into a [Pandoc](https://pandoc.org) AST, which enables fine-grained customization of the conversion process.
 
-We use it at [Innolitics](https://innolitics.com) to generate pages in our website using Notion as a content management system.
-
-The goal of the project is to provide a flexible way to export data from Notion into various text formats since Notion's built in Markdown and CSV export options are limited. For example, they don't preserve colors, underlining, and various types of blocks that are present in Notion.
-
-We've evaluated tools like [Super.so](https://super.so), which also let you use Notion as a CMS, but none of them provide enough flexibility for our needs.
+We use it at [Innolitics](https://innolitics.com) to generate pages for our website, thus allowing us to use Notion as a content management system. We also use it to generate PDFs and Word Documents from Notion pages.
 
 ## Installation
+
+To install the tool, just run:
 
 ```
 pip install n2y
 ```
 
-Install [pandoc](https://github.com/jgm/pandoc/releases/) for your operating system. (Tested with version 2.16.2)
+You'll also need to install [pandoc](https://github.com/jgm/pandoc/releases/). We've tested against version 2.16.2, but any newer versions should work too.
 
 ## Authorization
 
-In notion, go to the "Settings and Members" page. If you're an admin, you should see an "Integrations" option in the side bar. Click the link that says "Develop your own integrations" and follow the instructions on the page. Copy the "Internal Integration Token" into the `NOTION_ACCESS_TOKEN` environment variable.
+Before you'll be able to export any content from your Notion account you'll first need to give n2y permission to access the pages. You'll need to be an admin.
+
+To do this, go to the "Settings and Members" page in Notion. You should see an "Integrations" option in the side bar. Click the link that says "Develop your own integrations" and follow the instructions on the page. Copy the "Internal Integration Token" into the `NOTION_ACCESS_TOKEN` environment variable.
 
 Finally, in Notion you'll need to share the relevant pages with your internal integration---just like you'd share a page with another person.
 
-## Converting a Database to YAML
+## Example Usage
+
+### Convert a Database to YAML
 
 Copy the link for the database you'd like to export to YAML. Note that linked databases aren't supported. Then run:
 
@@ -30,13 +32,21 @@ Copy the link for the database you'd like to export to YAML. Note that linked da
 n2y DATABASE_LINK > database.yml
 ```
 
-## Converting a Database to markdown files
+### Convert a Database to a set of Markdown Files
 
 ```
-n2y -o markdown DATABASE_LINK
+n2y -f markdown DATABASE_LINK
 ```
 
-This process will automatically skip empty pages, pages with duplicate names, and untitled pages.
+This process will automatically skip untitled pages or pages with duplicate names.
+
+### Convert a Page to a Markdown File
+
+If the page is in a database, then it's properties will be included in the YAML front matter. If the page is not in a database, then the title of the page will be included in the YAML front matter.
+
+```
+n2y PAGE_LINK > page.md
+```
 
 ## Plugins
 
@@ -88,15 +98,34 @@ Any git commit tagged with a string starting with "v" will automatically be push
 
 Before pushing such commits, be sure to update the change log below.
 
+## Roadmap
+
+Here are some features we're planning to add in the future:
+
+- Add support for all block types and database property types
+- Add support for exporting sets of related databases
+- Make the plugin system more fully featured and easier to use
+- Add support for recursively dumping sets of pages and preserving links between them
+- Add some sort of Notion API cacheing mechanism
+- Add more examples to the documentation
+- Make it so that plugins and other configuration can be set for only a sub-set
+  of the exported pages, that way multiple configurations can be applied in a
+  single export
+
 ## Changelog
+
+### v0.2.4
+
+- Add support for exporting pages
+- Add basic support for links
+
+### v0.2.3
+
+- Skip Notion pages with falsey names.
+- Create shortcut flags for each parser arguement.
 
 ### v0.2.2
 
 - Improve logging, including adding arguments to control the verbosity of the output.
 - Fix bug that occurs if Notion has bolded, italic or struckthrough text that includes a space on the ends. When this occured, the generated markdown would not work properly. For example, bolded text could end up producing a list.
 - Ignore the name column argument when generating YAML.
-
-### v0.2.3
-
-- Skip Notion pages with falsey names.
-- Create shortcut flags for each parser arguement.
