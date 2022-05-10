@@ -12,6 +12,13 @@ from n2y import blocks, notion, property_values
 logger = None
 
 
+def cli_main():
+    print(sys.argv)
+    args = sys.argv[1:]
+    access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
+    sys.exit(main(args, access_token))
+
+
 def main(raw_args, access_token):
     parser = argparse.ArgumentParser(
         description="Move data from Notion into YAML/markdown",
@@ -182,6 +189,4 @@ def pandoc_tree_to_markdown(pandoc_tree):
 
 
 if __name__ == "__main__":
-    args = sys.argv
-    access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
-    sys.exit(main(args, access_token))
+    cli_main()
