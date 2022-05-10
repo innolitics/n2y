@@ -29,7 +29,6 @@ class Client:
         determining what type of object corresponds with an ID and we don't want
         to make the user indicate if they are pulling down a database or a page.
         """
-        # TODO: Consider having the
         try:
             return self.get_page(object_id), "page"
         except APIResponseError as e:
@@ -92,11 +91,9 @@ class Client:
 
         result = sum(depaginator(starting_url), [])
 
-        # recurse for all blocks that have children
         if recursive:
             for item in result:
                 if item['has_children'] and item['type'] in blocks_to_expand:
-                    # populate child objects
                     item['children'] = self.get_block_children(item['id'])
 
         return result
