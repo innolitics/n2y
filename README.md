@@ -45,7 +45,7 @@ This process will automatically skip untitled pages or pages with duplicate name
 If the page is in a database, then it's properties will be included in the YAML front matter. If the page is not in a database, then the title of the page will be included in the YAML front matter.
 
 ```
-n2y -f markdown PAGE_LINK
+n2y PAGE_LINK > page.md
 ```
 
 ## Plugins
@@ -97,6 +97,20 @@ Classes that can be extended (case sensitive):
 Any git commit tagged with a string starting with "v" will automatically be pushed to pypi.
 
 Before pushing such commits, be sure to update the change log below.
+
+## Roadmap
+
+Here are some features we're planning to add in the future:
+
+- Add support for all block types and database property types
+- Add support for exporting sets of related databases
+- Make the plugin system more fully featured and easier to use
+- Add support for recursively dumping sets of pages and preserving links between them
+- Add some sort of Notion API cacheing mechanism
+- Add more examples to the documentation
+- Make it so that plugins and other configuration can be set for only a sub-set
+  of the exported pages, that way multiple configurations can be applied in a
+  single export
 
 ## Changelog
 
