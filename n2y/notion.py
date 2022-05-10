@@ -2,6 +2,7 @@
 Grabbing data from the Notion API
 """
 import logging
+import json
 from os import path, makedirs
 from shutil import copyfileobj
 from urllib.parse import urlparse, urljoin
@@ -125,7 +126,7 @@ class Client:
                 raise APIResponseError(response, body["message"], code)
             raise HTTPResponseError(error.response)
         body = response.json()
-        logger.debug(f"=> %s", body)
+        logger.debug("=> %s", body)
         return body
 
     def download_file(self, url):

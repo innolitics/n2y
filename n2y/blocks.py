@@ -2,10 +2,12 @@ import logging
 import importlib.util
 from os import path
 
-from pandoc.types import Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link, \
-    HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody, \
-    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault, \
-    Caption, Math, DisplayMath
+from pandoc.types import (
+    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
+    Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
+    Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
+)
 
 from n2y.notion import Client
 from n2y.rich_text import RichTextArray

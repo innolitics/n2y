@@ -2,7 +2,6 @@
 Simplify data that has been returned from the Notion API.
 """
 import logging
-import re
 
 logger = logging.getLogger(__name__)
 
