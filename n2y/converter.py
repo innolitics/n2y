@@ -14,7 +14,7 @@ from pandoc.types import Str, Para, Plain, Space, SoftBreak, Header, Strong, Emp
     Caption, Math, InlineMath, DisplayMath
 
 from n2y.notion import Client
-from n2y.simplify import simplify_date
+from n2y.property_values import simplify_date
 
 
 # Notes:

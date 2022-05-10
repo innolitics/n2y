@@ -7,7 +7,7 @@ import argparse
 import yaml
 import pandoc
 
-from n2y import converter, notion, simplify
+from n2y import converter, notion, property_values
 
 logger = None
 
@@ -85,7 +85,7 @@ def main(raw_args, access_token):
 
 
 def name_column_valid(raw_rows, name_column):
-    first_row_flattened = simplify.flatten_database_row(raw_rows[0])
+    first_row_flattened = property_values.flatten_database_row(raw_rows[0])
 
     def available_columns():
         return filter(
@@ -121,7 +121,7 @@ def export_database_as_markdown_files(client, raw_rows, options):
     file_names = []
     skips = {'unnamed': 0, 'duplicate': 0}
     for row in raw_rows:
-        meta = simplify.flatten_database_row(row)
+        meta = property_values.flatten_database_row(row)
         page_name = meta[options.name_column]
         if page_name:
             # sanitize file name just a bit
@@ -155,7 +155,7 @@ def export_database_as_yaml_file(client, raw_rows):
     for row in raw_rows:
         pandoc_output = converter.load_block(client, row['id']).to_pandoc()
         markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
-        result.append({**simplify.flatten_database_row(row), 'content': markdown})
+        result.append({**property_values.flatten_database_row(row), 'content': markdown})
 
     print(yaml.dump(result, sort_keys=False))
 

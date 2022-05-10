@@ -1,6 +1,6 @@
 import yaml
 
-from n2y.simplify import flatten_database_row, simplify_property_name, simplify_rich_text
+from n2y.property_values import flatten_database_row, simplify_property_name, simplify_rich_text
 
 
 def test_flatten_database_rows():
