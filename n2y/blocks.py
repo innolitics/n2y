@@ -89,6 +89,8 @@ def parse_block(client: Client, block, get_children=True):
         return Toggle(client, block, get_children)
     elif block['type'] == "equation":
         return Equation(client, block, get_children)
+    elif block['type'] == "callout":
+        return CalloutBlock(client, block, get_children)
     else:
         # TODO: add remaining block types
         raise NotImplementedError(f'Unknown block type: "{block["type"]}"')
@@ -167,9 +169,9 @@ class ParagraphBlock(Block):
         if children:
             result = [Para(content)]
             result.extend(children)
-            return result
         else:
-            return Para(content)
+            result = Para(content)
+        return result
 
 
 class BulletedListItem(Block):
@@ -359,6 +361,22 @@ class Toggle(Block):
         content.extend(children)
         output = BulletList([content])
         return output
+
+
+class CalloutBlock(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.text = RichTextArray(self.text)
+
+    def to_pandoc(self):
+        content = self.text.to_pandoc()
+        children = super().to_pandoc()
+        if children:
+            result = [Para(content)]
+            result.extend(children)
+        else:
+            result = Para(content)
+        return result
 
 
 class File:

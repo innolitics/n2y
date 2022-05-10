@@ -74,6 +74,7 @@ Classes that can be extended (case sensitive):
 - Bookmark
 - BulletedList
 - BulletedListItem
+- CalloutBlock
 - ChildPageBlock
 - CodeBlockFenced
 - Divider
@@ -118,6 +119,7 @@ Here are some features we're planning to add in the future:
 
 - Add support for exporting pages
 - Add basic support for links
+- Add support for callout blocks
 
 ### v0.2.3
 

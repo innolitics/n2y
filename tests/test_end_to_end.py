@@ -67,6 +67,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "### Heading 3" in lines
     assert "-   List block" in lines
     assert "1.  Number list block" in lines
+    assert "Callout block" in lines
     # TODO: add more blocks to the document, along with assertions
 
     # "Unknown.jpeg" is a file block in the Notion page
