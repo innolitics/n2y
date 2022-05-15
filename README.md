@@ -91,7 +91,7 @@ Here are the default block classes that can be extended:
 | HeadingOneBlock | |
 | HeadingTwoBlock | |
 | HeadingThreeBlock | |
-| ImageBlock | Use just the URL for external images; download uploaded images to the `MEDIA_ROOT` and replace with a url relative from `MEDIA_URL`. The "caption" is used for the alt text. |
+| ImageBlock | It uses the URL for external images, but downloads uploaded images to the `MEDIA_ROOT` and replaces the path with a relative url based off of `MEDIA_URL`. The "caption" is used for the alt text. |
 | NumberedList | |
 | NumberedListItemBlock | |
 | ParagraphBlock | |
