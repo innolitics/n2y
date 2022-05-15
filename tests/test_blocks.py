@@ -330,3 +330,15 @@ def test_todo():
         '-   [x] Task One\n'
         '-   [ ] Task Two\n'
     )
+
+
+def test_callout():
+    parent = mock_block("callout", {"text": [mock_rich_text("Callout")]}, has_children=True)
+    children = [mock_paragraph_block([("Children", [])])]
+    pandoc_ast, markdown = process_parent_block(parent, children)
+    assert pandoc_ast == [Para([Str('Callout')]), Para([Str('Children')])]
+    assert markdown == (
+        'Callout\n'
+        '\n'
+        'Children\n'
+    )
