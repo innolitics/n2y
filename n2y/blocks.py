@@ -30,6 +30,20 @@ logger = logging.getLogger(__name__)
 
 
 def load_plugins(filename):
+    # TODO: Consider storing the imported classes on the `Client` instance. This
+    # will make it easier to test the plugin system in isolation, since given
+    # that the plugins are globals right now, if we have a test that uses the
+    # plugins it will mutate the global module state. Furthermore, by moving the
+    # plugin block class references onto the `Client` class it will make it
+    # easier to dynamically enable or disable certain plugin classes for certain
+    # notion pages, which is a feature we will likely need in the future.
+
+    # TODO: Make it possible to swap out the RichText classes too
+
+    # TODO: Make it possible to modify the property value code too; note that we
+    # should probably create a hierarchy of classes, similar to how the Block
+    # classes work
+
     abs_path = path.abspath(filename)
     plugin_spec = importlib.util.spec_from_file_location("plugins", abs_path)
     plugin_module = importlib.util.module_from_spec(plugin_spec)
@@ -131,6 +145,11 @@ class Block:
             self.get_children()
 
     def to_pandoc(self):
+        # TODO: remove this default implementation of `to_pandoc`, since it
+        # doesn't appear to ever be used; instead, it seems to be used kind of
+        # like it's a method call, thus the current functionality should
+        # probably be moved into a `children_to_pandoc` method and this can just
+        # raise a `NotImplementedError`
         if self.has_children:
             return [c.to_pandoc() for c in self.children]
 
@@ -138,7 +157,10 @@ class Block:
         # TODO: Consider adding the list containers during the `to_pandoc`
         # stage, instead of the notion data fetching stage, since they are added
         # because pandoc needs them. Doing this should make some things simpler
-        # for plugin authors, since they won't need to learn about these details.
+        # for plugin authors, since they won't need to learn about these
+        # details. Also, it seems like it will remove the need to fill in a
+        # bunch of attributes on `NumberedList`, `BulletedList`, and `ToDoList`
+        # with `None`.
         if self.has_children:
             self.children = []
             previous_child_type = ""
