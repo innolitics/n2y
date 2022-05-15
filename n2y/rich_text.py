@@ -145,7 +145,7 @@ class RichText():
             raise NotImplementedError(f'Unknown rich text object type: "{self.type}"')
 
 
-class RichTextArray():
+class RichTextArray:
     def __init__(self, text):
         self.text = [RichText(i) for i in text]
 

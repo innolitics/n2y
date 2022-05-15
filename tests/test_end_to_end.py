@@ -9,6 +9,7 @@ import sys
 import os.path
 from io import StringIO
 
+import pytest
 import yaml
 try:
     from yaml import CLoader as Loader
@@ -17,6 +18,7 @@ except ImportError:
 
 from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 from n2y.main import main
+from n2y.errors import APIErrorCode, HTTPResponseError
 
 
 def run_n2y(arguments):
@@ -67,7 +69,19 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "### Heading 3" in lines
     assert "-   List block" in lines
     assert "1.  Number list block" in lines
+    assert "-   Toggle list" in lines
+    assert "> Block quote" in lines
+    assert "---" in lines
     assert "Callout block" in lines
+    assert "$$e^{-i\pi} = -1$$" in lines
+    assert "```\nCode Block\n```" in document_as_markdown
+
+    # a bookmark with a caption and without
+    assert "[https://innolitics.com](https://innolitics.com)" in lines
+    assert "[Bookmark caption](https://innolitics.com)" in lines
+
+    # the word "caption" is bolded
+    assert "![Image *caption*](./Unknown.jpeg)" in lines
     # TODO: add more blocks to the document, along with assertions
 
     # "Unknown.jpeg" is a file block in the Notion page
@@ -103,3 +117,10 @@ def test_simple_page_to_markdown():
     status, document_as_markdown = run_n2y([object_id])
     assert status == 0
     assert "Page content" in document_as_markdown
+
+
+def test_missing_object_exception():
+    invalid_page_id = "11111111111111111111111111111111"
+    with pytest.raises(HTTPResponseError) as exinfo:
+        run_n2y([invalid_page_id])
+    assert exinfo.value.code == APIErrorCode.ObjectNotFound

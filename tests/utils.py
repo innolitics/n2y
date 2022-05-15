@@ -21,3 +21,7 @@ def parse_yaml_front_matter(content):
         return yaml.load(yaml_front_matter_str, Loader=Loader)
     else:
         raise ValueError("No YAML front matter found")
+
+
+def newline_lf(input):
+    return input.replace('\r\n', '\n')
