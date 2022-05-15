@@ -81,27 +81,27 @@ Here are the default block classes that can be extended:
 
 | Class Name | Noteworthy Behavior |
 | --- | --- |
-| Bookmark | |
+| BookmarkBlock | |
 | BulletedList | |
-| BulletedListItem | |
+| BulletedListItemBlock | |
 | CalloutBlock | The content of the callout block is extracted, but the emoji and background color are ignored. |
 | ChildPageBlock | |
-| CodeBlockFenced | |
-| Divider | |
-| HeadingOne | |
-| HeadingTwo | |
-| HeadingThree | |
+| FencedCodeBlock | |
+| DividerBlock | |
+| HeadingOneBlock | |
+| HeadingTwoBlock | |
+| HeadingThreeBlock | |
 | ImageBlock | Use just the URL for external images; download uploaded images to the `MEDIA_ROOT` and replace with a url relative from `MEDIA_URL`. The "caption" is used for the alt text. |
 | NumberedList | |
-| NumberedListItem | |
+| NumberedListItemBlock | |
 | ParagraphBlock | |
-| Quote | |
+| QuoteBlock | |
 | EquationBlock | Converted to "display math" using LaTeX; see the [pandoc](https://pandoc.org/MANUAL.html#math) documentation. |
-| RowBlock | |
 | TableBlock | |
-| ToDo | |
-| ToDoItem | |
-| Toggle | Convert the toggles into a bulleted list. |
+| RowBlock | |
+| ToDoList | |
+| ToDoItemBlock | |
+| ToggleBlock | Convert the toggles into a bulleted list. |
 
 ## Releases
 

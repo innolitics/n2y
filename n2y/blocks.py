@@ -66,29 +66,29 @@ def parse_block(client: Client, block, get_children=True):
     elif block['type'] == "paragraph":
         return ParagraphBlock(client, block, get_children)
     elif block['type'] == "heading_1":
-        return HeadingOne(client, block, get_children)
+        return HeadingOneBlock(client, block, get_children)
     elif block['type'] == "heading_2":
-        return HeadingTwo(client, block, get_children)
+        return HeadingTwoBlock(client, block, get_children)
     elif block['type'] == "heading_3":
-        return HeadingThree(client, block, get_children)
+        return HeadingThreeBlock(client, block, get_children)
     elif block['type'] == "divider":
-        return Divider(client, block, get_children)
+        return DividerBlock(client, block, get_children)
     elif block['type'] == "bookmark":
-        return Bookmark(client, block, get_children)
+        return BookmarkBlock(client, block, get_children)
     elif block['type'] == "image":
         return ImageBlock(client, block, get_children)
     elif block['type'] == "code":
-        return CodeBlockFenced(client, block, get_children)
+        return FencedCodeBlock(client, block, get_children)
     elif block['type'] == "quote":
-        return Quote(client, block, get_children)
+        return QuoteBlock(client, block, get_children)
     elif block['type'] == "table":
         return TableBlock(client, block, get_children)
     elif block['type'] == "table_row":
         return RowBlock(client, block, get_children)
     elif block['type'] == "toggle":
-        return Toggle(client, block, get_children)
+        return ToggleBlock(client, block, get_children)
     elif block['type'] == "equation":
-        return Equation(client, block, get_children)
+        return EquationBlock(client, block, get_children)
     elif block['type'] == "callout":
         return CalloutBlock(client, block, get_children)
     else:
@@ -135,6 +135,10 @@ class Block:
             return [c.to_pandoc() for c in self.children]
 
     def get_children(self):
+        # TODO: Consider adding the list containers during the `to_pandoc`
+        # stage, instead of the notion data fetching stage, since they are added
+        # because pandoc needs them. Doing this should make some things simpler
+        # for plugin authors, since they won't need to learn about these details.
         if self.has_children:
             self.children = []
             previous_child_type = ""
@@ -142,15 +146,15 @@ class Block:
                 if child['type'] == "numbered_list_item":
                     if previous_child_type != "numbered_list_item":
                         self.children.append(NumberedList(self.client, {}, get_children=False))
-                    self.children[-1].append(NumberedListItem(self.client, child))
+                    self.children[-1].append(NumberedListItemBlock(self.client, child))
                 elif child['type'] == "bulleted_list_item":
                     if previous_child_type != "bulleted_list_item":
                         self.children.append(BulletedList(self.client, {}, get_children=False))
-                    self.children[-1].append(BulletedListItem(self.client, child))
+                    self.children[-1].append(BulletedListItemBlock(self.client, child))
                 elif child['type'] == "to_do":
                     if previous_child_type != "to_do":
-                        self.children.append(ToDo(self.client, {}, get_children=False))
-                    self.children[-1].append(ToDoItem(self.client, child))
+                        self.children.append(ToDoList(self.client, {}, get_children=False))
+                    self.children[-1].append(ToDoItemBlock(self.client, child))
                 else:
                     self.children.append(parse_block(self.client, child, get_children=True))
 
@@ -166,7 +170,7 @@ class ChildPageBlock(Block):
             return None
 
 
-class Equation(Block):
+class EquationBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
 
@@ -191,7 +195,7 @@ class ParagraphBlock(Block):
         return result
 
 
-class BulletedListItem(Block):
+class BulletedListItemBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.text)
@@ -218,14 +222,14 @@ class BulletedList(Block):
         self.notion_type = "bulleted_list"
         self.items = []
 
-    def append(self, item: BulletedListItem):
+    def append(self, item: BulletedListItemBlock):
         self.items.append(item)
 
     def to_pandoc(self):
         return BulletList([i.to_pandoc() for i in self.items])
 
 
-class ToDoItem(BulletedListItem):
+class ToDoItemBlock(BulletedListItemBlock):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.checked = block['checked']
@@ -236,13 +240,13 @@ class ToDoItem(BulletedListItem):
             self.text.text[0].plain_text.text = '☐ ' + self.text.text[0].plain_text.text
 
 
-class ToDo(BulletedList):
+class ToDoList(BulletedList):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.type = 'to_do_list'
 
 
-class NumberedListItem(Block):
+class NumberedListItemBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.text)
@@ -269,14 +273,14 @@ class NumberedList(Block):
         self.notion_type = "numbered_list"
         self.items = []
 
-    def append(self, item: NumberedListItem):
+    def append(self, item: NumberedListItemBlock):
         self.items.append(item)
 
     def to_pandoc(self):
         return OrderedList((1, Decimal(), Period()), [i.to_pandoc() for i in self.items])
 
 
-class HeadingBase(Block):
+class HeadingBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.text)
@@ -285,24 +289,24 @@ class HeadingBase(Block):
         return Header(self.level, ('', [], []), self.text.to_pandoc())
 
 
-class HeadingOne(HeadingBase):
+class HeadingOneBlock(HeadingBlock):
     level = 1
 
 
-class HeadingTwo(HeadingBase):
+class HeadingTwoBlock(HeadingBlock):
     level = 2
 
 
-class HeadingThree(HeadingBase):
+class HeadingThreeBlock(HeadingBlock):
     level = 3
 
 
-class Divider(Block):
+class DividerBlock(Block):
     def to_pandoc(self):
         return HorizontalRule()
 
 
-class Bookmark(Block):
+class BookmarkBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         # TODO: Move caption processing here
@@ -316,12 +320,12 @@ class Bookmark(Block):
         return Para([Link(('', [], []), caption, (self.url, ''))])
 
 
-class CodeBlockFenced(Block):
+class FencedCodeBlock(Block):
     def to_pandoc(self):
         return CodeBlock(('', [self.language], []), self.text[0]['plain_text'])
 
 
-class Quote(Block):
+class QuoteBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.text)
@@ -389,7 +393,7 @@ class RowBlock(Block):
         return Row(('', [], []), cells)
 
 
-class Toggle(Block):
+class ToggleBlock(Block):
     """
     Generates a bulleted list item with indented children. A plugin may be used
     to add html classes and replicate the interactive behavior found in Notion.
