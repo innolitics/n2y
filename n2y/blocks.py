@@ -218,7 +218,7 @@ class BulletedListItemBlock(ListItemBlock):
 class ToDoListItemBlock(BulletedListItemBlock):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.checked = block['checked']
+        self.checked = self.notion_data['checked']
         if self.checked:
             self.text.items[0].plain_text.text = '☒ ' + self.text.items[0].plain_text.text
         else:
@@ -396,8 +396,8 @@ class CalloutBlock(Block):
 
     def to_pandoc(self):
         content = self.text.to_pandoc()
-        children = self.children_to_pandoc()
-        if children:
+        if self.has_children:
+            children = self.children_to_pandoc()
             result = [Para(content)]
             result.extend(children)
         else:

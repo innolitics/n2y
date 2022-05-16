@@ -313,8 +313,8 @@ def test_todo():
         mock_rich_text("Task List"),
     ]}, has_children=True)
     children = [
-        mock_block("to_do", {"text": [mock_rich_text("Task One")]}, checked=True),
-        mock_block("to_do", {"text": [mock_rich_text("Task Two")]}, checked=False),
+        mock_block("to_do", {"text": [mock_rich_text("Task One")], "checked": True}),
+        mock_block("to_do", {"text": [mock_rich_text("Task Two")], "checked": False}),
     ]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [

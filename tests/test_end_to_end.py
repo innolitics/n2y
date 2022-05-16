@@ -73,15 +73,15 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "> Block quote" in lines
     assert "---" in lines
     assert "Callout block" in lines
-    assert "$$e^{-i\pi} = -1$$" in lines
-    assert "```\nCode Block\n```" in document_as_markdown
+    assert "$e^{-i \\pi} = -1$" in lines
+    assert "``` javascript\nCode Block\n```" in document_as_markdown
 
     # a bookmark with a caption and without
-    assert "[https://innolitics.com](https://innolitics.com)" in lines
+    assert "<https://innolitics.com>" in lines
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "![Image *caption*](./Unknown.jpeg)" in lines
+    assert "![Image **caption**](Unknown.jpeg)" in lines
     # TODO: add more blocks to the document, along with assertions
 
     # "Unknown.jpeg" is a file block in the Notion page
