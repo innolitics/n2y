@@ -82,7 +82,6 @@ Here are the default block classes that can be extended:
 | Class Name | Noteworthy Behavior |
 | --- | --- |
 | BookmarkBlock | |
-| BulletedList | |
 | BulletedListItemBlock | |
 | CalloutBlock | The content of the callout block is extracted, but the emoji and background color are ignored. |
 | ChildPageBlock | |
@@ -92,16 +91,25 @@ Here are the default block classes that can be extended:
 | HeadingTwoBlock | |
 | HeadingThreeBlock | |
 | ImageBlock | It uses the URL for external images, but downloads uploaded images to the `MEDIA_ROOT` and replaces the path with a relative url based off of `MEDIA_URL`. The "caption" is used for the alt text. |
-| NumberedList | |
 | NumberedListItemBlock | |
 | ParagraphBlock | |
 | QuoteBlock | |
 | EquationBlock | Converted to "display math" using LaTeX; see the [pandoc](https://pandoc.org/MANUAL.html#math) documentation. |
 | TableBlock | |
 | RowBlock | |
-| ToDoList | |
 | ToDoItemBlock | |
 | ToggleBlock | Convert the toggles into a bulleted list. |
+
+Most of the Notion blocks can generate their pandoc AST from _only_ their own data. The one exception is the list item blocks; pandoc, unlike Notion, has an encompassing node in the AST for the entire list. The `ListItemBlock.list_to_pandoc` class method is responsible for generating this top-level node.
+
+## Architecture
+
+N2y's architecture is divided into four main steps:
+
+1. Configuration
+2. Retrieve data from Notion (by instantiating the `Block` instances)
+3. Convert to the pandoc AST (by calling `block.to_pandoc()`)
+4. Writing the pandoc AST into markdown or YAML
 
 ## Releases
 

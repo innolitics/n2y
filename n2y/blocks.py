@@ -1,3 +1,4 @@
+from itertools import groupby
 import logging
 import importlib.util
 from os import path
@@ -10,7 +11,7 @@ from pandoc.types import (
 )
 
 from n2y.notion import Client
-from n2y.rich_text import RichTextArray
+from n2y.rich_text import RichText, RichTextArray
 
 
 # Notes:
@@ -87,6 +88,12 @@ def parse_block(client: Client, block, get_children=True):
         return HeadingThreeBlock(client, block, get_children)
     elif block['type'] == "divider":
         return DividerBlock(client, block, get_children)
+    elif block['type'] == "numbered_list_item":
+        return NumberedListItemBlock(client, block, get_children)
+    elif block['type'] == "bulleted_list_item":
+        return BulletedListItemBlock(client, block, get_children)
+    elif block['type'] == "to_do":
+        return ToDoListItemBlock(client, block, get_children)
     elif block['type'] == "bookmark":
         return BookmarkBlock(client, block, get_children)
     elif block['type'] == "image":
@@ -115,7 +122,6 @@ class Block:
         logger.debug("Instantiating %s block", type(self).__name__)
         self.client = client
 
-        # generic block-level attributes
         self.notion_id = block['id']
         self.created_time = block['created_time']
         self.created_by = block['created_by']
@@ -124,69 +130,44 @@ class Block:
         self.has_children = block['has_children']
         self.archived = block['archived']
         self.notion_type = block['type']
+        self.notion_data = block[block['type']]
 
-        # TODO: Consider manually assigning block level properties in each
-        # subclass to make them more explicit; this could be nice since it would
-        # make the properties visible to people reading the code, would make
-        # things easier to update if/when the Notion API changes (since the
-        # errors will be explicit), and will avoid the need to over-ride
-        # properties in subclasses, e.g., things like `self.text =
-        # RichText(self.text)`.
-
-        # block-specific attributes
-        for key, value in block[self.notion_type].items():
-            logger.debug(" %s: %s", key, repr(value))
-            if key not in self.__dict__:
-                self.__dict__[key] = value
-            else:
-                raise ValueError(f'"{key}" exists with value "{self.__dict__[key]}"')
-
-        if get_children:
+        if self.has_children and get_children:
             self.get_children()
 
     def to_pandoc(self):
-        # TODO: remove this default implementation of `to_pandoc`, since it
-        # doesn't appear to ever be used; instead, it seems to be used kind of
-        # like it's a method call, thus the current functionality should
-        # probably be moved into a `children_to_pandoc` method and this can just
-        # raise a `NotImplementedError`
-        if self.has_children:
-            return [c.to_pandoc() for c in self.children]
+        raise NotImplementedError()
+
+    def children_to_pandoc(self):
+        assert self.has_children
+        pandoc_ast = []
+        for block_type, blocks in groupby(self.children, lambda c: type(c)):
+            if issubclass(block_type, ListItemBlock):
+                pandoc_ast.append(block_type.list_to_pandoc(blocks))
+            else:
+                pandoc_ast.extend(b.to_pandoc() for b in blocks)
+        return pandoc_ast
 
     def get_children(self):
-        # TODO: Consider adding the list containers during the `to_pandoc`
-        # stage, instead of the notion data fetching stage, since they are added
-        # because pandoc needs them. Doing this should make some things simpler
-        # for plugin authors, since they won't need to learn about these
-        # details. Also, it seems like it will remove the need to fill in a
-        # bunch of attributes on `NumberedList`, `BulletedList`, and `ToDoList`
-        # with `None`.
-        if self.has_children:
-            self.children = []
-            previous_child_type = ""
-            for child in self.client.get_block_children(self.notion_id, recursive=False):
-                if child['type'] == "numbered_list_item":
-                    if previous_child_type != "numbered_list_item":
-                        self.children.append(NumberedList(self.client, {}, get_children=False))
-                    self.children[-1].append(NumberedListItemBlock(self.client, child))
-                elif child['type'] == "bulleted_list_item":
-                    if previous_child_type != "bulleted_list_item":
-                        self.children.append(BulletedList(self.client, {}, get_children=False))
-                    self.children[-1].append(BulletedListItemBlock(self.client, child))
-                elif child['type'] == "to_do":
-                    if previous_child_type != "to_do":
-                        self.children.append(ToDoList(self.client, {}, get_children=False))
-                    self.children[-1].append(ToDoItemBlock(self.client, child))
-                else:
-                    self.children.append(parse_block(self.client, child, get_children=True))
+        self.children = []
+        for child in self.client.get_block_children(self.notion_id, recursive=False):
+            self.children.append(parse_block(self.client, child, get_children=True))
 
-                previous_child_type = child['type']
+
+class ListItemBlock(Block):
+    @classmethod
+    def list_to_pandoc(klass, items):
+        raise NotImplementedError()
 
 
 class ChildPageBlock(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.title = self.notion_data["title"]
+
     def to_pandoc(self):
         if hasattr(self, 'children'):
-            children = [item.to_pandoc() for item in self.children]
+            children = self.children_to_pandoc()
             return Pandoc(Meta({'title': MetaString(self.title)}), children)
         else:
             return None
@@ -195,117 +176,76 @@ class ChildPageBlock(Block):
 class EquationBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
+        self.expression = self.notion_data["expression"]
 
     def to_pandoc(self):
-        content = [Math(DisplayMath(), self.expression)]
-        return Para(content)
+        return Para([Math(DisplayMath(), self.expression)])
 
 
 class ParagraphBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = RichTextArray(self.text)
+        self.text = RichTextArray(self.notion_data["text"])
 
     def to_pandoc(self):
         content = self.text.to_pandoc()
-        children = super().to_pandoc()
-        if children:
+        if self.has_children:
             result = [Para(content)]
+            children = self.children_to_pandoc()
             result.extend(children)
         else:
             result = Para(content)
         return result
 
 
-class BulletedListItemBlock(Block):
+class BulletedListItemBlock(ListItemBlock):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = RichTextArray(self.text)
+        self.text = RichTextArray(self.notion_data["text"])
 
     def to_pandoc(self):
         content = [Plain(self.text.to_pandoc())]
-        children = super().to_pandoc()
-        if children:
+        if self.has_children:
+            children = self.children_to_pandoc()
             content.extend(children)
         return content
 
-
-class BulletedList(Block):
-    def __init__(self, client: Client, block, get_children=True):
-        self.client = client
-
-        self.notion_id = None
-        self.created_time = None
-        self.created_by = None
-        self.last_edited_time = None
-        self.last_edited_by = None
-        self.has_children = False
-        self.archived = False
-        self.notion_type = "bulleted_list"
-        self.items = []
-
-    def append(self, item: BulletedListItemBlock):
-        self.items.append(item)
-
-    def to_pandoc(self):
-        return BulletList([i.to_pandoc() for i in self.items])
+    @classmethod
+    def list_to_pandoc(klass, blocks):
+        return BulletList([b.to_pandoc() for b in blocks])
 
 
-class ToDoItemBlock(BulletedListItemBlock):
+class ToDoListItemBlock(BulletedListItemBlock):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.checked = block['checked']
-        self.type = 'to_do_list'
         if self.checked:
-            self.text.text[0].plain_text.text = '☒ ' + self.text.text[0].plain_text.text
+            self.text.items[0].plain_text.text = '☒ ' + self.text.items[0].plain_text.text
         else:
-            self.text.text[0].plain_text.text = '☐ ' + self.text.text[0].plain_text.text
+            self.text.items[0].plain_text.text = '☐ ' + self.text.items[0].plain_text.text
 
 
-class ToDoList(BulletedList):
+class NumberedListItemBlock(ListItemBlock):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.type = 'to_do_list'
-
-
-class NumberedListItemBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
-        super().__init__(client, block, get_children)
-        self.text = RichTextArray(self.text)
+        self.text = RichTextArray(self.notion_data['text'])
 
     def to_pandoc(self):
         content = [Plain(self.text.to_pandoc())]
-        children = super().to_pandoc()
-        if children:
+        if self.has_children:
+            children = self.children_to_pandoc()
             content.extend(children)
         return content
 
-
-class NumberedList(Block):
-    def __init__(self, client: Client, block, get_children=True):
-        self.client = client
-
-        self.notion_id = None
-        self.created_time = None
-        self.created_by = None
-        self.last_edited_time = None
-        self.last_edited_by = None
-        self.has_children = False
-        self.archived = False
-        self.notion_type = "numbered_list"
-        self.items = []
-
-    def append(self, item: NumberedListItemBlock):
-        self.items.append(item)
-
-    def to_pandoc(self):
-        return OrderedList((1, Decimal(), Period()), [i.to_pandoc() for i in self.items])
+    @classmethod
+    def list_to_pandoc(klass, blocks):
+        return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in blocks])
 
 
 class HeadingBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = RichTextArray(self.text)
+        self.text = RichTextArray(self.notion_data["text"])
 
     def to_pandoc(self):
         return Header(self.level, ('', [], []), self.text.to_pandoc())
@@ -331,26 +271,34 @@ class DividerBlock(Block):
 class BookmarkBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        # TODO: Move caption processing here
+        self.url = self.notion_data["url"]
+        if self.notion_data["caption"]:
+            self.caption = RichTextArray(self.notion_data["caption"])
+        else:
+            self.caption = None
 
     def to_pandoc(self):
-        caption = None
         if self.caption:
-            caption = RichTextArray(self.caption).to_pandoc()
+            caption_ast = self.caption.to_pandoc()
         else:
-            caption = [Str(self.url)]
-        return Para([Link(('', [], []), caption, (self.url, ''))])
+            caption_ast = [Str(self.url)]
+        return Para([Link(('', [], []), caption_ast, (self.url, ''))])
 
 
 class FencedCodeBlock(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.language = self.notion_data["language"]
+        self.text = RichText(self.notion_data["text"][0])
+
     def to_pandoc(self):
-        return CodeBlock(('', [self.language], []), self.text[0]['plain_text'])
+        return CodeBlock(('', [self.language], []), self.text.plain_text.text)
 
 
 class QuoteBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = RichTextArray(self.text)
+        self.text = RichTextArray(self.notion_data["text"])
 
     def to_pandoc(self):
         return BlockQuote([Para(self.text.to_pandoc())])
@@ -360,7 +308,7 @@ class ImageBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.file = File(client, block['image'])
-        self.caption = RichTextArray(self.caption)
+        self.caption = RichTextArray(self.notion_data["caption"])
 
     def to_pandoc(self):
         url = None
@@ -372,8 +320,14 @@ class ImageBlock(Block):
 
 
 class TableBlock(Block):
+    def __init__(self, client: Client, block, get_children=True):
+        super().__init__(client, block, get_children)
+        self.has_column_header = self.notion_data['has_column_header']
+        self.has_row_header = self.notion_data['has_row_header']
+        self.table_width = self.notion_data['table_width']
+
     def to_pandoc(self):
-        children = super().to_pandoc()
+        children = self.children_to_pandoc()
         # Isolate the header row if it exists
         if self.has_column_header:
             header_rows = [children.pop(0)]
@@ -386,23 +340,25 @@ class TableBlock(Block):
         # Notion does not have cell alignment or width options, sticking with defaults.
         colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(self.table_width)]
         table = Table(
-            ('', [], []),  # attr
-            Caption(None, []),  # caption
+            ('', [], []),
+            Caption(None, []),
             colspec,
-            TableHead(('', [], []), header_rows),  # table header
+            TableHead(('', [], []), header_rows),
             [TableBody(
                 ('', [], []),
                 RowHeadColumns(row_header_columns),
                 [],
-                children)],  # table body
-            TableFoot(('', [], []), []))  # table footer
+                children
+            )],
+            TableFoot(('', [], []), [])
+        )
         return table
 
 
 class RowBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.cells = [RichTextArray(cell) for cell in self.cells]
+        self.cells = [RichTextArray(cell) for cell in self.notion_data["cells"]]
 
     def to_pandoc(self):
         cells = [Cell(
@@ -423,25 +379,24 @@ class ToggleBlock(Block):
 
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = RichTextArray(self.text)
+        self.text = RichTextArray(self.notion_data["text"])
 
     def to_pandoc(self):
         header = self.text.to_pandoc()
-        children = super().to_pandoc()
+        children = self.children_to_pandoc()
         content = [Para(header)]
         content.extend(children)
-        output = BulletList([content])
-        return output
+        return BulletList([content])
 
 
 class CalloutBlock(Block):
     def __init__(self, client: Client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = RichTextArray(self.text)
+        self.text = RichTextArray(self.notion_data["text"])
 
     def to_pandoc(self):
         content = self.text.to_pandoc()
-        children = super().to_pandoc()
+        children = self.children_to_pandoc()
         if children:
             result = [Para(content)]
             result.extend(children)
