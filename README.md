@@ -50,11 +50,17 @@ n2y PAGE_LINK > page.md
 
 ## Plugins
 
-The default implementation can be extended or replaced with plugins. To specify a plugin add `--plugins path_to_plugin.py` as a command line argument.
+At the core of n2y are a set of python classes that subclass the `Block` class. These classes are responsible for converting the Notion data into pandoc abstract syntax tree objects. We use a python wrapper library that makes it easier to work with pandoc's AST. See [here](https://boisgera.github.io/pandoc/document/) for details. See the [Notion API documentation](https://developers.notion.com/reference/block) for details about their data structures.
 
-**Example plugin file:**
+The default implementation of these block classes can be modified using a plugin system. To create a plugin, follow these steps:
 
-``` python
+1. Create a new Python file.
+2. Subclass the various Block classes and modify the `to_pandoc` methods as desired
+3. Run n2y with the `--plugins` argument pointing to your python module.
+
+### Example Plugin File
+
+```python
 from n2y.converter import ParagraphBlock
 
 
@@ -69,28 +75,41 @@ exports = {
 }
 ```
 
-Classes that can be extended (case sensitive):
+### Default Block Class's
 
-- Bookmark
-- BulletedList
-- BulletedListItem
-- ChildPageBlock
-- CodeBlockFenced
-- Divider
-- HeadingOne
-- HeadingTwo
-- HeadingThree
-- ImageBlock
-- NumberedList
-- NumberedListItem
-- ParagraphBlock
-- Quote
-- EquationBlock
-- RowBlock
-- TableBlock
-- ToDo
-- ToDoItem
-- Toggle
+Here are the default block classes that can be extended:
+
+| Class Name | Noteworthy Behavior |
+| --- | --- |
+| BookmarkBlock | |
+| BulletedListItemBlock | |
+| CalloutBlock | The content of the callout block is extracted, but the emoji and background color are ignored. |
+| ChildPageBlock | |
+| FencedCodeBlock | |
+| DividerBlock | |
+| HeadingOneBlock | |
+| HeadingTwoBlock | |
+| HeadingThreeBlock | |
+| ImageBlock | It uses the URL for external images, but downloads uploaded images to the `MEDIA_ROOT` and replaces the path with a relative url based off of `MEDIA_URL`. The "caption" is used for the alt text. |
+| NumberedListItemBlock | |
+| ParagraphBlock | |
+| QuoteBlock | |
+| EquationBlock | Converted to "display math" using LaTeX; see the [pandoc](https://pandoc.org/MANUAL.html#math) documentation. |
+| TableBlock | |
+| RowBlock | |
+| ToDoItemBlock | |
+| ToggleBlock | Convert the toggles into a bulleted list. |
+
+Most of the Notion blocks can generate their pandoc AST from _only_ their own data. The one exception is the list item blocks; pandoc, unlike Notion, has an encompassing node in the AST for the entire list. The `ListItemBlock.list_to_pandoc` class method is responsible for generating this top-level node.
+
+## Architecture
+
+N2y's architecture is divided into four main steps:
+
+1. Configuration
+2. Retrieve data from Notion (by instantiating the `Block` instances)
+3. Convert to the pandoc AST (by calling `block.to_pandoc()`)
+4. Writing the pandoc AST into markdown or YAML
 
 ## Releases
 
@@ -118,6 +137,7 @@ Here are some features we're planning to add in the future:
 
 - Add support for exporting pages
 - Add basic support for links
+- Add support for callout blocks
 
 ### v0.2.3
 

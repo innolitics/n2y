@@ -117,6 +117,7 @@ class RichText():
             'equation': InlineEquation,
             'mention': Mention,
         }
+        # TODO: Replace this loop with explicit attribute setters
         for key, value in block.items():
             if key in handlers.keys():
                 self.__dict__[key] = handlers[key](value)
@@ -145,9 +146,9 @@ class RichText():
             raise NotImplementedError(f'Unknown rich text object type: "{self.type}"')
 
 
-class RichTextArray():
+class RichTextArray:
     def __init__(self, text):
-        self.text = [RichText(i) for i in text]
+        self.items = [RichText(i) for i in text]
 
     def to_pandoc(self):
-        return sum([item.to_pandoc() for item in self.text], [])
+        return sum([item.to_pandoc() for item in self.items], [])
