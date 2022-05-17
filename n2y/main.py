@@ -13,7 +13,6 @@ logger = None
 
 
 def cli_main():
-    print(sys.argv)
     args = sys.argv[1:]
     access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
     sys.exit(main(args, access_token))
@@ -76,12 +75,12 @@ def main(raw_args, access_token):
     # natural key handling is done, there should be no need for the
     # `name_column_valid` since that will be handled here
 
-    if object_type == "database" and args.output == 'markdown':
+    if object_type == "database" and args.format == 'markdown':
         if name_column_valid(object_data, args.name_column):
             export_database_as_markdown_files(client, object_data, options=args)
         else:
             return 1
-    elif object_type == "database" and args.output == 'yaml':
+    elif object_type == "database" and args.format == 'yaml':
         export_database_as_yaml_file(client, object_data)
     elif object_type == "page":
         export_page_as_markdown(client, object_data)

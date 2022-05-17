@@ -93,7 +93,8 @@ class Client:
                 if not data["has_more"]:
                     return
                 else:
-                    url = data["next_cursor"]
+                    cursor = data["next_cursor"]
+                    url = f"{starting_url}?start_cursor={cursor}"
 
         result = sum(depaginator(starting_url), [])
 
