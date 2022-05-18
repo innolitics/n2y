@@ -1,5 +1,7 @@
 # Notion to YAML
 
+[![Test](https://github.com/innolitics/n2y/actions/workflows/tests.yml/badge.svg)](https://github.com/innolitics/n2y/actions/workflows/tests.yml)
+
 This commandline tool exports data from selected Notion pages and databases into YAML and markdown files. Internally, it converts the Notion pages into a [Pandoc](https://pandoc.org) AST, which enables fine-grained customization of the conversion process.
 
 We use it at [Innolitics](https://innolitics.com) to generate pages for our website, thus allowing us to use Notion as a content management system. We also use it to generate PDFs and Word Documents from Notion pages.
