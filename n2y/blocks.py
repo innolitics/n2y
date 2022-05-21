@@ -12,6 +12,7 @@ from pandoc.types import (
 
 from n2y.notion import Client
 from n2y.rich_text import RichText, RichTextArray
+from n2y.file import File
 
 
 # Notes:
@@ -403,22 +404,3 @@ class CalloutBlock(Block):
         else:
             result = Para(content)
         return result
-
-
-class File:
-    """
-    See https://developers.notion.com/reference/file-object
-    """
-
-    def __init__(self, client: Client, obj):
-        self.client = client
-        if obj['type'] == "file":
-            self.type = "file"
-            self.url = obj['file']['url']
-            self.expiry_time = obj['file']['expiry_time']
-        elif obj['type'] == "external":
-            self.type = "external"
-            self.url = obj['external']['url']
-
-    def download(self):
-        return self.client.download_file(self.url)
