@@ -126,9 +126,7 @@ class Client:
             if code and is_api_error_code(code):
                 raise APIResponseError(response, body["message"], code)
             raise HTTPResponseError(error.response)
-        body = response.json()
-        logger.debug("=> %s", body)
-        return body
+        return response.json()
 
     def download_file(self, url):
         # TODO: append created time as hex to end of file to prevent collisions?

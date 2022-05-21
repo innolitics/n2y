@@ -120,7 +120,7 @@ def parse_block(client: Client, block, get_children=True):
 
 class Block:
     def __init__(self, client: Client, block, get_children=True):
-        logger.debug("Instantiating %s block", type(self).__name__)
+        logger.debug('Instantiating "%s" block', type(self).__name__)
         self.client = client
 
         self.notion_id = block['id']
