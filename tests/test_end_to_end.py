@@ -6,7 +6,9 @@ in the codebase. The login for this throw-away account is in the Innolitics'
 used to create them.
 """
 import sys
+from os import listdir
 import os.path
+from os.path import isfile, join
 from io import StringIO
 
 import pytest
@@ -46,7 +48,26 @@ def test_simple_database_to_yaml():
     assert database[0]["content"] is None
 
 
-# TODO: add test that dumps a database into a set of markdown files
+def test_simple_database_to_markdown_files(tmpdir):
+    '''
+    The database can be seen here:
+    https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
+    '''
+    object_id = '176fa24d4b7f4256877e60a1035b45a4'
+    status, _ = run_n2y([
+        object_id,
+        '--format', 'markdown',
+        '--output', str(tmpdir),
+        '--name-column', 'Name',
+    ])
+    assert status == 0
+    generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
+    assert generated_files == {"a.md", "b.md", "c.md"}
+    document_as_markdown = open(join(tmpdir, "a.md"), "r").read()
+    metadata = parse_yaml_front_matter(document_as_markdown)
+    assert metadata["Name"] == "A"
+    assert metadata["Tags"] == ["a", "b"]
+    assert "content" not in metadata
 
 
 def test_all_blocks_page_to_markdown(tmp_path):
