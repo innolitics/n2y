@@ -6,14 +6,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def flatten_database_rows(raw_rows):
-    return [flatten_property_values(r) for r in raw_rows]
+def flatten_pages(notion_pages):
+    return [flatten_property_values(p['properties']) for p in notion_pages]
 
 
-def flatten_property_values(raw_data):
+def flatten_property_values(notion_properties):
     return {
         k: simplify_property(v)
-        for k, v in raw_data["properties"].items()
+        for k, v in notion_properties.items()
     }
 
 

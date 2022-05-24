@@ -10,12 +10,46 @@ from urllib.parse import urlparse, urljoin
 import requests
 
 from n2y.errors import HTTPResponseError, APIResponseError, is_api_error_code, APIErrorCode
+from n2y.page import Page
+from n2y.database import Database
+from n2y import blocks
+
+DEFAULT_BLOCKS = {
+    "child_page": blocks.ChildPageBlock,
+    "paragraph": blocks.ParagraphBlock,
+    "heading_1": blocks.HeadingOneBlock,
+    "heading_2": blocks.HeadingTwoBlock,
+    "heading_3": blocks.HeadingThreeBlock,
+    "divider": blocks.DividerBlock,
+    "numbered_list_item": blocks.NumberedListItemBlock,
+    "bulleted_list_item": blocks.BulletedListItemBlock,
+    "to_do": blocks.ToDoListItemBlock,
+    "bookmark": blocks.BookmarkBlock,
+    "image": blocks.ImageBlock,
+    "code": blocks.FencedCodeBlock,
+    "quote": blocks.QuoteBlock,
+    "table": blocks.TableBlock,
+    "table_row": blocks.RowBlock,
+    "toggle": blocks.ToggleBlock,
+    "equation": blocks.EquationBlock,
+    "callout": blocks.CalloutBlock,
+}
 
 
 logger = logging.getLogger(__name__)
 
 
 class Client:
+    """
+    An instance of the client class has two purposes:
+    1. To store user configuration
+    2. To retrieve data from Notion
+    3. To determine what classes to use to wrap this notion data, based on the configuration
+    4. To act as a shared global store for all of the objects that are pulled
+       from Notion (e.g., there may be a lookup table between notion page IDs and
+       local file names so that links can be translated)
+    """
+
     def __init__(self, access_token, media_root='.', media_url=''):
         self.access_token = access_token
         self.media_root = media_root
@@ -26,6 +60,7 @@ class Client:
             "Content-Type": "application/json",
             "Notion-Version": "2021-08-16",
         }
+        self.block_classes = DEFAULT_BLOCKS
 
     def get_page_or_database(self, object_id):
         """
@@ -36,14 +71,22 @@ class Client:
         to make the user indicate if they are pulling down a database or a page.
         """
         try:
-            return self.get_page(object_id), "page"
+            return self.get_page(object_id)
         except APIResponseError as e:
             if e.code == APIErrorCode.ObjectNotFound:
-                return self.get_database(object_id), "database"
+                return self.get_database(object_id)
             else:
                 raise e
 
-    def get_database(self, database_id):
+    def get_database(self, database_id, parent=None):
+        notion_database = self._get_url(f"{self.base_url}databases/{database_id}")
+        return Database(self, notion_database, parent)
+
+    def get_database_pages(self, database_id, parent):
+        notion_pages = self.get_database_notion_pages(database_id)
+        return [Page(self, np, parent) for np in notion_pages]
+
+    def get_database_notion_pages(self, database_id):
         starting_url = f"{self.base_url}databases/{database_id}/query"
 
         def depaginator(url):
@@ -57,34 +100,33 @@ class Client:
 
         return sum(depaginator(starting_url), [])
 
-    def get_page(self, page_id):
-        return self._get_url(f"{self.base_url}pages/{page_id}")
+    def get_page(self, page_id, parent=None):
+        notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
+        return Page(self, notion_page, parent)
 
-    def get_block(self, block_id):
+    def get_block(self, block_id, get_children=True):
+        notion_block = self.get_notion_block(block_id)
+        return self._wrap_notion_block(notion_block, get_children)
+
+    def _wrap_notion_block(self, notion_block, get_children):
+        notion_block_type = notion_block["type"]
+        block_class = self.block_classes.get(notion_block_type, None)
+        if block_class:
+            return block_class(self, notion_block, get_children)
+        else:
+            raise NotImplementedError(f'Unknown block type: "{notion_block_type}"')
+
+    def get_notion_block(self, block_id):
         url = f"{self.base_url}blocks/{block_id}"
         response = requests.get(url, headers=self.headers)
         return self._parse_response(response)
 
-    def get_block_children(self, block_id, recursive=False):
-        """Recursively get block children"""
-        starting_url = f"{self.base_url}blocks/{block_id}/children"
+    def get_child_blocks(self, block_id, get_children):
+        child_notion_blocks = self.get_child_notion_blocks(block_id)
+        return [self._wrap_notion_block(b, get_children) for b in child_notion_blocks]
 
-        # Blocks that may have children.
-        # https://developers.notion.com/reference/block
-        blocks_to_expand = [
-            "paragraph",
-            "callout",
-            "quote",
-            "bulleted_list_item",
-            "numbered_list_item",
-            "to_do",
-            "toggle",
-            "column_list",
-            "column",
-            "template",
-            "synced_block",
-            "table",
-        ]
+    def get_child_notion_blocks(self, block_id):
+        starting_url = f"{self.base_url}blocks/{block_id}/children"
 
         def depaginator(url):
             while True:
@@ -96,14 +138,7 @@ class Client:
                     cursor = data["next_cursor"]
                     url = f"{starting_url}?start_cursor={cursor}"
 
-        result = sum(depaginator(starting_url), [])
-
-        if recursive:
-            for item in result:
-                if item['has_children'] and item['type'] in blocks_to_expand:
-                    item['children'] = self.get_block_children(item['id'])
-
-        return result
+        return sum(depaginator(starting_url), [])
 
     def _get_url(self, url):
         response = requests.get(url, headers=self.headers)

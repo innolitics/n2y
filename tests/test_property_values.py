@@ -5,43 +5,42 @@ from n2y.property_values import flatten_property_values, simplify_rich_text
 
 def test_flatten_database_rows():
     raw = yaml.safe_load('''
-    properties:
-        url:
-          type: url
-          url: https://example.com
-        number:
-          number: 7
-          type: number
-        email:
-          email: info@innolitics.com
-          type: email
-        bool:
-          checkbox: false
-          type: checkbox
+      url:
+        type: url
+        url: https://example.com
+      number:
+        number: 7
+        type: number
+      email:
+        email: info@innolitics.com
+        type: email
+      bool:
+        checkbox: false
+        type: checkbox
+      people:
         people:
-          people:
-          - name: J. David Giese
-          type: people
+        - name: J. David Giese
+        type: people
+      date:
         date:
-          date:
-            end: null
-            start: '2021-11-04'
-          type: date
-        empty:
-          rich_text: []
-          type: rich_text
+          end: null
+          start: '2021-11-04'
+        type: date
+      empty:
+        rich_text: []
+        type: rich_text
+      title:
+        id: title
         title:
-          id: title
-          title:
-          - plain_text: 'title'
-          type: title
+        - plain_text: 'title'
+        type: title
+      select:
         select:
-          select:
-            name: partial
-          type: select
-        phone:
-          phone_number: 555-555-5555
-          type: phone_number
+          name: partial
+        type: select
+      phone:
+        phone_number: 555-555-5555
+        type: phone_number
     ''')
     flattened = {
         "url": "https://example.com",

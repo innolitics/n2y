@@ -10,7 +10,6 @@ from pandoc.types import (
     ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
 
-from n2y.notion import Client
 from n2y.rich_text import RichText, RichTextArray
 from n2y.file import File
 
@@ -66,60 +65,15 @@ def load_plugins(filename):
             raise NotImplementedError(f'Unknown plugin type "{key}".')
 
 
-def load_block(client: Client, id, get_children=True):
-    block = client.get_block(id)
-    return parse_block(client, block, get_children)
-
-
-# The Notion client object is passed down for the following reasons:
-#   1. Some child objects may be unknown until the block is processed.
-#      Links to other Notion pages are an example.
-#   2. In some cases a block may choose not to get child blocks.
-#      Currently, all blocks load all children.
-def parse_block(client: Client, block, get_children=True):
-    if block['type'] == "child_page":
-        return ChildPageBlock(client, block, get_children)
-    elif block['type'] == "paragraph":
-        return ParagraphBlock(client, block, get_children)
-    elif block['type'] == "heading_1":
-        return HeadingOneBlock(client, block, get_children)
-    elif block['type'] == "heading_2":
-        return HeadingTwoBlock(client, block, get_children)
-    elif block['type'] == "heading_3":
-        return HeadingThreeBlock(client, block, get_children)
-    elif block['type'] == "divider":
-        return DividerBlock(client, block, get_children)
-    elif block['type'] == "numbered_list_item":
-        return NumberedListItemBlock(client, block, get_children)
-    elif block['type'] == "bulleted_list_item":
-        return BulletedListItemBlock(client, block, get_children)
-    elif block['type'] == "to_do":
-        return ToDoListItemBlock(client, block, get_children)
-    elif block['type'] == "bookmark":
-        return BookmarkBlock(client, block, get_children)
-    elif block['type'] == "image":
-        return ImageBlock(client, block, get_children)
-    elif block['type'] == "code":
-        return FencedCodeBlock(client, block, get_children)
-    elif block['type'] == "quote":
-        return QuoteBlock(client, block, get_children)
-    elif block['type'] == "table":
-        return TableBlock(client, block, get_children)
-    elif block['type'] == "table_row":
-        return RowBlock(client, block, get_children)
-    elif block['type'] == "toggle":
-        return ToggleBlock(client, block, get_children)
-    elif block['type'] == "equation":
-        return EquationBlock(client, block, get_children)
-    elif block['type'] == "callout":
-        return CalloutBlock(client, block, get_children)
-    else:
-        # TODO: add remaining block types
-        raise NotImplementedError(f'Unknown block type: "{block["type"]}"')
-
-
 class Block:
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
+        """
+        The Notion client object is passed down for the following reasons:
+        1. Some child objects may be unknown until the block is processed.
+           Links to other Notion pages are an example.
+        2. In some cases a block may choose not to get child blocks.
+           Currently, all blocks load all children.
+        """
         logger.debug('Instantiating "%s" block', type(self).__name__)
         self.client = client
 
@@ -133,8 +87,14 @@ class Block:
         self.notion_type = block['type']
         self.notion_data = block[block['type']]
 
-        if self.has_children and get_children:
-            self.get_children()
+        if get_children:
+            if self.has_children:
+                children = self.client.get_child_blocks(self.notion_id, get_children)
+            else:
+                children = []
+        else:
+            children = None
+        self.children = children
 
     def to_pandoc(self):
         raise NotImplementedError()
@@ -149,11 +109,6 @@ class Block:
                 pandoc_ast.extend(b.to_pandoc() for b in blocks)
         return pandoc_ast
 
-    def get_children(self):
-        self.children = []
-        for child in self.client.get_block_children(self.notion_id, recursive=False):
-            self.children.append(parse_block(self.client, child, get_children=True))
-
 
 class ListItemBlock(Block):
     @classmethod
@@ -162,12 +117,13 @@ class ListItemBlock(Block):
 
 
 class ChildPageBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.title = self.notion_data["title"]
 
     def to_pandoc(self):
-        if hasattr(self, 'children'):
+        assert self.children is not None
+        if self.children:
             children = self.children_to_pandoc()
             return Pandoc(Meta({'title': MetaString(self.title)}), children)
         else:
@@ -175,7 +131,7 @@ class ChildPageBlock(Block):
 
 
 class EquationBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.expression = self.notion_data["expression"]
 
@@ -184,7 +140,7 @@ class EquationBlock(Block):
 
 
 class ParagraphBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.notion_data["text"])
 
@@ -200,7 +156,7 @@ class ParagraphBlock(Block):
 
 
 class BulletedListItemBlock(ListItemBlock):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.notion_data["text"])
 
@@ -217,7 +173,7 @@ class BulletedListItemBlock(ListItemBlock):
 
 
 class ToDoListItemBlock(BulletedListItemBlock):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.checked = self.notion_data['checked']
         if self.checked:
@@ -227,7 +183,7 @@ class ToDoListItemBlock(BulletedListItemBlock):
 
 
 class NumberedListItemBlock(ListItemBlock):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.notion_data['text'])
 
@@ -244,7 +200,7 @@ class NumberedListItemBlock(ListItemBlock):
 
 
 class HeadingBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.notion_data["text"])
 
@@ -270,7 +226,7 @@ class DividerBlock(Block):
 
 
 class BookmarkBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.url = self.notion_data["url"]
         if self.notion_data["caption"]:
@@ -287,7 +243,7 @@ class BookmarkBlock(Block):
 
 
 class FencedCodeBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.language = self.notion_data["language"]
         self.text = RichText(self.notion_data["text"][0])
@@ -297,7 +253,7 @@ class FencedCodeBlock(Block):
 
 
 class QuoteBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.notion_data["text"])
 
@@ -306,7 +262,7 @@ class QuoteBlock(Block):
 
 
 class ImageBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.file = File(client, block['image'])
         self.caption = RichTextArray(self.notion_data["caption"])
@@ -321,7 +277,7 @@ class ImageBlock(Block):
 
 
 class TableBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.has_column_header = self.notion_data['has_column_header']
         self.has_row_header = self.notion_data['has_row_header']
@@ -357,7 +313,7 @@ class TableBlock(Block):
 
 
 class RowBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.cells = [RichTextArray(cell) for cell in self.notion_data["cells"]]
 
@@ -378,7 +334,7 @@ class ToggleBlock(Block):
     to add html classes and replicate the interactive behavior found in Notion.
     """
 
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.notion_data["text"])
 
@@ -391,7 +347,7 @@ class ToggleBlock(Block):
 
 
 class CalloutBlock(Block):
-    def __init__(self, client: Client, block, get_children=True):
+    def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.text = RichTextArray(self.notion_data["text"])
 

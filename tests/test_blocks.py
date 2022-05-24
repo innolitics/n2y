@@ -20,22 +20,22 @@ from tests.notion_mocks import mock_block, mock_file, mock_paragraph_block, mock
 
 
 def process_block(notion_block):
-    with mock.patch.object(notion.Client, 'get_block') as mock_get_block:
-        mock_get_block.return_value = notion_block
+    with mock.patch.object(notion.Client, 'get_notion_block') as mock_get_notion_block:
+        mock_get_notion_block.return_value = notion_block
         client = notion.Client('')
-        n2y_block = blocks.load_block(client, None)
+        n2y_block = client.get_block('unusedid')
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc.write(pandoc_ast, format='gfm+tex_math_dollars')
     return pandoc_ast, newline_lf(markdown)
 
 
-def process_parent_block(notion_block, children_notion_blocks):
-    with mock.patch.object(notion.Client, 'get_block_children') as mock_get_block_children:
-        with mock.patch.object(notion.Client, 'get_block') as mock_get_block:
-            mock_get_block_children.return_value = children_notion_blocks
-            mock_get_block.return_value = notion_block
+def process_parent_block(notion_block, child_notion_blocks):
+    with mock.patch.object(notion.Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
+        with mock.patch.object(notion.Client, 'get_notion_block') as mock_get_notion_block:
+            mock_get_child_notion_blocks.return_value = child_notion_blocks
+            mock_get_notion_block.return_value = notion_block
             client = notion.Client('')
-            n2y_block = blocks.load_block(client, None)
+            n2y_block = client.get_block('unusedid')
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc.write(pandoc_ast, format='gfm+tex_math_dollars')
     return pandoc_ast, newline_lf(markdown)

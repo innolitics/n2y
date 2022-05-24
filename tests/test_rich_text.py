@@ -152,7 +152,7 @@ def test_equation_inline():
         mock_rich_text(') is a very useful one indeed'),
     ]})
 
-    obj = blocks.parse_block(None, input, get_children=False)
+    obj = blocks.ParagraphBlock(None, input, get_children=False)
     pandoc_output = obj.to_pandoc()
     assert pandoc_output == Para([
         Str('Schrödinger'), Space(), Str('Equation'), Space(), Str('('),

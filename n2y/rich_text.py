@@ -1,8 +1,10 @@
 import re
 from collections import deque
 
-from pandoc.types import Str, Space, SoftBreak, Strong, Emph, Strikeout, Code, Link, \
-    Underline, Math, InlineMath
+from pandoc.types import (
+    Str, Space, SoftBreak, Strong, Emph, Strikeout, Code, Link, Underline, Math,
+    InlineMath
+)
 
 from n2y.property_values import simplify_date
 

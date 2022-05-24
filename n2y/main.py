@@ -5,9 +5,10 @@ import logging
 import argparse
 
 import yaml
-import pandoc
 
 from n2y import blocks, notion, property_values
+from n2y.database import Database
+from n2y.page import Page
 
 logger = None
 
@@ -67,7 +68,7 @@ def main(raw_args, access_token):
 
     client = notion.Client(access_token, media_root, args.media_url)
 
-    object_data, object_type = client.get_page_or_database(object_id)
+    node = client.get_page_or_database(object_id)
 
     # TODO: in the future, determing the natural keys for each row in the
     # database and calculate them up-front; prune out any pages where the
@@ -75,21 +76,18 @@ def main(raw_args, access_token):
     # natural key handling is done, there should be no need for the
     # `name_column_valid` since that will be handled here
 
-    if object_type == "database" and args.format == 'markdown':
-        if name_column_valid(object_data, args.name_column):
-            export_database_as_markdown_files(client, object_data, options=args)
-        else:
-            return 1
-    elif object_type == "database" and args.format == 'yaml':
-        export_database_as_yaml_file(client, object_data)
-    elif object_type == "page":
-        export_page_as_markdown(client, object_data)
+    if type(node) == Database and args.format == 'markdown':
+        export_database_as_markdown_files(node, options=args)
+    elif type(node) == Database and args.format == 'yaml':
+        print(node.to_yaml())
+    elif type(node) == Page:
+        print(node.to_markdown())
 
     return 0
 
 
 def name_column_valid(raw_rows, name_column):
-    first_row_flattened = property_values.flatten_property_values(raw_rows[0])
+    first_row_flattened = property_values.flatten_property_values(raw_rows[0]['properties'])
 
     def available_columns():
         return filter(
@@ -120,28 +118,23 @@ def name_column_valid(raw_rows, name_column):
     return True
 
 
-def export_database_as_markdown_files(client, raw_rows, options):
+def export_database_as_markdown_files(database, options):
     os.makedirs(options.output, exist_ok=True)
     file_names = []
     skips = {'unnamed': 0, 'duplicate': 0}
-    for row in raw_rows:
-        meta = property_values.flatten_property_values(row)
+    for page in database.children:
+        meta = page.properties
         page_name = meta[options.name_column]
         if page_name:
+            # TODO: switch to using the database's natural keys as the file names
+
             # sanitize file name just a bit
             # maybe use python-slugify in the future?
             filename = re.sub(r"[\s/,\\]", '_', page_name.lower())
             if filename not in file_names:
                 file_names.append(filename)
-
-                pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
-                logger.info('Processing page "%s".', page_name)
-
-                markdown = pandoc_tree_to_markdown(pandoc_output)
-
                 with open(os.path.join(options.output, f"{filename}.md"), 'w') as f:
-                    write_yaml_frontmatter(f, meta)
-                    f.write(markdown)
+                    f.write(page.to_markdown())
             else:
                 logger.debug('Page name "%s" has been used', page_name)
                 skips['duplicate'] += 1
@@ -150,41 +143,6 @@ def export_database_as_markdown_files(client, raw_rows, options):
     for key, count in skips.items():
         if count > 0:
             logger.info("%d %s page(s) skipped", count, key)
-
-
-def write_yaml_frontmatter(open_file, metadata):
-    open_file.write('---\n')
-    # TODO: replace with nice clean YAML dumper
-    open_file.write(yaml.dump(metadata))
-    open_file.write('---\n\n')
-
-
-def export_database_as_yaml_file(client, raw_rows):
-    result = []
-    for row in raw_rows:
-        pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
-        markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
-        result.append({**property_values.flatten_property_values(row), 'content': markdown})
-
-    print(yaml.dump(result, sort_keys=False))
-
-
-def export_page_as_markdown(client, page):
-    pandoc_output = blocks.load_block(client, page['id']).to_pandoc()
-    markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
-    metadata = property_values.flatten_property_values(page)
-
-    # For now, print the single page to standard output; eventually we'll need
-    # to re-think this and likely write the result to a file. This is necessary
-    # if there are sub-pages or sub-databases which would need to go into
-    # separate files.
-    write_yaml_frontmatter(sys.stdout, metadata)
-    print(markdown)
-
-
-def pandoc_tree_to_markdown(pandoc_tree):
-    return pandoc.write(pandoc_tree, format='gfm+tex_math_dollars') \
-        .replace('\r\n', '\n')  # Deal with Windows line endings
 
 
 if __name__ == "__main__":
