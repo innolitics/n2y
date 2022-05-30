@@ -262,7 +262,7 @@ class QuoteBlock(Block):
 class ImageBlock(Block):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.file = File(client, block['image'])
+        self.file = client.wrap_notion_file(block['image'])
         self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
