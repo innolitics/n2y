@@ -1,7 +1,11 @@
 import pytest
 from n2y import notion
 
-from tests.notion_mocks import mock_formula_property_value, mock_person_user, mock_relation_value, mock_rich_text, mock_property_value, mock_rich_text_array, mock_rollup_property_value, mock_select_option, mock_user
+from tests.notion_mocks import (
+    mock_formula_property_value, mock_person_user, mock_relation_value,
+    mock_rich_text, mock_property_value, mock_rich_text_array,
+    mock_rollup_property_value, mock_select_option, mock_user,
+)
 
 
 def process_property_value(notion_data):
@@ -29,7 +33,7 @@ def test_rich_text_annotated():
 
 def test_number_empty():
     notion_data = mock_property_value('number', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_number_non_empty():
@@ -39,7 +43,7 @@ def test_number_non_empty():
 
 def test_select_empty():
     notion_data = mock_property_value('select', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_select_non_empty():
@@ -62,7 +66,7 @@ def test_multi_select_non_empty():
 
 def test_date_empty():
     notion_data = mock_property_value('date', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_date_start_only():
@@ -96,12 +100,12 @@ def test_people_person_user():
 
 def test_checkbox():
     notion_data = mock_property_value('checkbox', True)
-    assert process_property_value(notion_data) == True
+    assert process_property_value(notion_data)
 
 
 def test_url_empty():
     notion_data = mock_property_value('url', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_url_non_empty():
@@ -111,7 +115,7 @@ def test_url_non_empty():
 
 def test_phone_number_empty():
     notion_data = mock_property_value('phone_number', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_phone_number_non_empty():
@@ -121,7 +125,7 @@ def test_phone_number_non_empty():
 
 def test_email_empty():
     notion_data = mock_property_value('email', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_email_non_empty():
@@ -131,7 +135,7 @@ def test_email_non_empty():
 
 def test_formula_number_empty():
     notion_data = mock_formula_property_value('number', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_formula_number_non_empty():
@@ -141,7 +145,7 @@ def test_formula_number_non_empty():
 
 def test_formula_date_empty():
     notion_data = mock_formula_property_value('date', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 def test_formula_date_start_only():
@@ -169,7 +173,7 @@ def test_relationship_double():
 
 def test_rollup_date_empty():
     notion_data = mock_rollup_property_value('date', None)
-    assert process_property_value(notion_data) == None
+    assert process_property_value(notion_data) is None
 
 
 @pytest.mark.xfail

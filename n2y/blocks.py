@@ -10,9 +10,6 @@ from pandoc.types import (
     ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
 
-from n2y.rich_text import RichText
-from n2y.file import File
-
 
 # Notes:
 # A single Notion block may have multiple lines of text.

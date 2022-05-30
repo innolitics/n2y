@@ -1,10 +1,7 @@
 import os
-import re
 import sys
 import logging
 import argparse
-
-import yaml
 
 from n2y import blocks, notion, property_values
 from n2y.database import Database
@@ -52,7 +49,8 @@ def main(raw_args, access_token):
             "for each row. Column names are normalized to lowercase letters, "
             "numbers, and underscores. Only used when generating markdown."))
 
-    # TODO: Add the ability to dump out a "schema" file that contains the schema for a set of databases
+    # TODO: Add the ability to dump out a "schema" file that contains the schema
+    # for a set of databases
 
     # TODO: Add the ability to export everything as a sqlite file
 

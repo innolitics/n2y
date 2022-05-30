@@ -14,15 +14,16 @@ from pandoc.types import (
     Caption, Math, DisplayMath
 )
 
-from n2y import blocks, notion
+from n2y import file
+from n2y.notion import Client
 from tests.utils import newline_lf
 from tests.notion_mocks import mock_block, mock_file, mock_paragraph_block, mock_rich_text
 
 
 def process_block(notion_block):
-    with mock.patch.object(notion.Client, 'get_notion_block') as mock_get_notion_block:
+    with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
         mock_get_notion_block.return_value = notion_block
-        client = notion.Client('')
+        client = Client('')
         n2y_block = client.get_block('unusedid')
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc.write(pandoc_ast, format='gfm+tex_math_dollars')
@@ -30,11 +31,11 @@ def process_block(notion_block):
 
 
 def process_parent_block(notion_block, child_notion_blocks):
-    with mock.patch.object(notion.Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
-        with mock.patch.object(notion.Client, 'get_notion_block') as mock_get_notion_block:
+    with mock.patch.object(Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
+        with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
             mock_get_child_notion_blocks.return_value = child_notion_blocks
             mock_get_notion_block.return_value = notion_block
-            client = notion.Client('')
+            client = Client('')
             n2y_block = client.get_block('unusedid')
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc.write(pandoc_ast, format='gfm+tex_math_dollars')
@@ -171,7 +172,7 @@ def test_block_quote():
     assert markdown == expected_markdown
 
 
-@mock.patch.object(blocks.File, 'download')
+@mock.patch.object(file.File, 'download')
 def test_image_internal_with_caption(mock_download):
     notion_block = mock_block("image", {
         'type': 'file',

@@ -1,8 +1,3 @@
-from asyncio.log import logger
-from itertools import groupby
-from select import select
-
-
 class Property:
     def __init__(self, client, notion_data):
         self.client = client
