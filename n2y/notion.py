@@ -10,30 +10,14 @@ from urllib.parse import urlparse, urljoin
 import requests
 
 from n2y.errors import HTTPResponseError, APIResponseError, is_api_error_code, APIErrorCode
+from n2y.file import File
 from n2y.page import Page
 from n2y.database import Database
-from n2y import blocks
-
-DEFAULT_BLOCKS = {
-    "child_page": blocks.ChildPageBlock,
-    "paragraph": blocks.ParagraphBlock,
-    "heading_1": blocks.HeadingOneBlock,
-    "heading_2": blocks.HeadingTwoBlock,
-    "heading_3": blocks.HeadingThreeBlock,
-    "divider": blocks.DividerBlock,
-    "numbered_list_item": blocks.NumberedListItemBlock,
-    "bulleted_list_item": blocks.BulletedListItemBlock,
-    "to_do": blocks.ToDoListItemBlock,
-    "bookmark": blocks.BookmarkBlock,
-    "image": blocks.ImageBlock,
-    "code": blocks.FencedCodeBlock,
-    "quote": blocks.QuoteBlock,
-    "table": blocks.TableBlock,
-    "table_row": blocks.RowBlock,
-    "toggle": blocks.ToggleBlock,
-    "equation": blocks.EquationBlock,
-    "callout": blocks.CalloutBlock,
-}
+from n2y.blocks import DEFAULT_BLOCKS
+from n2y.properties import DEFAULT_PROPERTIES
+from n2y.property_values import DEFAULT_PROPERTY_VALUES
+from n2y.user import User
+from n2y.rich_text import RichTextArray
 
 
 logger = logging.getLogger(__name__)
@@ -41,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 class Client:
     """
-    An instance of the client class has two purposes:
-    1. To store user configuration
+    An instance of the client class has a few purposes:
+    1. To store configuration
     2. To retrieve data from Notion
     3. To determine what classes to use to wrap this notion data, based on the configuration
     4. To act as a shared global store for all of the objects that are pulled
@@ -61,6 +45,37 @@ class Client:
             "Notion-Version": "2021-08-16",
         }
         self.block_classes = DEFAULT_BLOCKS
+        self.property_classes = DEFAULT_PROPERTIES
+        self.property_value_classes = DEFAULT_PROPERTY_VALUES
+        self.user_class = User
+        self.file_class = File
+        self.rich_text_array_class = RichTextArray
+
+    def wrap_notion_user(self, notion_data):
+        return self.user_class(self, notion_data)
+
+    def wrap_notion_file(self, notion_data):
+        return self.file_class(self, notion_data)
+
+    def wrap_notion_rich_text_array(self, notion_data):
+        return self.rich_text_array_class(self, notion_data)
+
+    def wrap_notion_property(self, notion_data):
+        notion_property_type = notion_data["type"]
+        property_class = self.property_classes.get(notion_property_type, None)
+        if property_class:
+            return property_class(self, notion_data)
+        else:
+            raise NotImplementedError(f'Unknown property type: "{notion_property_type}"')
+
+    def wrap_notion_property_value(self, notion_data):
+        notion_property_value_type = notion_data["type"]
+        property_value_class = self.property_value_classes.get(notion_property_value_type, None)
+        if property_value_class:
+            return property_value_class(self, notion_data)
+        else:
+            msg = f'Unknown property value type: "{notion_property_value_type}"'
+            raise NotImplementedError(msg)
 
     def get_page_or_database(self, object_id):
         """

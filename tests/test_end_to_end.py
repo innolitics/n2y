@@ -62,12 +62,41 @@ def test_simple_database_to_markdown_files(tmpdir):
     ])
     assert status == 0
     generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
-    assert generated_files == {"a.md", "b.md", "c.md"}
-    document_as_markdown = open(join(tmpdir, "a.md"), "r").read()
+    assert generated_files == {"A.md", "B.md", "C.md"}
+    document_as_markdown = open(join(tmpdir, "A.md"), "r").read()
     metadata = parse_yaml_front_matter(document_as_markdown)
     assert metadata["Name"] == "A"
     assert metadata["Tags"] == ["a", "b"]
     assert "content" not in metadata
+
+
+@pytest.mark.xfail(reason="The Notion API doesn't seem to include relation property objects")
+def test_related_databases(tmpdir):
+    """
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/Related-Databases-Page-26b1b681c3f6423c85989c40cc461e82
+    """
+    object_id = "53b9fa3da3f348e7ba3346254f1c722f"
+    status, _ = run_n2y([
+        object_id,
+        '--format', 'yaml-related',
+        '--output', str(tmpdir),
+    ])
+    assert status == 0
+    generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
+    assert generated_files == {"People.yml", "Employer.yml", "Countries.yml"}
+
+
+def test_all_properties_database():
+    """
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/53b9fa3da3f348e7ba3346254f1c722f
+    """
+    object_id = '53b9fa3da3f348e7ba3346254f1c722f'
+    status, stdoutput = run_n2y([object_id, '--output', 'yaml'])
+    assert status == 0
+    unsorted_database = yaml.load(stdoutput, Loader=Loader)
+    assert len(unsorted_database) == 4
 
 
 def test_all_blocks_page_to_markdown(tmp_path):

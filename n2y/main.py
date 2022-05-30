@@ -26,10 +26,11 @@ def main(raw_args, access_token):
     parser.add_argument("object_id", help="The id or url for a Notion database or page")
     parser.add_argument(
         "--format", '-f',
-        choices=["yaml", "markdown"], default="yaml",
+        choices=["yaml", "yaml-related", "markdown"], default="yaml",
         help=(
             "Select output type (only applies to databases)\n"
             "  yaml - log yaml to stdout\n"
+            "  yaml-related - save all related databases to a set of YAML files\n"
             "  markdown - create a markdown file for each page"))
     parser.add_argument(
         "--media-root", help="Filesystem path to directory where images and media are saved")
@@ -50,6 +51,11 @@ def main(raw_args, access_token):
             "Database column that will be used to generate the filename "
             "for each row. Column names are normalized to lowercase letters, "
             "numbers, and underscores. Only used when generating markdown."))
+
+    # TODO: Add the ability to dump out a "schema" file that contains the schema for a set of databases
+
+    # TODO: Add the ability to export everything as a sqlite file
+
     args = parser.parse_args(raw_args)
 
     logging.basicConfig(
@@ -80,6 +86,8 @@ def main(raw_args, access_token):
         export_database_as_markdown_files(node, options=args)
     elif type(node) == Database and args.format == 'yaml':
         print(node.to_yaml())
+    elif type(node) == Database and args.format == 'yaml-related':
+        export_related_databases(node, options=args)
     elif type(node) == Page:
         print(node.to_markdown())
 
@@ -120,29 +128,49 @@ def name_column_valid(raw_rows, name_column):
 
 def export_database_as_markdown_files(database, options):
     os.makedirs(options.output, exist_ok=True)
-    file_names = []
-    skips = {'unnamed': 0, 'duplicate': 0}
+    seen_file_names = set()
+    counts = {'unnamed': 0, 'duplicate': 0}
     for page in database.children:
-        meta = page.properties
-        page_name = meta[options.name_column]
-        if page_name:
+        meta = page.properties_to_values()
+        file_name = meta[options.name_column]
+        if file_name:
             # TODO: switch to using the database's natural keys as the file names
 
-            # sanitize file name just a bit
-            # maybe use python-slugify in the future?
-            filename = re.sub(r"[\s/,\\]", '_', page_name.lower())
-            if filename not in file_names:
-                file_names.append(filename)
-                with open(os.path.join(options.output, f"{filename}.md"), 'w') as f:
+            if file_name not in seen_file_names:
+                seen_file_names.add(file_name)
+                with open(os.path.join(options.output, f"{file_name}.md"), 'w') as f:
                     f.write(page.to_markdown())
             else:
-                logger.debug('Page name "%s" has been used', page_name)
-                skips['duplicate'] += 1
+                logger.warning('Skipping page named "%s" since it has been used', file_name)
+                counts['duplicate'] += 1
         else:
-            skips['unnamed'] += 1
-    for key, count in skips.items():
+            counts['unnamed'] += 1
+    for key, count in counts.items():
         if count > 0:
             logger.info("%d %s page(s) skipped", count, key)
+
+
+def export_related_databases(seed_database, options):
+    os.makedirs(options.output, exist_ok=True)
+
+    seen_database_ids = set()
+    seen_file_names = set()
+
+    def _export_related_databases(database):
+        seen_database_ids.add(database.notion_id)
+        file_name = database.title.to_markdown()
+        if file_name not in seen_file_names:
+            seen_file_names.add(file_name)
+            with open(os.path.join(options.output, f"{file_name}.yml"), 'w') as f:
+                f.write(database.to_yaml())
+        else:
+            logger.warning('Database name "%s" has been used', file_name)
+        for database_id in database.related_database_ids:
+            if database_id not in seen_database_ids:
+                related_database = database.client.get_database(database_id)
+                _export_related_databases(related_database)
+
+    _export_related_databases(seed_database)
 
 
 if __name__ == "__main__":

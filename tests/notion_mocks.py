@@ -2,8 +2,12 @@ from datetime import datetime
 import uuid
 
 
-def mock_user():
-    return {'object': 'user', 'id': uuid.uuid4()}
+def mock_user(**kwargs):
+    return {'object': 'user', 'id': str(uuid.uuid4()), **kwargs}
+
+
+def mock_person_user(name, email):
+    return mock_user(name=name, type="person", person={"email": email})
 
 
 def mock_annotations(annotations=None):
@@ -31,11 +35,15 @@ def mock_rich_text(text, annotations=None, href=None):
     }
 
 
+def mock_rich_text_array(text_blocks_descriptors):
+    return [mock_rich_text(t, a) for t, a in text_blocks_descriptors]
+
+
 def mock_block(block_type, content, has_children=False, **kwargs):
     created_by = mock_user()
     created_time = datetime.now().isoformat()
     return {
-        'id': uuid.uuid4(),
+        'id': str(uuid.uuid4()),
         'created_time': created_time,
         'created_by': created_by,
         'last_edited_time': created_time,
@@ -52,7 +60,7 @@ def mock_block(block_type, content, has_children=False, **kwargs):
 def mock_paragraph_block(text_blocks_descriptors, **kwargs):
     return mock_block('paragraph', {
         'color': 'default',
-        'text': [mock_rich_text(t, a) for t, a in text_blocks_descriptors],
+        'text': mock_rich_text_array(text_blocks_descriptors),
     }, **kwargs)
 
 
@@ -61,3 +69,39 @@ def mock_file(url):
         'url': url,
         'expiry_time': None
     }
+
+
+def mock_property_value(property_value_type, content):
+    return {
+        'id': str(uuid.uuid4()),
+        'type': property_value_type,
+        property_value_type: content,
+    }
+
+
+def mock_formula_property_value(formula_type, content):
+    return mock_property_value("formula", {
+        "type": formula_type,
+        formula_type: content,
+    })
+
+
+def mock_rollup_property_value(rollup_type, content):
+    return mock_property_value("rollup", {
+        "type": rollup_type,
+        "function": "function",
+        rollup_type: content,
+    })
+
+
+def mock_select_option(name, **kwargs):
+    return {
+        'id': str(uuid.uuid4()),
+        'name': name,
+        'color': 'green',
+        **kwargs,
+    }
+
+
+def mock_relation_value():
+    return {"id": str(uuid.uuid4)}
