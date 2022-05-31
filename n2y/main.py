@@ -6,6 +6,7 @@ import argparse
 from n2y import blocks, notion, property_values
 from n2y.database import Database
 from n2y.page import Page
+from n2y.errors import APIErrorCode, APIResponseError
 
 logger = None
 
@@ -122,8 +123,15 @@ def export_related_databases(seed_database, options):
             logger.warning('Database name "%s" has been used', file_name)
         for database_id in database.related_database_ids:
             if database_id not in seen_database_ids:
-                related_database = database.client.get_database(database_id)
-                _export_related_databases(related_database)
+                try:
+                    related_database = database.client.get_database(database_id)
+                    _export_related_databases(related_database)
+                except APIResponseError as err:
+                    if err.code == APIErrorCode.ObjectNotFound:
+                        msg = 'Skipping database with id "%s" due to lack of permissions'
+                        logger.warning(msg, database_id)
+                    else:
+                        raise err
 
     _export_related_databases(seed_database)
 
