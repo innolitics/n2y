@@ -178,3 +178,6 @@ class RichTextArray:
 
     def to_markdown(self):
         return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
+
+    def to_plain_text(self):
+        return ''.join(item.plain_text.text for item in self.items)
