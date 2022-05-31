@@ -70,13 +70,12 @@ def test_simple_database_to_markdown_files(tmpdir):
     assert "content" not in metadata
 
 
-@pytest.mark.xfail(reason="The Notion API doesn't seem to include relation property objects")
-def test_related_databases(tmpdir):
+def test_simple_related_databases(tmpdir):
     """
     The page can be seen here:
-    https://fresh-pencil-9f3.notion.site/Related-Databases-Page-26b1b681c3f6423c85989c40cc461e82
+    https://fresh-pencil-9f3.notion.site/Simple-Related-Databases-7737303365434ee6b699786c110830a2
     """
-    object_id = "53b9fa3da3f348e7ba3346254f1c722f"
+    object_id = "6cc54e2b49994787927c24a9ac3d4676"
     status, _ = run_n2y([
         object_id,
         '--format', 'yaml-related',
@@ -84,7 +83,7 @@ def test_related_databases(tmpdir):
     ])
     assert status == 0
     generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
-    assert generated_files == {"People.yml", "Employer.yml", "Countries.yml"}
+    assert generated_files == {"A.yml", "B.yml"}
 
 
 def test_all_properties_database():

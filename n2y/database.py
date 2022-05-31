@@ -3,7 +3,7 @@ import logging
 import yaml
 
 from n2y.page import Page
-from n2y.properties import RelationProperty
+from n2y.property_values import RelationPropertyValue
 from n2y.utils import fromisoformat
 
 
@@ -44,10 +44,46 @@ class Database:
 
     @property
     def related_database_ids(self):
+        """
+        This method is much more complicated than it should be due to limitations of the Notion API.
+
+        First, one would expect that the RelationProperty objects would be
+        present in the databases's properties features, however they do not
+        show up _unless_ the relationship is back to the same database.
+
+        Secondly, one would expect that the page property endpoint
+        (https://developers.notion.com/reference/retrieve-a-page-property)
+        would enable one to retrieve the related database id from the property
+        directly, however, the database id doesn't appear to be returned there
+        either.
+
+        As a last result, this method will first get the first page in a
+        database (raising an error if there are no pages). Then, it will loop
+        through the properties of the page to find any relationship properties.
+        Then, it will loop through all pages in the database to find one that
+        actually has a value of a page in the related database. Finally, we
+        retrieve the related page and get the database ID from the parent.
+        """
+        if len(self.children) == 0:
+            raise ValueError("Unable to identify relationships for an empty database")
+        first_page = self.children[0]
         ids = []
-        for prop in self.schema.values():
-            if isinstance(prop, RelationProperty):
-                ids.append(prop.database_id)
+        for prop_name, prop in first_page.properties.items():
+            if isinstance(prop, RelationPropertyValue):
+                related_page_id = None
+                for page in self.children:
+                    related_page_ids = page.properties[prop_name].ids
+                    if len(related_page_ids) > 0:
+                        related_page_id = related_page_ids[0]
+                        break
+                if related_page_id is None:
+                    raise ValueError(
+                        'Unable to identify database for relationship "{prop_name}" '
+                        'because there are no values in the entire database'
+                    )
+                related_page = self.client.get_page(related_page_id)
+                assert related_page.notion_parent["type"] == "database_id"
+                ids.append(related_page.notion_parent["database_id"])
         return ids
 
     def to_pandoc(self):
