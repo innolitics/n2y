@@ -22,10 +22,10 @@ class TitlePropertyValue(PropertyValue):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
-        self.text = client.wrap_notion_rich_text_array(notion_data['title'])
+        self.rich_text = client.wrap_notion_rich_text_array(notion_data['title'])
 
     def to_value(self):
-        return self.text.to_markdown()
+        return self.rich_text.to_markdown()
 
 
 class TextPropertyValue(PropertyValue):
@@ -33,10 +33,10 @@ class TextPropertyValue(PropertyValue):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
-        self.text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
+        self.rich_text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
 
     def to_value(self):
-        return self.text.to_markdown()
+        return self.rich_text.to_markdown()
 
 
 class NumberPropertyValue(PropertyValue):
