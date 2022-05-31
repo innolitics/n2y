@@ -63,8 +63,12 @@ class Database:
         actually has a value of a page in the related database. Finally, we
         retrieve the related page and get the database ID from the parent.
         """
+        database_title = self.title.to_plain_text()
         if len(self.children) == 0:
-            raise ValueError("Unable to identify relationships for an empty database")
+            logger.warn(
+                'Unable to identify relationships for empty database "%s"',
+                database_title
+            )
         first_page = self.children[0]
         ids = []
         for prop_name, prop in first_page.properties.items():
@@ -76,13 +80,17 @@ class Database:
                         related_page_id = related_page_ids[0]
                         break
                 if related_page_id is None:
-                    raise ValueError(
-                        'Unable to identify database for relationship "{prop_name}" '
-                        'because there are no values in the entire database'
+                    logger.warning(
+                        'Unable to identify related database for relationship "%s" '
+                        'property in the "%s" database because there are no values '
+                        'in the entire database',
+                        prop_name,
+                        database_title,
                     )
-                related_page = self.client.get_page(related_page_id)
-                assert related_page.notion_parent["type"] == "database_id"
-                ids.append(related_page.notion_parent["database_id"])
+                else:
+                    related_page = self.client.get_page(related_page_id)
+                    assert related_page.notion_parent["type"] == "database_id"
+                    ids.append(related_page.notion_parent["database_id"])
         return ids
 
     def to_pandoc(self):
