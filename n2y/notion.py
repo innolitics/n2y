@@ -155,6 +155,15 @@ class Client:
 
         return sum(depaginator(starting_url), [])
 
+    def get_page_property(self, page_id, property_id):
+        notion_property = self.get_notion_page_property(page_id, property_id)
+        return self.wrap_notion_property(notion_property)
+
+    def get_notion_page_property(self, page_id, property_id):
+        url = f"{self.base_url}pages/{page_id}/properties/{property_id}"
+        response = requests.get(url, headers=self.headers)
+        return self._parse_response(response)
+
     def _get_url(self, url):
         response = requests.get(url, headers=self.headers)
         return self._parse_response(response)

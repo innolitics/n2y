@@ -10,9 +10,8 @@ logger = logging.getLogger(__name__)
 class PropertyValue:
     def __init__(self, client, notion_data):
         self.client = client
-        self.notion_id = notion_data['id']
+        self.notion_property_id = notion_data['id']
         self.notion_type = notion_data['type']
-        self.notion_data = notion_data
 
     def to_value(self):
         raise NotImplementedError()
@@ -20,6 +19,8 @@ class PropertyValue:
 
 class TitlePropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
+        # TODO: handle the case when there are more than 25 rich text items in the property
+        # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
         self.text = client.wrap_notion_rich_text_array(notion_data['title'])
 
@@ -29,6 +30,8 @@ class TitlePropertyValue(PropertyValue):
 
 class TextPropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
+        # TODO: handle the case when there are more than 25 rich text items in the property
+        # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
         self.text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
 
@@ -174,6 +177,8 @@ class FormulaPropertyValue(PropertyValue):
 
 class RelationPropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
+        # TODO: handle the case when there are more than 25 pages in the relation
+        # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
         self.ids = [related["id"] for related in notion_data["relation"]]
 
@@ -183,6 +188,8 @@ class RelationPropertyValue(PropertyValue):
 
 class RollupPropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
+        # TODO: handle the case when the rollup needs to be paginated
+        # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
         notion_rollup = notion_data["rollup"]
         self.function = notion_rollup["function"]
@@ -252,6 +259,4 @@ DEFAULT_PROPERTY_VALUES = {
     'created_by': CreatedByPropertyValue,
     'last_edited_time': LastEditedTimePropertyValue,
     'last_edited_by': LastEditedBy,
-
-
 }
