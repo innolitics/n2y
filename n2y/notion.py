@@ -42,7 +42,7 @@ class Client:
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
-            "Notion-Version": "2021-08-16",
+            "Notion-Version": "2022-02-22",
         }
         self.block_classes = DEFAULT_BLOCKS
         self.property_classes = DEFAULT_PROPERTIES

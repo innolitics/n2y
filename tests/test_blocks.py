@@ -57,21 +57,21 @@ def test_paragraph():
 
 
 def test_heading_1():
-    notion_block = mock_block("heading_1", {"text": [mock_rich_text("Heading One")]})
+    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One")]})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])
     assert markdown == "# Heading One\n"
 
 
 def test_heading_2():
-    notion_block = mock_block("heading_2", {"text": [mock_rich_text("Heading Two")]})
+    notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(2, ("", [], []), [Str("Heading"), Space(), Str("Two")])
     assert markdown == "## Heading Two\n"
 
 
 def test_heading_3():
-    notion_block = mock_block("heading_3", {"text": [mock_rich_text("Heading Three")]})
+    notion_block = mock_block("heading_3", {"rich_text": [mock_rich_text("Heading Three")]})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(3, ("", [], []), [Str("Heading"), Space(), Str("Three")])
     assert markdown == "### Heading Three\n"
@@ -80,8 +80,8 @@ def test_heading_3():
 def test_bulleted_list():
     parent = mock_paragraph_block([("Bulleted List", [])], has_children=True)
     children = [
-        mock_block("bulleted_list_item", {"text": [mock_rich_text("Item One")]}),
-        mock_block("bulleted_list_item", {"text": [mock_rich_text("Item Two")]}),
+        mock_block("bulleted_list_item", {"rich_text": [mock_rich_text("Item One")]}),
+        mock_block("bulleted_list_item", {"rich_text": [mock_rich_text("Item Two")]}),
     ]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [
@@ -97,8 +97,8 @@ def test_bulleted_list():
 def test_numbered_list():
     parent = mock_paragraph_block([("Numbered List", [])], has_children=True)
     children = [
-        mock_block("numbered_list_item", {"text": [mock_rich_text("Item One")]}),
-        mock_block("numbered_list_item", {"text": [mock_rich_text("Item Two")]}),
+        mock_block("numbered_list_item", {"rich_text": [mock_rich_text("Item One")]}),
+        mock_block("numbered_list_item", {"rich_text": [mock_rich_text("Item Two")]}),
     ]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [
@@ -158,7 +158,7 @@ def test_divider():
 
 
 def test_block_quote():
-    notion_block = mock_block("quote", {"text": [
+    notion_block = mock_block("quote", {"rich_text": [
         mock_rich_text("In a time of deceit telling the truth is a revolutionary act."),
     ]})
     pandoc_ast, markdown = process_block(notion_block)
@@ -215,7 +215,7 @@ def test_equation_block():
 
 def test_code_block():
     notion_block = mock_block("code", {
-        "text": [mock_rich_text("const a = 3")],
+        "rich_text": [mock_rich_text("const a = 3")],
         "language": "javascript",
     })
     pandoc_ast, markdown = process_block(notion_block)
@@ -293,7 +293,7 @@ def test_table_block():
 
 
 def test_toggle():
-    parent = mock_block("toggle", {"text": [
+    parent = mock_block("toggle", {"rich_text": [
         mock_rich_text("Toggle Header"),
     ]}, has_children=True)
     children = [mock_paragraph_block([("Toggle Content", [])])]
@@ -310,12 +310,12 @@ def test_toggle():
 
 
 def test_todo():
-    parent = mock_block("paragraph", {"text": [
+    parent = mock_block("paragraph", {"rich_text": [
         mock_rich_text("Task List"),
     ]}, has_children=True)
     children = [
-        mock_block("to_do", {"text": [mock_rich_text("Task One")], "checked": True}),
-        mock_block("to_do", {"text": [mock_rich_text("Task Two")], "checked": False}),
+        mock_block("to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}),
+        mock_block("to_do", {"rich_text": [mock_rich_text("Task Two")], "checked": False}),
     ]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [
@@ -334,7 +334,7 @@ def test_todo():
 
 
 def test_callout():
-    parent = mock_block("callout", {"text": [mock_rich_text("Callout")]}, has_children=True)
+    parent = mock_block("callout", {"rich_text": [mock_rich_text("Callout")]}, has_children=True)
     children = [mock_paragraph_block([("Children", [])])]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [Para([Str('Callout')]), Para([Str('Children')])]

@@ -139,10 +139,10 @@ class EquationBlock(Block):
 class ParagraphBlock(Block):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = client.wrap_notion_rich_text_array(self.notion_data["text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        content = self.text.to_pandoc()
+        content = self.rich_text.to_pandoc()
         if self.has_children:
             result = [Para(content)]
             children = self.children_to_pandoc()
@@ -155,10 +155,10 @@ class ParagraphBlock(Block):
 class BulletedListItemBlock(ListItemBlock):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = client.wrap_notion_rich_text_array(self.notion_data["text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        content = [Plain(self.text.to_pandoc())]
+        content = [Plain(self.rich_text.to_pandoc())]
         if self.has_children:
             children = self.children_to_pandoc()
             content.extend(children)
@@ -173,19 +173,20 @@ class ToDoListItemBlock(BulletedListItemBlock):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.checked = self.notion_data['checked']
-        if self.checked:
-            self.text.items[0].plain_text.text = '☒ ' + self.text.items[0].plain_text.text
-        else:
-            self.text.items[0].plain_text.text = '☐ ' + self.text.items[0].plain_text.text
+
+        # TODO: Consider doing this at the "to_pandoc" stage
+        box = '☒' if self.checked else '☐'
+        self.rich_text.items[0].plain_text.text = box + \
+            ' ' + self.rich_text.items[0].plain_text.text
 
 
 class NumberedListItemBlock(ListItemBlock):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = client.wrap_notion_rich_text_array(self.notion_data['text'])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        content = [Plain(self.text.to_pandoc())]
+        content = [Plain(self.rich_text.to_pandoc())]
         if self.has_children:
             children = self.children_to_pandoc()
             content.extend(children)
@@ -199,10 +200,10 @@ class NumberedListItemBlock(ListItemBlock):
 class HeadingBlock(Block):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = client.wrap_notion_rich_text_array(self.notion_data["text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        return Header(self.level, ('', [], []), self.text.to_pandoc())
+        return Header(self.level, ('', [], []), self.rich_text.to_pandoc())
 
 
 class HeadingOneBlock(HeadingBlock):
@@ -243,20 +244,20 @@ class FencedCodeBlock(Block):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
         self.language = self.notion_data["language"]
-        self.text = client.wrap_notion_rich_text_array(self.notion_data["text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        plain_text = ''.join(t.plain_text.text for t in self.text.items)
+        plain_text = ''.join(t.plain_text.text for t in self.rich_text.items)
         return CodeBlock(('', [self.language], []), plain_text)
 
 
 class QuoteBlock(Block):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = client.wrap_notion_rich_text_array(self.notion_data["text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        return BlockQuote([Para(self.text.to_pandoc())])
+        return BlockQuote([Para(self.rich_text.to_pandoc())])
 
 
 class ImageBlock(Block):
@@ -313,8 +314,7 @@ class TableBlock(Block):
 class RowBlock(Block):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.cells = [client.wrap_notion_rich_text_array(
-            cell) for cell in self.notion_data["cells"]]
+        self.cells = [client.wrap_notion_rich_text_array(nc) for nc in self.notion_data["cells"]]
 
     def to_pandoc(self):
         cells = [Cell(
@@ -335,10 +335,10 @@ class ToggleBlock(Block):
 
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = client.wrap_notion_rich_text_array(self.notion_data["text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        header = self.text.to_pandoc()
+        header = self.rich_text.to_pandoc()
         children = self.children_to_pandoc()
         content = [Para(header)]
         content.extend(children)
@@ -348,10 +348,10 @@ class ToggleBlock(Block):
 class CalloutBlock(Block):
     def __init__(self, client, block, get_children=True):
         super().__init__(client, block, get_children)
-        self.text = client.wrap_notion_rich_text_array(self.notion_data["text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        content = self.text.to_pandoc()
+        content = self.rich_text.to_pandoc()
         if self.has_children:
             children = self.children_to_pandoc()
             result = [Para(content)]

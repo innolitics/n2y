@@ -60,7 +60,7 @@ def mock_block(block_type, content, has_children=False, **kwargs):
 def mock_paragraph_block(text_blocks_descriptors, **kwargs):
     return mock_block('paragraph', {
         'color': 'default',
-        'text': mock_rich_text_array(text_blocks_descriptors),
+        'rich_text': mock_rich_text_array(text_blocks_descriptors),
     }, **kwargs)
 
 
