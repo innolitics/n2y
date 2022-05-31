@@ -3,6 +3,7 @@ import logging
 import yaml
 
 from n2y.utils import pandoc_ast_to_markdown, fromisoformat
+from n2y.property_values import TitlePropertyValue
 
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,13 @@ class Page:
 
         self._block = None
         self._children = None
+
+    @property
+    def title(self):
+        for property_value in self.properties.values():
+            # Notion ensure's there is always exactly one title property
+            if isinstance(property_value, TitlePropertyValue):
+                return property_value.rich_text.to_plain_text()
 
     @property
     def block(self):

@@ -58,7 +58,6 @@ def test_simple_database_to_markdown_files(tmpdir):
         object_id,
         '--format', 'markdown',
         '--output', str(tmpdir),
-        '--name-column', 'Name',
     ])
     assert status == 0
     generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}

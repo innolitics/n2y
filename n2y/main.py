@@ -42,12 +42,6 @@ def main(raw_args, access_token):
     parser.add_argument(
         "--logging-format", default='%(asctime)s - %(levelname)s: %(message)s',
         help="Default format used when logging")
-    parser.add_argument(
-        "--name-column", '-n', default='title',
-        help=(
-            "Database column that will be used to generate the filename "
-            "for each row. Column names are normalized to lowercase letters, "
-            "numbers, and underscores. Only used when generating markdown."))
 
     # TODO: Add the ability to dump out a "schema" file that contains the schema
     # for a set of databases
@@ -56,8 +50,7 @@ def main(raw_args, access_token):
 
     args = parser.parse_args(raw_args)
 
-    logging.basicConfig(
-        format=args.logging_format, level=logging.__dict__[args.verbosity])
+    logging.basicConfig(format=args.logging_format, level=logging.__dict__[args.verbosity])
     global logger
     logger = logging.getLogger(__name__)
 
@@ -76,9 +69,7 @@ def main(raw_args, access_token):
 
     # TODO: in the future, determing the natural keys for each row in the
     # database and calculate them up-front; prune out any pages where the
-    # natural key is empty. Furthermore, add duplicate handling here. Once the
-    # natural key handling is done, there should be no need for the
-    # `name_column_valid` since that will be handled here
+    # natural key is empty. Furthermore, add duplicate handling here.
 
     if type(node) == Database and args.format == 'markdown':
         export_database_as_markdown_files(node, options=args)
@@ -92,48 +83,14 @@ def main(raw_args, access_token):
     return 0
 
 
-def name_column_valid(raw_rows, name_column):
-    first_row_flattened = property_values.flatten_property_values(raw_rows[0]['properties'])
-
-    def available_columns():
-        return filter(
-            lambda c: isinstance(first_row_flattened[c], str),
-            first_row_flattened.keys())
-
-    # make sure the title column exists
-    if name_column not in first_row_flattened:
-        logger.critical(
-            'Database does not contain the column "%s". Please specify '
-            'the correct name column using the --name-column (-n) flag. '
-            # only show columns that have strings as possible options
-            'Available column(s): ' + ', '.join(available_columns()), name_column)
-        return False
-
-    # make sure title column is not empty (only the first row is checked)
-    if first_row_flattened[name_column] is None:
-        logger.critical('Column "%s" Cannot Be Empty.', name_column)
-        return False
-
-    # make sure the title column is a string
-    if not isinstance(first_row_flattened[name_column], str):
-        logger.critical(
-            'Column "%s" does not contain a string. '
-            # only show columns that have strings as possible options
-            'Available column(s): ' + ', '.join(available_columns()), name_column)
-        return False
-    return True
-
-
 def export_database_as_markdown_files(database, options):
     os.makedirs(options.output, exist_ok=True)
     seen_file_names = set()
     counts = {'unnamed': 0, 'duplicate': 0}
     for page in database.children:
-        meta = page.properties_to_values()
-        file_name = meta[options.name_column]
+        # TODO: switch to using the database's natural keys as the file names
+        file_name = page.title
         if file_name:
-            # TODO: switch to using the database's natural keys as the file names
-
             if file_name not in seen_file_names:
                 seen_file_names.add(file_name)
                 with open(os.path.join(options.output, f"{file_name}.md"), 'w') as f:
