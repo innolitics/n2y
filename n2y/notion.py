@@ -44,12 +44,20 @@ class Client:
             "Content-Type": "application/json",
             "Notion-Version": "2022-02-22",
         }
+        self.page_class = Page
+        self.database_class = Database
         self.block_classes = DEFAULT_BLOCKS
         self.property_classes = DEFAULT_PROPERTIES
         self.property_value_classes = DEFAULT_PROPERTY_VALUES
         self.user_class = User
         self.file_class = File
         self.rich_text_array_class = RichTextArray
+
+    def wrap_notion_page(self, notion_data, parent=None):
+        return self.page_class(self, notion_data, parent)
+
+    def wrap_notion_database(self, notion_data, parent=None):
+        return self.database_class(self, notion_data, parent)
 
     def wrap_notion_user(self, notion_data):
         return self.user_class(self, notion_data)
@@ -95,11 +103,11 @@ class Client:
 
     def get_database(self, database_id, parent=None):
         notion_database = self._get_url(f"{self.base_url}databases/{database_id}")
-        return Database(self, notion_database, parent)
+        return self.wrap_notion_database(notion_database, parent)
 
     def get_database_pages(self, database_id, parent):
         notion_pages = self.get_database_notion_pages(database_id)
-        return [Page(self, np, parent) for np in notion_pages]
+        return [self.wrap_notion_page(np, parent) for np in notion_pages]
 
     def get_database_notion_pages(self, database_id):
         starting_url = f"{self.base_url}databases/{database_id}/query"
@@ -117,7 +125,7 @@ class Client:
 
     def get_page(self, page_id, parent=None):
         notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
-        return Page(self, notion_page, parent)
+        return self.wrap_notion_page(notion_page, parent)
 
     def get_block(self, block_id, get_children=True):
         notion_block = self.get_notion_block(block_id)
