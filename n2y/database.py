@@ -2,7 +2,6 @@ import logging
 
 import yaml
 
-from n2y.page import Page
 from n2y.property_values import RelationPropertyValue
 from n2y.utils import fromisoformat
 
@@ -38,14 +37,14 @@ class Database:
     @property
     def children(self):
         if self._children is None:
-            notion_pages = self.client.get_database_notion_pages(self.notion_id)
-            self._children = [Page(self.client, np) for np in notion_pages]
+            self._children = self.client.get_database_pages(self.notion_id, self)
         return self._children
 
     @property
     def related_database_ids(self):
         """
-        This method is much more complicated than it should be due to limitations of the Notion API.
+        This method is much more complicated than it should be due to
+        limitations of the Notion API.
 
         First, one would expect that the RelationProperty objects would be
         present in the databases's properties features, however they do not
