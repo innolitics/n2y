@@ -3,7 +3,7 @@ import sys
 import logging
 import argparse
 
-from n2y import blocks, notion, property_values
+from n2y import blocks, notion
 from n2y.database import Database
 from n2y.page import Page
 from n2y.errors import APIErrorCode, APIResponseError
@@ -20,7 +20,8 @@ def cli_main():
 def main(raw_args, access_token):
     parser = argparse.ArgumentParser(
         description="Move data from Notion into YAML/markdown",
-        formatter_class=argparse.RawTextHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     parser.add_argument("object_id", help="The id or url for a Notion database or page")
     parser.add_argument(
         "--format", '-f',
@@ -29,20 +30,26 @@ def main(raw_args, access_token):
             "Select output type (only applies to databases)\n"
             "  yaml - log yaml to stdout\n"
             "  yaml-related - save all related databases to a set of YAML files\n"
-            "  markdown - create a markdown file for each page"))
+            "  markdown - create a markdown file for each page"
+        )
+    )
     parser.add_argument(
-        "--media-root", help="Filesystem path to directory where images and media are saved")
+        "--media-root", help="Filesystem path to directory where images and media are saved"
+    )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
     parser.add_argument("--plugins", '-p', help="Plugin file")
     parser.add_argument(
         "--output", '-o', default='./',
-        help="Relative path to output directory")
+        help="Relative path to output directory",
+    )
     parser.add_argument(
         "--verbosity", '-v', default='INFO',
-        help="Level to set the root logging module to")
+        help="Level to set the root logging module to",
+    )
     parser.add_argument(
         "--logging-format", default='%(asctime)s - %(levelname)s: %(message)s',
-        help="Default format used when logging")
+        help="Default format used when logging",
+    )
 
     # TODO: Add the ability to dump out a "schema" file that contains the schema
     # for a set of databases
@@ -72,13 +79,13 @@ def main(raw_args, access_token):
     # database and calculate them up-front; prune out any pages where the
     # natural key is empty. Furthermore, add duplicate handling here.
 
-    if type(node) == Database and args.format == 'markdown':
+    if isinstance(node, Database) and args.format == 'markdown':
         export_database_as_markdown_files(node, options=args)
-    elif type(node) == Database and args.format == 'yaml':
+    elif isinstance(node, Database) and args.format == 'yaml':
         print(node.to_yaml())
-    elif type(node) == Database and args.format == 'yaml-related':
+    elif isinstance(node, Database) and args.format == 'yaml-related':
         export_related_databases(node, options=args)
-    elif type(node) == Page:
+    elif isinstance(node, Page):
         print(node.to_markdown())
 
     return 0

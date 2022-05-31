@@ -25,11 +25,17 @@ from n2y.errors import APIErrorCode, HTTPResponseError
 
 def run_n2y(arguments):
     old_stdout = sys.stdout
+    old_stderr = sys.stderr
     sys.stdout = StringIO()
-    status = main(arguments, NOTION_ACCESS_TOKEN)
-    captured_stdout = sys.stdout.getvalue()
-    sys.stdout = old_stdout
-    return status, captured_stdout
+    sys.stderr = StringIO()
+    try:
+        status = main(arguments, NOTION_ACCESS_TOKEN)
+        stdout = sys.stdout.getvalue()
+        stderr = sys.stderr.getvalue()
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+    return status, stdout, stderr
 
 
 def test_simple_database_to_yaml():
@@ -38,7 +44,7 @@ def test_simple_database_to_yaml():
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     '''
     object_id = '176fa24d4b7f4256877e60a1035b45a4'
-    status, stdoutput = run_n2y([object_id, '--output', 'yaml'])
+    status, stdoutput, _ = run_n2y([object_id, '--output', 'yaml'])
     assert status == 0
     unsorted_database = yaml.load(stdoutput, Loader=Loader)
     database = sorted(unsorted_database, key=lambda row: row["Name"])
@@ -54,7 +60,7 @@ def test_simple_database_to_markdown_files(tmpdir):
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     '''
     object_id = '176fa24d4b7f4256877e60a1035b45a4'
-    status, _ = run_n2y([
+    status, _, _ = run_n2y([
         object_id,
         '--format', 'markdown',
         '--output', str(tmpdir),
@@ -75,7 +81,7 @@ def test_simple_related_databases(tmpdir):
     https://fresh-pencil-9f3.notion.site/Simple-Related-Databases-7737303365434ee6b699786c110830a2
     """
     object_id = "6cc54e2b49994787927c24a9ac3d4676"
-    status, _ = run_n2y([
+    status, _, _ = run_n2y([
         object_id,
         '--format', 'yaml-related',
         '--output', str(tmpdir),
@@ -85,13 +91,32 @@ def test_simple_related_databases(tmpdir):
     assert generated_files == {"A.yml", "B.yml"}
 
 
+def test_unshared_related_databases(tmpdir):
+    """
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/bc86b1692c2e4b7d991d7e6f6cacac54?v=cb6887a78ddd41f1a8a75385f7a40d47
+    """
+    object_id = "bc86b1692c2e4b7d991d7e6f6cacac54"
+    status, _, stderr = run_n2y([
+        object_id,
+        '--format', 'yaml-related',
+        '--output', str(tmpdir),
+    ])
+    assert status == 0
+    generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
+    assert generated_files == {"Database with Relationship to Unshared Database.yml"}
+    # TODO: add an assertion that checks that warnings were displayed in stderr
+    # (at the moment, they don't appear to be because the related pages simply
+    # don't show up at all)
+
+
 def test_all_properties_database():
     """
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/53b9fa3da3f348e7ba3346254f1c722f
     """
     object_id = '53b9fa3da3f348e7ba3346254f1c722f'
-    status, stdoutput = run_n2y([object_id, '--output', 'yaml'])
+    status, stdoutput, _ = run_n2y([object_id, '--output', 'yaml'])
     assert status == 0
     unsorted_database = yaml.load(stdoutput, Loader=Loader)
     assert len(unsorted_database) == 4
@@ -103,7 +128,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     https://fresh-pencil-9f3.notion.site/Test-Page-5f18c7d7eda44986ae7d938a12817cc0
     '''
     object_id = '5f18c7d7eda44986ae7d938a12817cc0'
-    status, document_as_markdown = run_n2y([object_id, '--media-root', str(tmp_path)])
+    status, document_as_markdown, _ = run_n2y([object_id, '--media-root', str(tmp_path)])
     lines = document_as_markdown.split('\n')
     metadata = parse_yaml_front_matter(document_as_markdown)
     assert metadata['title'] == 'All Blocks Test Page'
@@ -147,7 +172,7 @@ def test_page_in_database_to_markdown():
     https://fresh-pencil-9f3.notion.site/C-7e967a44893f4b25917965896e81c137
     '''
     object_id = '7e967a44893f4b25917965896e81c137'
-    _, document_as_markdown = run_n2y([object_id])
+    _, document_as_markdown, _ = run_n2y([object_id])
     lines = document_as_markdown.split('\n')
     metadata = parse_yaml_front_matter(document_as_markdown)
     assert metadata['Name'] == 'C'
@@ -162,7 +187,7 @@ def test_simple_page_to_markdown():
     https://fresh-pencil-9f3.notion.site/Simple-Test-Page-6670dc17a7bc4426b91bca4cf3ac5623
     '''
     object_id = '6670dc17a7bc4426b91bca4cf3ac5623'
-    status, document_as_markdown = run_n2y([object_id])
+    status, document_as_markdown, _ = run_n2y([object_id])
     assert status == 0
     assert "Page content" in document_as_markdown
 
