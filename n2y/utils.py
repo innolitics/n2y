@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def pandoc_ast_to_markdown(pandoc_ast):
     # This function tries to avoid calling the separate pandoc binary (which is
-    # slow) for basic cases with just
+    # slow) for basic cases with just spaces and strings
     if len(pandoc_ast) == 0:
         return ""
     elif all(type(n) in [Str, Space] for n in pandoc_ast):
