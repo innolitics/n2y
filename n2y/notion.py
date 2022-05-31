@@ -97,9 +97,10 @@ class Client:
             return self.get_page(object_id)
         except APIResponseError as e:
             if e.code == APIErrorCode.ObjectNotFound:
-                return self.get_database(object_id)
+                pass
             else:
                 raise e
+        return self.get_database(object_id)
 
     def get_database(self, database_id, parent=None):
         notion_database = self._get_url(f"{self.base_url}databases/{database_id}")

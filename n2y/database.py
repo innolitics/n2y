@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Database:
     def __init__(self, client, notion_data, parent=None):
-        logger.debug("Instantiating page")
+        logger.debug("Instantiating database")
         self.client = client
 
         self.notion_id = notion_data['id']
@@ -65,7 +65,7 @@ class Database:
         """
         database_title = self.title.to_plain_text()
         if len(self.children) == 0:
-            logger.warn(
+            logger.error(
                 'Unable to identify relationships for empty database "%s"',
                 database_title
             )
@@ -80,7 +80,7 @@ class Database:
                         related_page_id = related_page_ids[0]
                         break
                 if related_page_id is None:
-                    logger.warning(
+                    logger.error(
                         'Unable to identify related database for relationship "%s" '
                         'property in the "%s" database because there are no values '
                         'in the entire database',
