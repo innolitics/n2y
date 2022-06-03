@@ -80,6 +80,14 @@ def test_bold_italic_word():
     assert plain_text == "A bold-italic word."
 
 
+def test_bold_space():
+    notion_data = mock_rich_text_array([
+        (' ', ['bold']),
+    ])
+    pandoc_ast, _, _ = process_rich_text_array(notion_data)
+    assert pandoc_ast == [Strong([Space()])]
+
+
 def test_italic_spaces():
     notion_data = mock_rich_text_array([('An', []), (' italic ', ['italic']), ('word.', [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
