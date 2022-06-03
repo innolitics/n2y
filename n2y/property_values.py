@@ -100,11 +100,21 @@ def _process_notion_date(notion_date):
 
 class DatePropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
+        # TODO: handle timezones
         super().__init__(client, notion_data)
         self.value = _process_notion_date(notion_data['date'])
 
     def to_value(self):
         return self.value
+
+    def to_plain_text(self):
+        # TODO: make this work the same way that Notion does
+        if self.value is None:
+            return ""
+        if isinstance(self.value, list):
+            return f'{self.value[0]} to {self.value[1]}'
+        else:
+            return self.value
 
 
 class PeoplePropertyValue(PropertyValue):
