@@ -1,13 +1,12 @@
 import os
-import re
 import sys
 import logging
 import argparse
 
-import yaml
-import pandoc
-
-from n2y import blocks, notion, property_values
+from n2y import blocks, notion
+from n2y.database import Database
+from n2y.page import Page
+from n2y.errors import APIErrorCode, APIResponseError
 
 logger = None
 
@@ -21,38 +20,45 @@ def cli_main():
 def main(raw_args, access_token):
     parser = argparse.ArgumentParser(
         description="Move data from Notion into YAML/markdown",
-        formatter_class=argparse.RawTextHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     parser.add_argument("object_id", help="The id or url for a Notion database or page")
     parser.add_argument(
         "--format", '-f',
-        choices=["yaml", "markdown"], default="yaml",
+        choices=["yaml", "yaml-related", "markdown"], default="yaml",
         help=(
             "Select output type (only applies to databases)\n"
             "  yaml - log yaml to stdout\n"
-            "  markdown - create a markdown file for each page"))
+            "  yaml-related - save all related databases to a set of YAML files\n"
+            "  markdown - create a markdown file for each page"
+        )
+    )
     parser.add_argument(
-        "--media-root", help="Filesystem path to directory where images and media are saved")
+        "--media-root", help="Filesystem path to directory where images and media are saved"
+    )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
     parser.add_argument("--plugins", '-p', help="Plugin file")
     parser.add_argument(
         "--output", '-o', default='./',
-        help="Relative path to output directory")
+        help="Relative path to output directory",
+    )
     parser.add_argument(
         "--verbosity", '-v', default='INFO',
-        help="Level to set the root logging module to")
+        help="Level to set the root logging module to",
+    )
     parser.add_argument(
         "--logging-format", default='%(asctime)s - %(levelname)s: %(message)s',
-        help="Default format used when logging")
-    parser.add_argument(
-        "--name-column", '-n', default='title',
-        help=(
-            "Database column that will be used to generate the filename "
-            "for each row. Column names are normalized to lowercase letters, "
-            "numbers, and underscores. Only used when generating markdown."))
+        help="Default format used when logging",
+    )
+
+    # TODO: Add the ability to dump out a "schema" file that contains the schema
+    # for a set of databases
+
+    # TODO: Add the ability to export everything as a sqlite file
+
     args = parser.parse_args(raw_args)
 
-    logging.basicConfig(
-        format=args.logging_format, level=logging.__dict__[args.verbosity])
+    logging.basicConfig(format=args.logging_format, level=logging.__dict__[args.verbosity])
     global logger
     logger = logging.getLogger(__name__)
 
@@ -67,124 +73,74 @@ def main(raw_args, access_token):
 
     client = notion.Client(access_token, media_root, args.media_url)
 
-    object_data, object_type = client.get_page_or_database(object_id)
+    node = client.get_page_or_database(object_id)
 
     # TODO: in the future, determing the natural keys for each row in the
     # database and calculate them up-front; prune out any pages where the
-    # natural key is empty. Furthermore, add duplicate handling here. Once the
-    # natural key handling is done, there should be no need for the
-    # `name_column_valid` since that will be handled here
+    # natural key is empty. Furthermore, add duplicate handling here.
 
-    if object_type == "database" and args.format == 'markdown':
-        if name_column_valid(object_data, args.name_column):
-            export_database_as_markdown_files(client, object_data, options=args)
-        else:
-            return 1
-    elif object_type == "database" and args.format == 'yaml':
-        export_database_as_yaml_file(client, object_data)
-    elif object_type == "page":
-        export_page_as_markdown(client, object_data)
+    if isinstance(node, Database) and args.format == 'markdown':
+        export_database_as_markdown_files(node, options=args)
+    elif isinstance(node, Database) and args.format == 'yaml':
+        print(node.to_yaml())
+    elif isinstance(node, Database) and args.format == 'yaml-related':
+        export_related_databases(node, options=args)
+    elif isinstance(node, Page):
+        print(node.to_markdown())
 
     return 0
 
 
-def name_column_valid(raw_rows, name_column):
-    first_row_flattened = property_values.flatten_property_values(raw_rows[0])
-
-    def available_columns():
-        return filter(
-            lambda c: isinstance(first_row_flattened[c], str),
-            first_row_flattened.keys())
-
-    # make sure the title column exists
-    if name_column not in first_row_flattened:
-        logger.critical(
-            'Database does not contain the column "%s". Please specify '
-            'the correct name column using the --name-column (-n) flag. '
-            # only show columns that have strings as possible options
-            'Available column(s): ' + ', '.join(available_columns()), name_column)
-        return False
-
-    # make sure title column is not empty (only the first row is checked)
-    if first_row_flattened[name_column] is None:
-        logger.critical('Column "%s" Cannot Be Empty.', name_column)
-        return False
-
-    # make sure the title column is a string
-    if not isinstance(first_row_flattened[name_column], str):
-        logger.critical(
-            'Column "%s" does not contain a string. '
-            # only show columns that have strings as possible options
-            'Available column(s): ' + ', '.join(available_columns()), name_column)
-        return False
-    return True
-
-
-def export_database_as_markdown_files(client, raw_rows, options):
+def export_database_as_markdown_files(database, options):
     os.makedirs(options.output, exist_ok=True)
-    file_names = []
-    skips = {'unnamed': 0, 'duplicate': 0}
-    for row in raw_rows:
-        meta = property_values.flatten_property_values(row)
-        page_name = meta[options.name_column]
-        if page_name:
-            # sanitize file name just a bit
-            # maybe use python-slugify in the future?
-            filename = re.sub(r"[\s/,\\]", '_', page_name.lower())
-            if filename not in file_names:
-                file_names.append(filename)
-
-                pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
-                logger.info('Processing page "%s".', page_name)
-
-                markdown = pandoc_tree_to_markdown(pandoc_output)
-
-                with open(os.path.join(options.output, f"{filename}.md"), 'w') as f:
-                    write_yaml_frontmatter(f, meta)
-                    f.write(markdown)
+    seen_file_names = set()
+    counts = {'unnamed': 0, 'duplicate': 0}
+    for page in database.children:
+        # TODO: switch to using the database's natural keys as the file names
+        file_name = page.title
+        if file_name:
+            if file_name not in seen_file_names:
+                seen_file_names.add(file_name)
+                with open(os.path.join(options.output, f"{file_name}.md"), 'w') as f:
+                    f.write(page.to_markdown())
             else:
-                logger.debug('Page name "%s" has been used', page_name)
-                skips['duplicate'] += 1
+                logger.warning('Skipping page named "%s" since it has been used', file_name)
+                counts['duplicate'] += 1
         else:
-            skips['unnamed'] += 1
-    for key, count in skips.items():
+            counts['unnamed'] += 1
+    for key, count in counts.items():
         if count > 0:
             logger.info("%d %s page(s) skipped", count, key)
 
 
-def write_yaml_frontmatter(open_file, metadata):
-    open_file.write('---\n')
-    # TODO: replace with nice clean YAML dumper
-    open_file.write(yaml.dump(metadata))
-    open_file.write('---\n\n')
+def export_related_databases(seed_database, options):
+    os.makedirs(options.output, exist_ok=True)
 
+    seen_database_ids = set()
+    seen_file_names = set()
 
-def export_database_as_yaml_file(client, raw_rows):
-    result = []
-    for row in raw_rows:
-        pandoc_output = blocks.load_block(client, row['id']).to_pandoc()
-        markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
-        result.append({**property_values.flatten_property_values(row), 'content': markdown})
+    def _export_related_databases(database):
+        seen_database_ids.add(database.notion_id)
+        file_name = database.title.to_markdown()
+        if file_name not in seen_file_names:
+            seen_file_names.add(file_name)
+            with open(os.path.join(options.output, f"{file_name}.yml"), 'w') as f:
+                f.write(database.to_yaml())
+        else:
+            logger.warning('Database name "%s" has been used', file_name)
+        for database_id in database.related_database_ids:
+            if database_id not in seen_database_ids:
+                try:
+                    related_database = database.client.get_database(database_id)
+                    _export_related_databases(related_database)
+                except APIResponseError as err:
+                    if err.code == APIErrorCode.ObjectNotFound:
+                        msg = 'Skipping database with id "%s" due to lack of permissions'
+                        logger.warning(msg, database_id)
+                    else:
+                        raise err
 
-    print(yaml.dump(result, sort_keys=False))
-
-
-def export_page_as_markdown(client, page):
-    pandoc_output = blocks.load_block(client, page['id']).to_pandoc()
-    markdown = pandoc_tree_to_markdown(pandoc_output) if pandoc_output else None
-    metadata = property_values.flatten_property_values(page)
-
-    # For now, print the single page to standard output; eventually we'll need
-    # to re-think this and likely write the result to a file. This is necessary
-    # if there are sub-pages or sub-databases which would need to go into
-    # separate files.
-    write_yaml_frontmatter(sys.stdout, metadata)
-    print(markdown)
-
-
-def pandoc_tree_to_markdown(pandoc_tree):
-    return pandoc.write(pandoc_tree, format='gfm+tex_math_dollars') \
-        .replace('\r\n', '\n')  # Deal with Windows line endings
+    _export_related_databases(seed_database)
 
 
 if __name__ == "__main__":

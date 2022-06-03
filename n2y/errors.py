@@ -76,7 +76,7 @@ class APIResponseError(HTTPResponseError):
     """An error raised by Notion API."""
 
     def __init__(self, response, message, code) -> None:
-        super().__init__(response, message)
+        super().__init__(response, f"{message} [{code}]")
         self.code = code
 
 

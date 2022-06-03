@@ -1,111 +1,262 @@
-"""
-Simplify data that has been returned from the Notion API.
-"""
+from datetime import datetime
 import logging
+
+from n2y.utils import fromisoformat
+
 
 logger = logging.getLogger(__name__)
 
 
-def flatten_database_rows(raw_rows):
-    return [flatten_property_values(r) for r in raw_rows]
+class PropertyValue:
+    def __init__(self, client, notion_data):
+        self.client = client
+        self.notion_property_id = notion_data['id']
+        self.notion_type = notion_data['type']
 
-
-def flatten_property_values(raw_data):
-    return {
-        k: simplify_property(v)
-        for k, v in raw_data["properties"].items()
-    }
-
-
-def simplify_property(prop):
-    if prop["type"] == "title":
-        return simplify_title(prop["title"])
-    elif prop["type"] == "rich_text":
-        return simplify_rich_text(prop["rich_text"])
-    elif prop["type"] == "select":
-        return simplify_select(prop["select"])
-    elif prop["type"] == "people":
-        return simplify_people(prop["people"])
-    elif prop["type"] == "url":
-        return prop["url"]
-    elif prop["type"] == "number":
-        return prop["number"]
-    elif prop["type"] == "email":
-        return prop["email"]
-    elif prop["type"] == "checkbox":
-        return prop["checkbox"]
-    elif prop["type"] == "phone_number":
-        return prop["phone_number"]
-    elif prop["type"] == "date":
-        return simplify_date(prop["date"])
-    elif prop["type"] == "multi_select":
-        return [option["name"] for option in prop["multi_select"]]
-    elif prop["type"] == "relation":
-        logger.warning("field type 'relation' is not fully implemented")
-        return [relation["id"] for relation in prop["relation"]]
-    elif prop["type"] == "rollup":
-        logger.warning("field type 'rollup' is not fully implemented")
-        r = prop["rollup"]
-        return {"type": r["type"], "function": r["function"], r["type"]: r[r["type"]]}
-    elif prop["type"] == "formula":
-        logger.warning("field type 'formula' is not fully implemented")
-        return prop["formula"]["string"]
-    elif prop["type"] == "files":
-        logger.warning("field type 'files' is not fully implemented")
-        return prop["files"]
-    else:
-        # TODO: add remaining column types
+    def to_value(self):
         raise NotImplementedError()
 
 
-def simplify_title(data):
-    if data is None or len(data) == 0:
+class TitlePropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        # TODO: handle the case when there are more than 25 rich text items in the property
+        # See https://developers.notion.com/reference/retrieve-a-page-property
+        super().__init__(client, notion_data)
+        self.rich_text = client.wrap_notion_rich_text_array(notion_data['title'])
+
+    def to_value(self):
+        return self.rich_text.to_markdown()
+
+
+class TextPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        # TODO: handle the case when there are more than 25 rich text items in the property
+        # See https://developers.notion.com/reference/retrieve-a-page-property
+        super().__init__(client, notion_data)
+        self.rich_text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
+
+    def to_value(self):
+        return self.rich_text.to_markdown()
+
+
+class NumberPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.number = notion_data['number']
+
+    def to_value(self):
+        return self.number
+
+
+class SelectPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        notion_select = notion_data['select']
+        if notion_select is not None:
+            self.notion_option_id = notion_select['id']
+            self.name = notion_select['name']
+            self.color = notion_select['color']
+        else:
+            self.notion_option_id = None
+            self.name = None
+            self.color = None
+
+    def to_value(self):
+        # Note: the Notion UI shouldn't allow you to have two options with the
+        # same name
+        return self.name
+
+
+class MultiSelectPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.options = [MultiSelectOption(self.client, no) for no in notion_data['multi_select']]
+
+    def to_value(self):
+        # Note: the Notion UI shouldn't allow you to have two options with the
+        # same name
+        return [o.name for o in self.options]
+
+
+class MultiSelectOption:
+    def __init__(self, client, notion_option):
+        self.client = client
+        self.notion_id = notion_option['id']
+        self.name = notion_option['name']
+        self.color = notion_option['color']
+
+
+def _process_notion_date(notion_date):
+    if notion_date is None:
         return None
-    return data[0]["plain_text"]
-
-
-def simplify_select(data):
-    if data is None:
-        return None
-    return data["name"]
-
-
-def simplify_rich_text(data):
-    # Note that this will strip out some things that markdown doesn't support,
-    # like colors and underlines.
-    return "".join(simplify_rich_text_item(r) for r in data)
-
-
-def simplify_rich_text_item(data):
-    text = escape_markdown(data["plain_text"])
-    if data["annotations"]["code"]:
-        text = f"`{text}`"
-    if data["annotations"]["bold"]:
-        text = f"**{text}**"
-    if data["annotations"]["italic"]:
-        text = f"*{text}*"
-    if data["annotations"]["strikethrough"]:
-        text = f"~~{text}~~"
-    if data["href"] is not None:
-        text = f"[{text}]({data['href']})"
-    return text
-
-
-def escape_markdown(text):
-    # TODO: think through other things we should escape and if/when we need to
-    # escape
-    escaped = "*_`[]"
-    return "".join(c if c not in escaped else f"\\{c}" for c in text)
-
-
-def simplify_people(data):
-    return [p["name"] for p in data]
-
-
-def simplify_date(data):
-    if data is None:
-        return None
-    if data["end"] is None:
-        return data["start"]
+    elif notion_date.get('end', None):
+        return [
+            notion_date['start'],
+            notion_date['end'],
+        ]
     else:
-        return f'{data["start"]} to {data["end"]}'
+        return notion_date['start']
+
+
+class DatePropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.value = _process_notion_date(notion_data['date'])
+
+    def to_value(self):
+        return self.value
+
+
+class PeoplePropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.people = [client.wrap_notion_user(nu) for nu in notion_data['people']]
+
+    def to_value(self):
+        return [u.to_value() for u in self.people]
+
+
+class FilesPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.files = [client.wrap_notion_file(nf) for nf in notion_data['files']]
+
+    def to_value(self):
+        return [f.to_value() for f in self.files]
+
+
+class CheckboxPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.checkbox = notion_data['checkbox']
+
+    def to_value(self):
+        return self.checkbox
+
+
+class UrlPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.url = notion_data['url']
+
+    def to_value(self):
+        return self.url
+
+
+class EmailPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.email = notion_data['email']
+
+    def to_value(self):
+        return self.email
+
+
+class PhoneNumberPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.phone_number = notion_data['phone_number']
+
+    def to_value(self):
+        return self.phone_number
+
+
+class FormulaPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        # TODO: set other attributes
+        notion_formula = notion_data["formula"]
+        if notion_formula["type"] == "date":
+            self.value = _process_notion_date(notion_formula["date"])
+        else:
+            self.value = notion_formula[notion_formula["type"]]
+
+    def to_value(self):
+        return self.value
+
+
+class RelationPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        # TODO: handle the case when there are more than 25 pages in the relation
+        # See https://developers.notion.com/reference/retrieve-a-page-property
+        super().__init__(client, notion_data)
+        self.ids = [related["id"] for related in notion_data["relation"]]
+
+    def to_value(self):
+        return self.ids
+
+
+class RollupPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        # TODO: handle the case when the rollup needs to be paginated
+        # See https://developers.notion.com/reference/retrieve-a-page-property
+        super().__init__(client, notion_data)
+        notion_rollup = notion_data["rollup"]
+        self.function = notion_rollup["function"]
+        if notion_rollup["type"] == "date":
+            self.value = _process_notion_date(notion_rollup['date'])
+        else:
+            self.value = notion_rollup[notion_rollup["type"]]
+        # TODO: handle arrays of dates
+
+    def to_value(self):
+        return self.value
+
+
+class CreatedTimePropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.created_time = fromisoformat(notion_data['created_time'])
+
+    def to_value(self):
+        return datetime.isoformat(self.created_time)
+
+
+class CreatedByPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.created_by = client.wrap_notion_user(notion_data['created_by'])
+
+    def to_value(self):
+        return self.created_by.to_value()
+
+
+class LastEditedTimePropertyValue(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
+
+    def to_value(self):
+        return datetime.isoformat(self.last_edited_time)
+
+
+class LastEditedBy(PropertyValue):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
+
+    def to_value(self):
+        return self.last_edited_by.to_value()
+
+
+DEFAULT_PROPERTY_VALUES = {
+    'title': TitlePropertyValue,
+    'rich_text': TextPropertyValue,
+    'number': NumberPropertyValue,
+    'select': SelectPropertyValue,
+    'multi_select': MultiSelectPropertyValue,
+    'date': DatePropertyValue,
+    'people': PeoplePropertyValue,
+    'files': FilesPropertyValue,
+    'checkbox': CheckboxPropertyValue,
+    'url': UrlPropertyValue,
+    'email': EmailPropertyValue,
+    'phone_number': PhoneNumberPropertyValue,
+    'formula': FormulaPropertyValue,
+    'relation': RelationPropertyValue,
+    'rollup': RollupPropertyValue,
+    'created_time': CreatedTimePropertyValue,
+    'created_by': CreatedByPropertyValue,
+    'last_edited_time': LastEditedTimePropertyValue,
+    'last_edited_by': LastEditedBy,
+}

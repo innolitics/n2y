@@ -1,117 +1,110 @@
-import pandoc
 from pandoc.types import (
-    Str, Para, Space, Strong, Emph, Strikeout, Code, Link, Math, InlineMath,
+    Str, Space, Strong, Emph, Strikeout, Code, Link, Math, InlineMath,
     Underline
 )
 
-from n2y import blocks
-from tests.utils import newline_lf
-from tests.notion_mocks import mock_annotations, mock_block, mock_paragraph_block, mock_rich_text
+from n2y.notion import Client
+from tests.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text
+
+
+def process_rich_text_array(notion_data):
+    client = Client('')
+    rich_text_array = client.wrap_notion_rich_text_array(notion_data)
+    pandoc_ast = rich_text_array.to_pandoc()
+    markdown = rich_text_array.to_markdown()
+    plain_text = rich_text_array.to_plain_text()
+    return pandoc_ast, markdown, plain_text
 
 
 def test_bold_word():
-    input = mock_paragraph_block([('A ', []), ('bold', ['bold']), (' word.', [])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([
-        Str("A"), Space(), Strong([Str("bold")]), Space(), Str("word.")])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "A **bold** word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
+    notion_data = mock_rich_text_array([('A ', []), ('bold', ['bold']), (' word.', [])])
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
+        Str("A"), Space(), Strong([Str("bold")]), Space(), Str("word.")
+    ]
+    assert markdown == "A **bold** word."
+    assert plain_text == "A bold word."
 
 
 def test_bold_letter():
-    input = mock_paragraph_block([('A ', []), ('b', ['bold']), ('old word.', [])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para(
-        [Str("A"), Space(), Strong([Str("b")]), Str("old"), Space(), Str("word.")])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "A **b**old word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
+    notion_data = mock_rich_text_array([('A ', []), ('b', ['bold']), ('old word.', [])])
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
+        Str("A"), Space(), Strong([Str("b")]), Str("old"), Space(), Str("word.")
+    ]
+    assert markdown == "A **b**old word."
+    assert plain_text == "A bold word."
 
 
 def test_bold_spaces():
-    input = mock_paragraph_block([(' bold ', ['bold'])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([Space(), Strong([Str('bold')]), Space()])
+    notion_data = mock_rich_text_array([('A', []), (' bold ', ['bold']), ('word.', [])])
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
+        Str("A"), Space(), Strong([Str("bold")]), Space(), Str("word.")
+    ]
+    assert markdown == "A **bold** word."
+    assert plain_text == "A bold word."
 
 
 def test_italic_word():
-    input = mock_paragraph_block([('An ', []), ('italic', ['italic']), (' word.', [])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para(
-        [Str("An"), Space(), Emph([Str("italic")]), Space(), Str("word.")])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "An *italic* word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
+    notion_data = mock_rich_text_array([('An ', []), ('italic', ['italic']), (' word.', [])])
+    pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
+        Str("An"), Space(), Emph([Str("italic")]), Space(), Str("word.")
+    ]
+    assert markdown == "An *italic* word."
 
 
 def test_italic_letter():
-    input = mock_paragraph_block([('An ', []), ('i', ['italic']), ('talic word.', [])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para(
-        [Str("An"), Space(), Emph([Str("i")]), Str("talic"), Space(), Str("word.")])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "An *i*talic word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
+    notion_data = mock_rich_text_array([('An ', []), ('i', ['italic']), ('talic word.', [])])
+    pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
+    assert pandoc_ast == [Str("An"), Space(), Emph([Str("i")]), Str("talic"), Space(), Str("word.")]
+    assert markdown == "An *i*talic word."
 
 
 def test_bold_italic_word():
-    input = mock_paragraph_block([
+    notion_data = mock_rich_text_array([
         ('A ', []),
         ('bold-italic', ['bold', 'italic']),
-        (' word.', [])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([
+        (' word.', []),
+    ])
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
         Str('A'),
         Space(),
         Emph([Strong([Str('bold-italic')])]),
         Space(),
-        Str('word.')])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "A ***bold-italic*** word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
+        Str('word.'),
+    ]
+    assert markdown == "A ***bold-italic*** word."
+    assert plain_text == "A bold-italic word."
 
 
 def test_italic_spaces():
-    input = mock_paragraph_block([(' italic ', ['italic'])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([Space(), Emph([Str('italic')]), Space()])
+    notion_data = mock_rich_text_array([('An', []), (' italic ', ['italic']), ('word.', [])])
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [Str('An'), Space(), Emph([Str('italic')]), Space(), Str('word.')]
+    assert markdown == "An *italic* word."
+    assert plain_text == "An italic word."
 
 
 def test_strikeout_word():
-    input = mock_paragraph_block([('A ', []), ('deleted', ['strikethrough']), (' word.', [])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para(
-        [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "A ~~deleted~~ word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
+    notion_data = mock_rich_text_array([('A ', []), ('deleted', ['strikethrough']), (' word.', [])])
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")]
+    assert markdown == "A ~~deleted~~ word."
+    assert plain_text == "A deleted word."
 
 
 def test_strikeout_spaces():
-    input = mock_paragraph_block([(' strikethrough ', ['strikethrough'])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([Space(), Strikeout([Str('strikethrough')]), Space()])
-
-
-def test_struckthrough_spaces():
-    input1 = mock_paragraph_block([(' strikethrough ', ['strikethrough'])])
-    obj1 = blocks.ParagraphBlock(None, input1, get_children=False)
-    pandoc_output1 = obj1.to_pandoc()
-    assert pandoc_output1 == Para([Space(), Strikeout([Str('strikethrough')]), Space()])
+    notion_data = mock_rich_text_array([('A', []), (' deleted ', ['strikethrough']), ('word.', [])])
+    pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
+    assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")]
+    assert markdown == "A ~~deleted~~ word."
 
 
 def test_blended_annotated_spaces():
-    input = mock_paragraph_block([
+    notion_data = mock_rich_text_array([
         ('this ', ['bold']),
         ('is ', ['bold', 'italic']),
         ('a', ['italic']),
@@ -120,9 +113,8 @@ def test_blended_annotated_spaces():
         (' i pass', ['underline', 'code']),
         ('?', [])
     ])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([
+    pandoc_ast, _, _ = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
         Strong([Str('this')]),
         Space(),
         Emph([Strong([Str('is')])]),
@@ -132,7 +124,9 @@ def test_blended_annotated_spaces():
         Strikeout([Str('test')]),
         Underline([Strong([Code(('', [], []), ' did')])]),
         Underline([Code(('', [], []), ' i pass')]),
-        Str('?')])
+        Str('?')
+    ]
+    # TODO: add assertion for markdown
 
 
 def test_equation_inline():
@@ -140,8 +134,8 @@ def test_equation_inline():
     rhs = "\\Psi (t)\\rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}"
     example_equation = f"{lhs}{rhs}"
 
-    input = mock_block("paragraph", {'text': [
-        mock_rich_text('Schrödinger Equation ('),
+    notion_data = [
+        mock_rich_text('The Schrödinger Equation ('),
         {
             'type': 'equation',
             'equation': {'expression': example_equation},
@@ -150,46 +144,40 @@ def test_equation_inline():
             'href': None,
         },
         mock_rich_text(') is a very useful one indeed'),
-    ]})
+    ]
 
-    obj = blocks.parse_block(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([
-        Str('Schrödinger'), Space(), Str('Equation'), Space(), Str('('),
+    pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
+        Str('The'), Space(), Str('Schrödinger'), Space(), Str('Equation'), Space(), Str('('),
         Math(InlineMath(), example_equation), Str(')'), Space(),
         Str('is'), Space(), Str('a'), Space(), Str('very'), Space(),
-        Str('useful'), Space(), Str('one'), Space(), Str('indeed')])
-    markdown_output = pandoc.write(pandoc_output, format='gfm+tex_math_dollars')
-    md1 = "Schrödinger Equation\n(${\\displaystyle i\\hbar "
+        Str('useful'), Space(), Str('one'), Space(), Str('indeed'),
+    ]
+    md1 = "The Schrödinger Equation (${\\displaystyle i\\hbar "
     md2 = "{\\frac {d}{dt}}\\vert \\Psi (t)\\rangle={\\hat "
-    md3 = "{H}}\\vert \\Psi (t)\\rangle}$)\nis a very useful one indeed\n"
-    expected_markdown = f"{md1}{md2}{md3}"
-    assert newline_lf(markdown_output) == expected_markdown
+    md3 = "{H}}\\vert \\Psi (t)\\rangle}$) is a very useful one indeed"
+    assert markdown == f"{md1}{md2}{md3}"
 
 
 def test_code_inline():
-    input = mock_paragraph_block([('A ', []), ('code', ['code']), (' word.', [])])
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para(
-        [Str("A"), Space(), Code(("", [], []), "code"), Space(), Str("word.")])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = "A `code` word.\n"
-    assert newline_lf(markdown_output) == expected_markdown
+    notion_data = mock_rich_text_array([('A ', []), ('code', ['code']), (' word.', [])])
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [Str("A"), Space(), Code(("", [], []), "code"), Space(), Str("word.")]
+    assert markdown == "A `code` word."
+    assert plain_text == "A code word."
 
 
 def test_link_inline():
-    input = mock_block("paragraph", {"text": [
+    notion_data = [
         mock_rich_text("This is a "),
         mock_rich_text("link", ["bold"], href="https://example.com"),
         mock_rich_text("."),
-    ]})
-    obj = blocks.ParagraphBlock(None, input, get_children=False)
-    pandoc_output = obj.to_pandoc()
-    assert pandoc_output == Para([
+    ]
+    pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
+    assert pandoc_ast == [
         Str('This'), Space(), Str('is'), Space(), Str('a'), Space(),
         Link(('', [], []), [Strong([Str('link')])], ('https://example.com', '')),
-        Str('.')])
-    markdown_output = pandoc.write(pandoc_output, format='gfm')
-    expected_markdown = 'This is a [**link**](https://example.com).\n'
-    assert newline_lf(markdown_output) == expected_markdown
+        Str('.'),
+    ]
+    assert markdown == 'This is a [**link**](https://example.com).'
+    assert plain_text == 'This is a link.'

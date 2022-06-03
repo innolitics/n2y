@@ -123,17 +123,22 @@ Before pushing such commits, be sure to update the change log below.
 
 Here are some features we're planning to add in the future:
 
-- Add support for all block types and database property types
-- Add support for exporting sets of related databases
+- Add support for all block types
 - Make the plugin system more fully featured and easier to use
 - Add support for recursively dumping sets of pages and preserving links between them
-- Add some sort of Notion API cacheing mechanism
+- Add some sort of Notion API caching mechanism
 - Add more examples to the documentation
 - Make it so that plugins and other configuration can be set for only a sub-set
   of the exported pages, that way multiple configurations can be applied in a
   single export
 
 ## Changelog
+
+### v0.3.0
+
+- Add support for exporting sets of linked YAML files
+- Extend support to all property value types (including rollupws, etc.)
+- Removed the "name_column" option (will be replaced with better natural key handling)
 
 ### v0.2.4
 
@@ -144,10 +149,10 @@ Here are some features we're planning to add in the future:
 ### v0.2.3
 
 - Skip Notion pages with falsey names.
-- Create shortcut flags for each parser arguement.
+- Create shortcut flags for each parser argument.
 
 ### v0.2.2
 
 - Improve logging, including adding arguments to control the verbosity of the output.
-- Fix bug that occurs if Notion has bolded, italic or struckthrough text that includes a space on the ends. When this occured, the generated markdown would not work properly. For example, bolded text could end up producing a list.
+- Fix bug that occurs if Notion has bolded, italic or struckthrough text that includes a space on the ends. When this occurred, the generated markdown would not work properly. For example, bolded text could end up producing a list.
 - Ignore the name column argument when generating YAML.
