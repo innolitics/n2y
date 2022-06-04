@@ -176,8 +176,8 @@ class ToDoListItemBlock(BulletedListItemBlock):
 
         # TODO: Consider doing this at the "to_pandoc" stage
         box = '☒' if self.checked else '☐'
-        self.rich_text.items[0].plain_text.text = box + \
-            ' ' + self.rich_text.items[0].plain_text.text
+        self.rich_text.items[0].plain_text = box + \
+            ' ' + self.rich_text.items[0].plain_text
 
 
 class NumberedListItemBlock(ListItemBlock):
@@ -247,7 +247,7 @@ class FencedCodeBlock(Block):
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        plain_text = ''.join(t.plain_text.text for t in self.rich_text.items)
+        plain_text = ''.join(t.plain_text for t in self.rich_text.items)
         return CodeBlock(('', [self.language], []), plain_text)
 
 

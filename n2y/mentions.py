@@ -1,5 +1,7 @@
 from pandoc.types import Str
 
+from n2y.utils import process_notion_date, processed_date_to_plain_text
+
 
 class Mention:
     def __init__(self, client, notion_data):
@@ -13,13 +15,13 @@ class UserMention(Mention):
         self.user = client.wrap_notion_user(notion_data["user"])
 
     def to_pandoc(self):
-        return [Str(self.user["name"])]
+        return [Str(self.user.name)]
 
 
 class PageMention(Mention):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.page_id = notion_data["id"]
+        self.page_id = notion_data["page"]["id"]
 
     def to_pandoc(self):
         # TODO: at least replace with the page title
@@ -30,7 +32,7 @@ class PageMention(Mention):
 class DatabaseMention(Mention):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.database_id = notion_data["id"]
+        self.database_id = notion_data["database"]["id"]
 
     def to_pandoc(self):
         # TODO: at least replace with the database title
@@ -41,10 +43,11 @@ class DatabaseMention(Mention):
 class DateMention(Mention):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.date = client.wrap_notion_property_value(notion_data["date"])
+        self.processed_date = process_notion_date(notion_data["date"])
 
     def to_pandoc(self):
-        return [Str(self.date.to_plain_text())]
+        plain_text_date = processed_date_to_plain_text(self.processed_date)
+        return [Str(plain_text_date)]
 
 
 class LinkPreviewMention(Mention):

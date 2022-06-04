@@ -1,13 +1,24 @@
 import re
+import logging
 from collections import deque
 
-from pandoc.types import Str, Space, SoftBreak, Strong, Emph, Strikeout, Code, Link, \
+from pandoc.types import (
+    Str, Space, SoftBreak, Strong, Emph, Strikeout, Code, Link,
     Underline, Math, InlineMath
+)
 
-from n2y.property_values import simplify_date
+from n2y.utils import pandoc_ast_to_markdown
+
+
+logger = logging.getLogger(__name__)
 
 
 class RichText:
+    """
+    A sequence of text that contains the same styling throughout. It also may
+    contain an @-mention or an equation (both of which may be styled as well).
+    """
+
     def __init__(self, client, notion_data):
         self.client = client
 
@@ -49,23 +60,36 @@ class RichText:
         return ast
 
     def annotate_pandoc_ast(self, target):
-        # TODO: handle a space that has styling
+        """
+        Pandoc's Strong, Emph, Underline, and Strikeout all except sub-trees of
+        inlines. Code does not. This is likely because `a *bold* word` does not
+        create a bold word, but *a `code` word* does produce a bolded code word.
+        Thus, it's not generally feasible for `annotate_pandoc_ast` to properly
+        wrap any ast in a `Code`. If `Code` formatting is to be preserved, then
+        the subclasses of `RichText` must apply it separately.
+        """
+        blank_space = [Space(), SoftBreak()]
+
+        if all(n in blank_space for n in target):
+            return target
+
         prependages = deque()
         appendages = deque()
         problematic_annotations = [
             self.bold, self.italic, self.strikethrough
         ]
 
-        if True in problematic_annotations:
-            blank_space = [Space(), SoftBreak()]
+        # Notion's data model allows space to be bolded, italicized, or
+        # strick through, but markdown's doesn't. Thus, since these annotations
+        # aren't visible around blank space anyway, we don't apply the
+        # annotation to the blank space
+        if any(problematic_annotations):
             while target[0] in blank_space:
                 prependages.append(target.pop(0))
             while target[-1] in blank_space:
                 appendages.appendleft(target.pop(-1))
 
         result = target
-        if self.code:
-            result = self._listify(Code(("", [], []), result))
         if self.bold:
             result = self._listify(Strong(result))
         if self.italic:
@@ -84,10 +108,10 @@ class MentionRichText(RichText):
         self.mention = client.wrap_notion_mention(notion_data['mention'])
 
     def to_pandoc(self):
-        # TODO: consider handling annotations with styling
-
-        # TODO: use the mention object
-        return super().to_pandoc()
+        if self.code:
+            logger.warning('Code formatting is being dropped on mention "%s"', self.plain_text)
+        mention_ast = self.mention.to_pandoc()
+        return self.annotate_pandoc_ast(mention_ast)
 
 
 class EquationRichText(RichText):
@@ -96,9 +120,10 @@ class EquationRichText(RichText):
         self.expression = notion_data['equation']['expression']
 
     def to_pandoc(self):
-        # TODO: consider handling equations with annotatios (e.g., a bolded
-        # equation; it seems Notion supports this)
-        return [Math(InlineMath(), self.expression)]
+        if self.code:
+            logger.warning('Code formatting is being dropped on equation "%s"', self.expression)
+        equation_ast = [Math(InlineMath(), self.expression)]
+        return self.annotate_pandoc_ast(equation_ast)
 
 
 class TextRichText(RichText):
@@ -106,8 +131,13 @@ class TextRichText(RichText):
         super().__init__(client, notion_data)
 
     def to_pandoc(self):
-        plain_text_ast = self.plain_text_to_pandoc()
-        annotated_ast = self.annotate_pandoc_ast(plain_text_ast)
+        if not self.code:
+            plain_text_ast = self.plain_text_to_pandoc()
+            annotated_ast = self.annotate_pandoc_ast(plain_text_ast)
+        else:
+            code_ast = [Code(("", [], []), self.plain_text)]
+            annotated_ast = self.annotate_pandoc_ast(code_ast)
+
         if self.href:
             return [Link(
                 ('', [], []),
@@ -126,6 +156,18 @@ DEFAULT_RICH_TEXTS = {
 
 
 class RichTextArray:
+    """
+    Contains a sequence or styled text.
+
+    For example, the sentence with a single bolded word
+
+        "The man ran to *eat* the hot dog."
+
+    would be represented as a `RichTextArray` with three elements. The first
+    would contain "The man ran to ", the second would contain "eat", and would
+    be bolded, and the third would contain " the hot dog.".
+    """
+
     def __init__(self, client, notion_data):
         self.client = client
         assert isinstance(notion_data, list)

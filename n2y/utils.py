@@ -3,9 +3,38 @@ import logging
 
 import pandoc
 from pandoc.types import Str, Space
+from plumbum import ProcessExecutionError
+
+from n2y.errors import PandocASTParseError
 
 
 logger = logging.getLogger(__name__)
+
+
+def process_notion_date(notion_date):
+    if notion_date is None:
+        return None
+    elif notion_date.get('end', None):
+        return [
+            notion_date['start'],
+            notion_date['end'],
+        ]
+    else:
+        return notion_date['start']
+
+
+def processed_date_to_plain_text(processed_date):
+    # TODO: make this work the same way that Notion does
+    if processed_date is None:
+        return ""
+    if isinstance(processed_date, list):
+        return f'{processed_date[0]} to {processed_date[1]}'
+    else:
+        return processed_date
+
+
+# see https://pandoc.org/MANUAL.html#exit-codes
+PANDOC_PARSE_ERROR = 64
 
 
 def pandoc_ast_to_markdown(pandoc_ast):
@@ -20,13 +49,29 @@ def pandoc_ast_to_markdown(pandoc_ast):
             for n in pandoc_ast
         )
     else:
-        result = pandoc.write(
-            pandoc_ast,
-            format='gfm+tex_math_dollars',
-            options=['--wrap', 'none'],  # don't hard line-wrap
-        ).replace('\r\n', '\n')
-        logger.debug("%s", result)
-        logger.debug("%s", repr(pandoc_ast))
+        try:
+            # TODO: add a mechanism to customize this
+            result = pandoc.write(
+                pandoc_ast,
+                format='gfm+tex_math_dollars',
+                options=[
+                    '--wrap', 'none',  # don't hard line-wrap
+                    '--eol', 'lf',  # use linux-style line endings
+                ],
+            )
+        except ProcessExecutionError as err:
+            if err.retcode == PANDOC_PARSE_ERROR:
+                lines = []
+                for element, path in pandoc.iter(pandoc_ast, path=True):
+                    path_str = ".".join(str(i) for _, i in path)
+                    lines.append(f"{path_str} {element}")
+                    logger.debug("Pandoc AST:\n%s", "\n".join(lines))
+                msg = (
+                    "Pandoc couldn't parse the generated AST. "
+                    f"This is likely due to a bug in n2y or a plugin: {err.stderr}"
+                )
+                logger.error(msg)
+            raise PandocASTParseError(msg)
         return result
 
 

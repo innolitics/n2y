@@ -85,7 +85,7 @@ def test_bold_space():
         (' ', ['bold']),
     ])
     pandoc_ast, _, _ = process_rich_text_array(notion_data)
-    assert pandoc_ast == [Strong([Space()])]
+    assert pandoc_ast == [Space()]
 
 
 def test_italic_spaces():

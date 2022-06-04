@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging
 
-from n2y.utils import fromisoformat
+from n2y.utils import fromisoformat, process_notion_date, processed_date_to_plain_text
 
 
 logger = logging.getLogger(__name__)
@@ -86,35 +86,17 @@ class MultiSelectOption:
         self.color = notion_option['color']
 
 
-def _process_notion_date(notion_date):
-    if notion_date is None:
-        return None
-    elif notion_date.get('end', None):
-        return [
-            notion_date['start'],
-            notion_date['end'],
-        ]
-    else:
-        return notion_date['start']
-
-
 class DatePropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
         # TODO: handle timezones
         super().__init__(client, notion_data)
-        self.value = _process_notion_date(notion_data['date'])
+        self.value = process_notion_date(notion_data['date'])
 
     def to_value(self):
         return self.value
 
     def to_plain_text(self):
-        # TODO: make this work the same way that Notion does
-        if self.value is None:
-            return ""
-        if isinstance(self.value, list):
-            return f'{self.value[0]} to {self.value[1]}'
-        else:
-            return self.value
+        return processed_date_to_plain_text(self.value)
 
 
 class PeoplePropertyValue(PropertyValue):
@@ -177,7 +159,7 @@ class FormulaPropertyValue(PropertyValue):
         # TODO: set other attributes
         notion_formula = notion_data["formula"]
         if notion_formula["type"] == "date":
-            self.value = _process_notion_date(notion_formula["date"])
+            self.value = process_notion_date(notion_formula["date"])
         else:
             self.value = notion_formula[notion_formula["type"]]
 
@@ -204,7 +186,7 @@ class RollupPropertyValue(PropertyValue):
         notion_rollup = notion_data["rollup"]
         self.function = notion_rollup["function"]
         if notion_rollup["type"] == "date":
-            self.value = _process_notion_date(notion_rollup['date'])
+            self.value = process_notion_date(notion_rollup['date'])
         else:
             self.value = notion_rollup[notion_rollup["type"]]
         # TODO: handle arrays of dates

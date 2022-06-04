@@ -17,7 +17,8 @@ from n2y.blocks import DEFAULT_BLOCKS
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
-from n2y.rich_text import RichTextArray
+from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
+from n2y.mentions import DEFAULT_MENTIONS
 
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,8 @@ class Client:
         self.user_class = User
         self.file_class = File
         self.rich_text_array_class = RichTextArray
+        self.rich_text_classes = DEFAULT_RICH_TEXTS
+        self.mention_classes = DEFAULT_MENTIONS
 
     def wrap_notion_page(self, notion_data, parent=None):
         return self.page_class(self, notion_data, parent)
@@ -68,13 +71,29 @@ class Client:
     def wrap_notion_rich_text_array(self, notion_data):
         return self.rich_text_array_class(self, notion_data)
 
-    def wrap_notion_property(self, notion_data):
-        notion_property_type = notion_data["type"]
-        property_class = self.property_classes.get(notion_property_type, None)
-        if property_class:
-            return property_class(self, notion_data)
+    def wrap_notion_rich_text(self, notion_data):
+        notion_type = notion_data["type"]
+        klass = self.rich_text_classes.get(notion_type, None)
+        if klass:
+            return klass(self, notion_data)
         else:
-            raise NotImplementedError(f'Unknown property type: "{notion_property_type}"')
+            raise NotImplementedError(f'Unknown rich text type: "{notion_type}"')
+
+    def wrap_notion_mention(self, notion_data):
+        notion_type = notion_data["type"]
+        klass = self.mention_classes.get(notion_type, None)
+        if klass:
+            return klass(self, notion_data)
+        else:
+            raise NotImplementedError(f'Unknown mention type: "{notion_type}"')
+
+    def wrap_notion_property(self, notion_data):
+        notion_type = notion_data["type"]
+        klass = self.property_classes.get(notion_type, None)
+        if klass:
+            return klass(self, notion_data)
+        else:
+            raise NotImplementedError(f'Unknown property type: "{notion_type}"')
 
     def wrap_notion_property_value(self, notion_data):
         notion_property_value_type = notion_data["type"]
