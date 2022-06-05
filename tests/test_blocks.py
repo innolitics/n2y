@@ -14,7 +14,6 @@ from pandoc.types import (
     Caption, Math, DisplayMath
 )
 
-from n2y import file
 from n2y.notion import Client
 from tests.utils import newline_lf
 from tests.notion_mocks import mock_block, mock_file, mock_paragraph_block, mock_rich_text
@@ -172,7 +171,7 @@ def test_block_quote():
     assert markdown == expected_markdown
 
 
-@mock.patch.object(file.File, 'download')
+@mock.patch.object(Client, 'download_file')
 def test_image_internal_with_caption(mock_download):
     notion_block = mock_block("image", {
         'type': 'file',

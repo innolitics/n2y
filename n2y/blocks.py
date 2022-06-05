@@ -2,6 +2,7 @@ from itertools import groupby
 import logging
 import importlib.util
 from os import path
+from urllib.parse import urlparse
 
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
@@ -21,7 +22,7 @@ from pandoc.types import (
 # Block types used here that do not exist in Notion:
 #   container - block with no top-level content, only children (used to parse a page and lists)
 #   bulleted_list - Notion has bulleted_list_item, but no enclosing container
-#   numbered_list - Notion has numbered_list_item, but no enclusing container
+#   numbered_list - Notion has numbered_list_item, but no enclosing container
 
 
 logger = logging.getLogger(__name__)
@@ -271,7 +272,10 @@ class ImageBlock(Block):
         if self.file.type == "external":
             url = self.file.url
         elif self.file.type == "file":
-            url = self.file.download()
+            # TODO: log warning if there are name collisions
+            # TODO: save images in a folder associated with the page
+            file_path = path.basename(urlparse(self.file.url).path)
+            url = self.client.download_file(self.file.url, file_path)
         return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
 
 

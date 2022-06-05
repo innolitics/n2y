@@ -215,15 +215,14 @@ class Client:
             raise HTTPResponseError(error.response)
         return response.json()
 
-    def download_file(self, url):
+    def download_file(self, url, file_path):
         # TODO: append created time as hex to end of file to prevent collisions?
-        makedirs(self.media_root, exist_ok=True)
-        url_path = path.basename(urlparse(url).path)
-        local_filename = path.join(self.media_root, url_path)
+        local_filename = path.join(self.media_root, file_path)
+        makedirs(path.dirname(local_filename), exist_ok=True)
         with requests.get(url, stream=True) as request_stream:
             with open(local_filename, 'wb') as file_stream:
                 copyfileobj(request_stream.raw, file_stream)
-        return urljoin(self.media_url, url_path)
+        return urljoin(self.media_url, file_path)
 
 
 def id_from_share_link(share_link):
