@@ -58,28 +58,11 @@ At the core of n2y are a set of python classes that subclass the `Block` class. 
 
 The default implementation of these block classes can be modified using a plugin system. To create a plugin, follow these steps:
 
-1. Create a new Python file.
-2. Subclass the various Block classes and modify the `to_pandoc` methods as desired
-3. Run n2y with the `--plugin` argument pointing to your python module.
+1. Create a new Python module
+2. Subclass the various notion classes, modifying their constructor or `to_pandoc` method as desired
+3. Run n2y with the `--plugin` argument pointing to your python module
 
-### Example Plugin File
-
-```python
-from n2y.converter import ParagraphBlock
-
-
-class ParagraphBlockOverride(ParagraphBlock):
-    def to_pandoc(self):
-        # Add custom code here. Call super().to_pandoc() to get default implementation.
-        return super().to_pandoc()
-
-# Add classes to override here
-notion_classes = {
-    'blocks': {
-        'paragraph': ParagraphBlockOverride,
-    }
-}
-```
+See the [builtin plugins](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for examples.
 
 ### Default Block Class's
 
