@@ -65,7 +65,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
                 for element, path in pandoc.iter(pandoc_ast, path=True):
                     path_str = ".".join(str(i) for _, i in path)
                     lines.append(f"{path_str} {element}")
-                    logger.debug("Pandoc AST:\n%s", "\n".join(lines))
+                    logger.error("Pandoc AST:\n%s", "\n".join(lines))
                 msg = (
                     "Pandoc couldn't parse the generated AST. "
                     f"This is likely due to a bug in n2y or a plugin: {err.stderr}"
