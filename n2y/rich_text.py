@@ -40,9 +40,6 @@ class RichText:
     def to_markdown(self):
         return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
 
-    def _listify(self, obj):
-        return obj if type(obj) == list else [obj]
-
     def plain_text_to_pandoc(self):
         ast = []
         match = re.findall(r"( +)|(\S+)|(\n+)|(\t+)", self.plain_text)
@@ -91,13 +88,13 @@ class RichText:
 
         result = target
         if self.bold:
-            result = self._listify(Strong(result))
+            result = [Strong(result)]
         if self.italic:
-            result = self._listify(Emph(result))
+            result = [Emph(result)]
         if self.underline:
-            result = self._listify(Underline(result))
+            result = [Underline(result)]
         if self.strikethrough:
-            result = self._listify(Strikeout(result))
+            result = [Strikeout(result)]
 
         return list(prependages) + result + list(appendages)
 
