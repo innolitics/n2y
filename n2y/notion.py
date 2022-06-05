@@ -8,7 +8,10 @@ import importlib.util
 
 import requests
 
-from n2y.errors import HTTPResponseError, APIResponseError, PluginError, is_api_error_code, APIErrorCode
+from n2y.errors import (
+    HTTPResponseError, APIResponseError, PluginError, is_api_error_code,
+    APIErrorCode
+)
 from n2y.file import File
 from n2y.page import Page
 from n2y.database import Database

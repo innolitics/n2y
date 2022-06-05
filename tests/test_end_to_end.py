@@ -200,15 +200,12 @@ def test_builtin_plugins():
     object_id = "96d71e2876eb47b285833582e8cf27eb"
     status, document_as_markdown, _ = run_n2y([
         object_id,
-        #'--plugin', 'n2y.plugins.footnotes',
         '--plugin', 'n2y.plugins.deepheaders',
     ])
     assert status == 0
     lines = document_as_markdown.split('\n')
-    # assert '# H1[^1]' in lines
     assert '#### H4' in lines
     assert '##### H5' in lines
-    #assert '[1]: First **footnote**.' in lines
 
 
 def test_missing_object_exception():
