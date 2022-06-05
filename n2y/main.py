@@ -3,7 +3,7 @@ import sys
 import logging
 import argparse
 
-from n2y import blocks, notion
+from n2y import notion
 from n2y.database import Database
 from n2y.page import Page
 from n2y.errors import APIErrorCode, APIResponseError
@@ -37,7 +37,7 @@ def main(raw_args, access_token):
         "--media-root", help="Filesystem path to directory where images and media are saved"
     )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
-    parser.add_argument("--plugins", '-p', help="Plugin file")
+    parser.add_argument("--plugins", '-p', action='append', help="Plugin file")
     parser.add_argument(
         "--output", '-o', default='./',
         help="Relative path to output directory",
@@ -68,10 +68,8 @@ def main(raw_args, access_token):
 
     object_id = notion.id_from_share_link(args.object_id)
     media_root = args.media_root or args.output
-    if args.plugins:
-        blocks.load_plugins(args.plugins)
 
-    client = notion.Client(access_token, media_root, args.media_url)
+    client = notion.Client(access_token, media_root, args.media_url, plugins=args.plugins)
 
     node = client.get_page_or_database(object_id)
 

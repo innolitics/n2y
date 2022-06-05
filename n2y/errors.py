@@ -5,9 +5,16 @@ class N2YError(Exception):
     pass
 
 
-class PandocASTParseError(Exception):
+class PandocASTParseError(N2YError):
     """
     Raised if there was an error parsing the AST we provided to Pandoc.
+    """
+    pass
+
+
+class PluginError(N2YError):
+    """
+    Raised due to various errors loading a plugin.
     """
     pass
 

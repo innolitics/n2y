@@ -1,15 +1,14 @@
-"""
-Grabbing data from the Notion API
-"""
+import copy
 import logging
 import json
 from os import path, makedirs
 from shutil import copyfileobj
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin
+import importlib.util
 
 import requests
 
-from n2y.errors import HTTPResponseError, APIResponseError, is_api_error_code, APIErrorCode
+from n2y.errors import HTTPResponseError, APIResponseError, PluginError, is_api_error_code, APIErrorCode
 from n2y.file import File
 from n2y.page import Page
 from n2y.database import Database
@@ -19,6 +18,20 @@ from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
+
+
+DEFAULT_NOTION_CLASSES = {
+    "page": Page,
+    "database": Database,
+    "block": DEFAULT_BLOCKS,
+    "property": DEFAULT_PROPERTIES,
+    "property_value": DEFAULT_PROPERTY_VALUES,
+    "user": User,
+    "file": File,
+    "rich_text_array": RichTextArray,
+    "rich_text": DEFAULT_RICH_TEXTS,
+    "mention": DEFAULT_MENTIONS,
+}
 
 
 logger = logging.getLogger(__name__)
@@ -35,7 +48,7 @@ class Client:
        local file names so that links can be translated)
     """
 
-    def __init__(self, access_token, media_root='.', media_url=''):
+    def __init__(self, access_token, media_root='.', media_url='', plugins=None):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
@@ -45,64 +58,98 @@ class Client:
             "Content-Type": "application/json",
             "Notion-Version": "2022-02-22",
         }
-        self.page_class = Page
-        self.database_class = Database
-        self.block_classes = DEFAULT_BLOCKS
-        self.property_classes = DEFAULT_PROPERTIES
-        self.property_value_classes = DEFAULT_PROPERTY_VALUES
-        self.user_class = User
-        self.file_class = File
-        self.rich_text_array_class = RichTextArray
-        self.rich_text_classes = DEFAULT_RICH_TEXTS
-        self.mention_classes = DEFAULT_MENTIONS
+
+        self.notion_classes = copy.deepcopy(DEFAULT_NOTION_CLASSES)
+        self.load_plugins(plugins)
+
+    def load_plugins(self, plugins):
+        if plugins is not None:
+            for plugin in plugins:
+                plugin_module = importlib.import_module(plugin)
+                try:
+                    self.load_plugin(plugin_module.notion_classes)
+                except PluginError as err:
+                    logger.error('Error loading plugin "%s": %s', plugin, err)
+                    raise
+
+    def load_plugin(self, notion_classes):
+        for notion_object, object_types in notion_classes.items():
+            if notion_object in self.notion_classes:
+                default_object_types = DEFAULT_NOTION_CLASSES[notion_object]
+                if isinstance(object_types, dict) and isinstance(default_object_types, dict):
+                    for object_type, plugin_class in object_types.items():
+                        if object_type in default_object_types:
+                            class_being_replaced = default_object_types[object_type]
+                            # assumes all of the default classes have a single parent class
+                            base_class = class_being_replaced.__bases__[0]
+                            if issubclass(plugin_class, base_class):
+                                self.notion_classes[notion_object][object_type] = plugin_class
+                            else:
+                                raise PluginError(
+                                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                                    f'override the base class "{base_class.__name__}"',
+                                )
+                        else:
+                            raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
+                elif not isinstance(object_types, dict) and isinstance(default_object_types, dict):
+                    raise PluginError(
+                        f'Expecting a dict for "{notion_object}", found "{type(object_types)}"')
+                else:
+                    plugin_class = object_types
+                    base_class = default_object_types
+                    if issubclass(plugin_class, base_class):
+                        self.notion_classes[notion_object] = plugin_class
+                    else:
+                        raise PluginError(
+                            f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                            f'override the base class "{base_class.__name__}"',
+                        )
+            else:
+                raise PluginError(f'Invalid notion object "{notion_object}"')
+
+    def get_class(self, notion_object, object_type=None):
+        if object_type is None:
+            return self.notion_classes[notion_object]
+        try:
+            return self.notion_classes[notion_object][object_type]
+        except KeyError:
+            raise NotImplementedError(f'Unknown "{notion_object}" class of type "{object_type}"')
 
     def wrap_notion_page(self, notion_data, parent=None):
-        return self.page_class(self, notion_data, parent)
+        page_class = self.get_class("page")
+        return page_class(self, notion_data, parent)
 
     def wrap_notion_database(self, notion_data, parent=None):
-        return self.database_class(self, notion_data, parent)
+        database_class = self.get_class("database")
+        return database_class(self, notion_data, parent)
 
     def wrap_notion_user(self, notion_data):
-        return self.user_class(self, notion_data)
+        user_class = self.get_class("user")
+        return user_class(self, notion_data)
 
     def wrap_notion_file(self, notion_data):
-        return self.file_class(self, notion_data)
+        file_class = self.get_class("file")
+        return file_class(self, notion_data)
 
     def wrap_notion_rich_text_array(self, notion_data):
-        return self.rich_text_array_class(self, notion_data)
+        rich_text_array_class = self.get_class("rich_text_array")
+        return rich_text_array_class(self, notion_data)
 
     def wrap_notion_rich_text(self, notion_data):
-        notion_type = notion_data["type"]
-        klass = self.rich_text_classes.get(notion_type, None)
-        if klass:
-            return klass(self, notion_data)
-        else:
-            raise NotImplementedError(f'Unknown rich text type: "{notion_type}"')
+        rich_text_class = self.get_class("rich_text", notion_data["type"])
+        return rich_text_class(self, notion_data)
 
     def wrap_notion_mention(self, notion_data):
-        notion_type = notion_data["type"]
-        klass = self.mention_classes.get(notion_type, None)
-        if klass:
-            return klass(self, notion_data)
-        else:
-            raise NotImplementedError(f'Unknown mention type: "{notion_type}"')
+        mention_class = self.get_class("mention", notion_data["type"])
+        return mention_class(self, notion_data)
 
     def wrap_notion_property(self, notion_data):
-        notion_type = notion_data["type"]
-        klass = self.property_classes.get(notion_type, None)
-        if klass:
-            return klass(self, notion_data)
-        else:
-            raise NotImplementedError(f'Unknown property type: "{notion_type}"')
+        property_class = self.get_class("property", notion_data["type"])
+        return property_class(self, notion_data)
 
     def wrap_notion_property_value(self, notion_data):
-        notion_property_value_type = notion_data["type"]
-        property_value_class = self.property_value_classes.get(notion_property_value_type, None)
-        if property_value_class:
-            return property_value_class(self, notion_data)
-        else:
-            msg = f'Unknown property value type: "{notion_property_value_type}"'
-            raise NotImplementedError(msg)
+        property_value_class = self.get_class("property_value", notion_data["type"])
+        return property_value_class(self, notion_data)
 
     def get_page_or_database(self, object_id):
         """
