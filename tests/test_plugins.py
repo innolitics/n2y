@@ -16,7 +16,7 @@ def test_load_plugin_invalid_notion_object():
 def test_load_plugin_invalid_object_type():
     client = Client('')
     with pytest.raises(PluginError) as err:
-        client.load_plugin({"block": {"puppy": str}})
+        client.load_plugin({"blocks": {"puppy": str}})
     assert "block" in str(err)
     assert "puppy" in str(err)
 
@@ -43,18 +43,18 @@ def test_load_plugin_invalid_page_class():
 
 def test_load_plugin_valid_block():
     client = Client('')
-    assert client.get_class("block", "paragraph") == ParagraphBlock
+    assert client.get_class("blocks", "paragraph") == ParagraphBlock
 
     class MyParagraphBlock(ParagraphBlock):
         pass
-    client.load_plugin({"block": {"paragraph": MyParagraphBlock}})
-    assert client.get_class("block", "paragraph") == MyParagraphBlock
+    client.load_plugin({"blocks": {"paragraph": MyParagraphBlock}})
+    assert client.get_class("blocks", "paragraph") == MyParagraphBlock
 
 
 def test_load_plugin_invalid_block_mapping():
     client = Client('')
     with pytest.raises(PluginError) as err:
-        client.load_plugin({"block": str})
+        client.load_plugin({"blocks": str})
     assert "block" in str(err)
 
 
@@ -64,5 +64,5 @@ def test_load_plugin_invalid_block_class():
     class MyParagraphBlock:
         pass
     with pytest.raises(PluginError) as err:
-        client.load_plugin({"block": {"paragraph": MyParagraphBlock}})
+        client.load_plugin({"blocks": {"paragraph": MyParagraphBlock}})
     assert "MyParagraphBlock" in str(err)

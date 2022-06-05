@@ -23,14 +23,14 @@ from n2y.mentions import DEFAULT_MENTIONS
 DEFAULT_NOTION_CLASSES = {
     "page": Page,
     "database": Database,
-    "block": DEFAULT_BLOCKS,
-    "property": DEFAULT_PROPERTIES,
-    "property_value": DEFAULT_PROPERTY_VALUES,
+    "blocks": DEFAULT_BLOCKS,
+    "properties": DEFAULT_PROPERTIES,
+    "property_values": DEFAULT_PROPERTY_VALUES,
     "user": User,
     "file": File,
     "rich_text_array": RichTextArray,
-    "rich_text": DEFAULT_RICH_TEXTS,
-    "mention": DEFAULT_MENTIONS,
+    "rich_texts": DEFAULT_RICH_TEXTS,
+    "mentions": DEFAULT_MENTIONS,
 }
 
 
@@ -123,6 +123,10 @@ class Client:
         database_class = self.get_class("database")
         return database_class(self, notion_data, parent)
 
+    def wrap_notion_block(self, notion_data, get_children):
+        block_class = self.get_class("blocks", notion_data["type"])
+        return block_class(self, notion_data, get_children)
+
     def wrap_notion_user(self, notion_data):
         user_class = self.get_class("user")
         return user_class(self, notion_data)
@@ -136,19 +140,19 @@ class Client:
         return rich_text_array_class(self, notion_data)
 
     def wrap_notion_rich_text(self, notion_data):
-        rich_text_class = self.get_class("rich_text", notion_data["type"])
+        rich_text_class = self.get_class("rich_texts", notion_data["type"])
         return rich_text_class(self, notion_data)
 
     def wrap_notion_mention(self, notion_data):
-        mention_class = self.get_class("mention", notion_data["type"])
+        mention_class = self.get_class("mentions", notion_data["type"])
         return mention_class(self, notion_data)
 
     def wrap_notion_property(self, notion_data):
-        property_class = self.get_class("property", notion_data["type"])
+        property_class = self.get_class("properties", notion_data["type"])
         return property_class(self, notion_data)
 
     def wrap_notion_property_value(self, notion_data):
-        property_value_class = self.get_class("property_value", notion_data["type"])
+        property_value_class = self.get_class("property_values", notion_data["type"])
         return property_value_class(self, notion_data)
 
     def get_page_or_database(self, object_id):
@@ -196,15 +200,7 @@ class Client:
 
     def get_block(self, block_id, get_children=True):
         notion_block = self.get_notion_block(block_id)
-        return self._wrap_notion_block(notion_block, get_children)
-
-    def _wrap_notion_block(self, notion_block, get_children):
-        notion_block_type = notion_block["type"]
-        block_class = self.block_classes.get(notion_block_type, None)
-        if block_class:
-            return block_class(self, notion_block, get_children)
-        else:
-            raise NotImplementedError(f'Unknown block type: "{notion_block_type}"')
+        return self.wrap_notion_block(notion_block, get_children)
 
     def get_notion_block(self, block_id):
         url = f"{self.base_url}blocks/{block_id}"
@@ -213,7 +209,7 @@ class Client:
 
     def get_child_blocks(self, block_id, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        return [self._wrap_notion_block(b, get_children) for b in child_notion_blocks]
+        return [self.wrap_notion_block(b, get_children) for b in child_notion_blocks]
 
     def get_child_notion_blocks(self, block_id):
         starting_url = f"{self.base_url}blocks/{block_id}/children"
