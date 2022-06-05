@@ -52,13 +52,15 @@ n2y PAGE_LINK > page.md
 
 ## Plugins
 
+TODO: Update the plugin documentation to explain all of the object types as well as the default classes for each of them. For now, please see the source code to understand how the plugin system works.
+
 At the core of n2y are a set of python classes that subclass the `Block` class. These classes are responsible for converting the Notion data into pandoc abstract syntax tree objects. We use a python wrapper library that makes it easier to work with pandoc's AST. See [here](https://boisgera.github.io/pandoc/document/) for details. See the [Notion API documentation](https://developers.notion.com/reference/block) for details about their data structures.
 
 The default implementation of these block classes can be modified using a plugin system. To create a plugin, follow these steps:
 
 1. Create a new Python file.
 2. Subclass the various Block classes and modify the `to_pandoc` methods as desired
-3. Run n2y with the `--plugins` argument pointing to your python module.
+3. Run n2y with the `--plugin` argument pointing to your python module.
 
 ### Example Plugin File
 
@@ -72,8 +74,10 @@ class ParagraphBlockOverride(ParagraphBlock):
         return super().to_pandoc()
 
 # Add classes to override here
-exports = {
-    'ParagraphBlock': ParagraphBlockOverride
+notion_classes = {
+    'blocks': {
+        'paragraph': ParagraphBlockOverride,
+    }
 }
 ```
 
@@ -104,6 +108,14 @@ Here are the default block classes that can be extended:
 
 Most of the Notion blocks can generate their pandoc AST from _only_ their own data. The one exception is the list item blocks; pandoc, unlike Notion, has an encompassing node in the AST for the entire list. The `ListItemBlock.list_to_pandoc` class method is responsible for generating this top-level node.
 
+## Built-in Plugins
+
+N2y provides a few builtin plugins. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
+
+### Deep Headers
+
+Notion only support three levels of headers, but sometimes this is not enough. This plugin enables support for h4 and h5 headers in the documents exported from Notion. Any Notion h3 whose text begins with the characters "= " is converted to an h4, and any h3 that begins with "== " is converted to an h5, and so on.
+
 ## Architecture
 
 N2y's architecture is divided into four main steps:
@@ -133,6 +145,14 @@ Here are some features we're planning to add in the future:
   single export
 
 ## Changelog
+
+### v0.4.0
+
+- Split out the various rich_text and mention types into their own classes
+- Add plugin support for all notion classes
+- Improve error handling when the pandoc conversion fails
+- Add a builtin "deep header" plugin which makes it possible to use h4 and h5
+  headers in Notion
 
 ### v0.3.0
 
