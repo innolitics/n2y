@@ -61,7 +61,7 @@ class RichText:
 
     def annotate_pandoc_ast(self, target):
         """
-        Pandoc's Strong, Emph, Underline, and Strikeout all except sub-trees of
+        Pandoc's Strong, Emph, Underline, and Strikeout all accept sub-trees of
         inlines. Code does not. This is likely because `a *bold* word` does not
         create a bold word, but *a `code` word* does produce a bolded code word.
         Thus, it's not generally feasible for `annotate_pandoc_ast` to properly

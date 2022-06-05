@@ -80,36 +80,42 @@ class Client:
         for notion_object, object_types in notion_classes.items():
             if notion_object in self.notion_classes:
                 default_object_types = DEFAULT_NOTION_CLASSES[notion_object]
-                if isinstance(object_types, dict) and isinstance(default_object_types, dict):
-                    for object_type, plugin_class in object_types.items():
-                        if object_type in default_object_types:
-                            class_being_replaced = default_object_types[object_type]
-                            # assumes all of the default classes have a single parent class
-                            base_class = class_being_replaced.__bases__[0]
-                            if issubclass(plugin_class, base_class):
-                                self.notion_classes[notion_object][object_type] = plugin_class
-                            else:
-                                raise PluginError(
-                                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
-                                    f'override the base class "{base_class.__name__}"',
-                                )
-                        else:
-                            raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
-                elif not isinstance(object_types, dict) and isinstance(default_object_types, dict):
-                    raise PluginError(
-                        f'Expecting a dict for "{notion_object}", found "{type(object_types)}"')
-                else:
-                    plugin_class = object_types
-                    base_class = default_object_types
+                self._override_notion_classes(notion_object, object_types, default_object_types)
+            else:
+                raise PluginError(f'Invalid notion object "{notion_object}"')
+
+    def _override_notion_classes(self, notion_object, object_types, default_object_types):
+        # E.g., there are many types of notion blocks but only one type of notion page.
+        notion_object_has_types = isinstance(default_object_types, dict)
+
+        if notion_object_has_types and isinstance(object_types, dict):
+            for object_type, plugin_class in object_types.items():
+                if object_type in default_object_types:
+                    class_being_replaced = default_object_types[object_type]
+                    # assumes all of the default classes have a single parent class
+                    base_class = class_being_replaced.__bases__[0]
                     if issubclass(plugin_class, base_class):
-                        self.notion_classes[notion_object] = plugin_class
+                        self.notion_classes[notion_object][object_type] = plugin_class
                     else:
                         raise PluginError(
                             f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
                             f'override the base class "{base_class.__name__}"',
                         )
+                else:
+                    raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
+        elif notion_object_has_types and not isinstance(object_types, dict):
+            raise PluginError(
+                f'Expecting a dict for "{notion_object}", found "{type(object_types)}"')
+        else:
+            plugin_class = object_types
+            base_class = default_object_types
+            if issubclass(plugin_class, base_class):
+                self.notion_classes[notion_object] = plugin_class
             else:
-                raise PluginError(f'Invalid notion object "{notion_object}"')
+                raise PluginError(
+                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                    f'override the base class "{base_class.__name__}"',
+                )
 
     def get_class(self, notion_object, object_type=None):
         if object_type is None:
