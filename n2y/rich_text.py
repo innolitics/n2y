@@ -181,3 +181,21 @@ class RichTextArray:
 
     def to_plain_text(self):
         return ''.join(item.plain_text for item in self.items)
+
+    def matches(self, regexp):
+        if len(self.items) > 0:
+            first_item = self.items[0]
+
+            # don't match EquationRichText or MentionRichText
+            if isinstance(first_item, TextRichText):
+                return regexp.match(first_item.plain_text)
+
+    def lstrip(self, string):
+        if len(self.items) > 0:
+            first_item = self.items[0]
+            if isinstance(first_item, TextRichText):
+                string_len = len(string)
+                if first_item.plain_text[:string_len] == string:
+                    self.items[0].plain_text = first_item.plain_text[string_len:]
+                    if self.items[0].plain_text == "":
+                        self.items.pop(0)

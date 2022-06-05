@@ -192,6 +192,25 @@ def test_simple_page_to_markdown():
     assert "Page content" in document_as_markdown
 
 
+def test_builtin_plugins():
+    '''
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/Plugins-Test-96d71e2876eb47b285833582e8cf27eb
+    '''
+    object_id = "96d71e2876eb47b285833582e8cf27eb"
+    status, document_as_markdown, _ = run_n2y([
+        object_id,
+        #'--plugin', 'n2y.plugins.footnotes',
+        '--plugin', 'n2y.plugins.deepheaders',
+    ])
+    assert status == 0
+    lines = document_as_markdown.split('\n')
+    # assert '# H1[^1]' in lines
+    assert '#### H4' in lines
+    assert '##### H5' in lines
+    #assert '[1]: First **footnote**.' in lines
+
+
 def test_missing_object_exception():
     invalid_page_id = "11111111111111111111111111111111"
     with pytest.raises(HTTPResponseError) as exinfo:

@@ -61,6 +61,7 @@ class Client:
 
         self.notion_classes = copy.deepcopy(DEFAULT_NOTION_CLASSES)
         self.load_plugins(plugins)
+        self.plugin_data = {}
 
     def load_plugins(self, plugins):
         if plugins is not None:
