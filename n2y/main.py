@@ -37,7 +37,7 @@ def main(raw_args, access_token):
         "--media-root", help="Filesystem path to directory where images and media are saved"
     )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
-    parser.add_argument("--plugins", '-p', action='append', help="Plugin file")
+    parser.add_argument("--plugin", '-p', action='append', help="Plugin module")
     parser.add_argument(
         "--output", '-o', default='./',
         help="Relative path to output directory",
@@ -69,7 +69,7 @@ def main(raw_args, access_token):
     object_id = notion.id_from_share_link(args.object_id)
     media_root = args.media_root or args.output
 
-    client = notion.Client(access_token, media_root, args.media_url, plugins=args.plugins)
+    client = notion.Client(access_token, media_root, args.media_url, plugins=args.plugin)
 
     node = client.get_page_or_database(object_id)
 
