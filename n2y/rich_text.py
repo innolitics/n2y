@@ -170,6 +170,9 @@ class RichTextArray:
         assert isinstance(notion_data, list)
         self.items = [client.wrap_notion_rich_text(i) for i in notion_data]
 
+    def __len__(self):
+        return len(self.items)
+
     def to_pandoc(self):
         return sum([item.to_pandoc() for item in self.items], [])
 

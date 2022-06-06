@@ -192,10 +192,7 @@ class BookmarkBlock(Block):
     def __init__(self, client, notion_data, get_children=True):
         super().__init__(client, notion_data, get_children)
         self.url = self.notion_data["url"]
-        if self.notion_data["caption"]:
-            self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
-        else:
-            self.caption = None
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
         if self.caption:
@@ -223,6 +220,28 @@ class QuoteBlock(Block):
 
     def to_pandoc(self):
         return BlockQuote([Para(self.rich_text.to_pandoc())])
+
+
+class FileBlock(Block):
+    def __init__(self, client, notion_data, get_children=True):
+        super().__init__(client, notion_data, get_children)
+        self.file = client.wrap_notion_file(notion_data['file'])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
+
+    def to_pandoc(self):
+        url = None
+        if self.file.type == "external":
+            url = self.file.url
+        elif self.file.type == "file":
+            # TODO: log warning if there are name collisions
+            # TODO: save files in a folder associated with the page
+            file_path = path.basename(urlparse(self.file.url).path)
+            url = self.client.download_file(self.file.url, file_path)
+        if self.caption:
+            caption_ast = self.caption.to_pandoc()
+        else:
+            caption_ast = [Str(url)]
+        return Para([Link(('', [], []), caption_ast, (url, ''))])
 
 
 class ImageBlock(Block):
@@ -330,22 +349,35 @@ class CalloutBlock(Block):
 
 
 DEFAULT_BLOCKS = {
-    "child_page": ChildPageBlock,
     "paragraph": ParagraphBlock,
     "heading_1": HeadingOneBlock,
     "heading_2": HeadingTwoBlock,
     "heading_3": HeadingThreeBlock,
-    "divider": DividerBlock,
-    "numbered_list_item": NumberedListItemBlock,
     "bulleted_list_item": BulletedListItemBlock,
+    "numbered_list_item": NumberedListItemBlock,
     "to_do": ToDoListItemBlock,
-    "bookmark": BookmarkBlock,
+    "toggle": ToggleBlock,
+    "child_page": ChildPageBlock,
+    # "child_database": ChildDatabaseBlock,
+    # "embed": EmbedBlock,
     "image": ImageBlock,
-    "code": FencedCodeBlock,
+    # "video": VideoBlock,
+    "file": FileBlock,
+    # "pdf": PdfBlock,
+    "bookmark": BookmarkBlock,
+    "callout": CalloutBlock,
     "quote": QuoteBlock,
+    "equation": EquationBlock,
+    "divider": DividerBlock,
+    # "table_of_contents": TableOfContentsBlock,
+    # "column": ColumnBlock,
+    # "column_list": ColumnListBlock,
+    # "link_preview": LinkPreviewBlock,
+    # "synced_block": SyncedBlock,
+    # "template": TemplateBlock,
+    # "link_to_page": LinkToPageBlock,
+    "code": FencedCodeBlock,
     "table": TableBlock,
     "table_row": RowBlock,
-    "toggle": ToggleBlock,
-    "equation": EquationBlock,
-    "callout": CalloutBlock,
+    # "unsupported": UnsupportedBlock,
 }
