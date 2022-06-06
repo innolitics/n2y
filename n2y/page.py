@@ -38,7 +38,7 @@ class Page:
         for property_value in self.properties.values():
             # Notion ensure's there is always exactly one title property
             if isinstance(property_value, TitlePropertyValue):
-                return property_value.rich_text.to_plain_text()
+                return property_value.rich_text
 
     @property
     def block(self):

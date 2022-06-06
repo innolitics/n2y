@@ -100,6 +100,13 @@ class APIResponseError(HTTPResponseError):
         self.code = code
 
 
+class ObjectNotFound(APIResponseError):
+    def __init__(self, response, message) -> None:
+        code = APIErrorCode.ObjectNotFound
+        super().__init__(response, f"{message} [{code}]", code)
+        self.code = code
+
+
 def is_api_error_code(code: str) -> bool:
     """Check if given code belongs to the list of valid API error codes."""
     if isinstance(code, str):

@@ -1,4 +1,4 @@
-from pandoc.types import Str
+from pandoc.types import Str, Space
 
 from n2y.utils import process_notion_date, processed_date_to_plain_text
 
@@ -21,23 +21,27 @@ class UserMention(Mention):
 class PageMention(Mention):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.page_id = notion_data["page"]["id"]
+        self.page = client.get_page(notion_data["page"]["id"])
 
     def to_pandoc(self):
-        # TODO: at least replace with the page title
-        # TODO: incorporate when implementing https://github.com/innolitics/n2y/issues/24
-        return [Str(f'Link to page "{self.page_id}"')]
+        if self.page is not None:
+            # TODO: if the page is being exported too, then make this a relative
+            # URL to that page
+            return self.page.title.to_pandoc()
+        else:
+            return [Str("Untitled")]
 
 
 class DatabaseMention(Mention):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.database_id = notion_data["database"]["id"]
+        self.database = client.get_database(notion_data["database"]["id"])
 
     def to_pandoc(self):
-        # TODO: at least replace with the database title
-        # TODO: incorporate when implementing https://github.com/innolitics/n2y/issues/24
-        return [Str(f'Link to database "{self.database_id}"')]
+        if self.database is not None:
+            return self.database.title.to_pandoc()
+        else:
+            return [Str("Untitled")]
 
 
 class DateMention(Mention):

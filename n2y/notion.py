@@ -9,7 +9,7 @@ import importlib.util
 import requests
 
 from n2y.errors import (
-    HTTPResponseError, APIResponseError, PluginError, is_api_error_code,
+    HTTPResponseError, APIResponseError, ObjectNotFound, PluginError, is_api_error_code,
     APIErrorCode
 )
 from n2y.file import File
@@ -209,14 +209,11 @@ class Client:
         determining what type of object corresponds with an ID and we don't want
         to make the user indicate if they are pulling down a database or a page.
         """
-        try:
-            return self.get_page(object_id)
-        except APIResponseError as e:
-            if e.code == APIErrorCode.ObjectNotFound:
-                pass
-            else:
-                raise e
-        return self.get_database(object_id)
+        page = self.get_page(object_id)
+        if page is not None:
+            return page
+        else:
+            return self.get_database(object_id)
 
     def get_database(self, database_id):
         """
@@ -226,9 +223,12 @@ class Client:
         if database_id in self.databases_cache:
             database = self.databases_cache[database_id]
         else:
-            notion_database = self._get_url(f"{self.base_url}databases/{database_id}")
-            database = self._wrap_notion_database(notion_database)
-            self.databases_cache[database.notion_id] = database
+            try:
+                notion_database = self._get_url(f"{self.base_url}databases/{database_id}")
+                database = self._wrap_notion_database(notion_database)
+            except ObjectNotFound:
+                database = None
+            self.databases_cache[database_id] = database
         return database
 
     def get_database_pages(self, database_id):
@@ -256,7 +256,11 @@ class Client:
         if page_id in self.pages_cache:
             page = self.pages_cache[page_id]
         else:
-            notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
+            try:
+                notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
+            except ObjectNotFound:
+                self.pages_cache[page_id] = None
+                return
             # _wrap_notion_page will add the page to the cache
             page = self._wrap_notion_page(notion_page)
         return page
@@ -316,7 +320,9 @@ class Client:
                 code = body.get("code")
             except json.JSONDecodeError:
                 code = None
-            if code and is_api_error_code(code):
+            if code == APIErrorCode.ObjectNotFound:
+                raise ObjectNotFound(response, body["message"])
+            elif code and is_api_error_code(code):
                 raise APIResponseError(response, body["message"], code)
             raise HTTPResponseError(error.response)
         return response.json()
