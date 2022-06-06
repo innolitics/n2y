@@ -72,7 +72,6 @@ class Page:
     def to_markdown(self):
         return '\n'.join([
             '---',
-            yaml.dump(self.properties_to_values()),
-            '---',
+            yaml.dump(self.properties_to_values()) + '---',
             self.content_to_markdown() or '',
         ])
