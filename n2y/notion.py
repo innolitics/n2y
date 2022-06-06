@@ -55,7 +55,14 @@ class Client:
     page or database.
     """
 
-    def __init__(self, access_token, media_root='.', media_url='', plugins=None, content_property=None):
+    def __init__(
+        self,
+        access_token,
+        media_root='.',
+        media_url='',
+        plugins=None,
+        content_property=None
+    ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
