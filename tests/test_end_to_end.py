@@ -201,11 +201,13 @@ def test_builtin_plugins():
     status, document_as_markdown, _ = run_n2y([
         object_id,
         '--plugin', 'n2y.plugins.deepheaders',
+        '--plugin', 'n2y.plugins.removecallouts',
     ])
     assert status == 0
     lines = document_as_markdown.split('\n')
     assert '#### H4' in lines
     assert '##### H5' in lines
+    assert not any('should disappear' in l for l in lines)
 
 
 def test_missing_object_exception():

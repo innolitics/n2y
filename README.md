@@ -100,6 +100,10 @@ N2y provides a few builtin plugins. Brief descriptions are provided below, but s
 
 Notion only support three levels of headers, but sometimes this is not enough. This plugin enables support for h4 and h5 headers in the documents exported from Notion. Any Notion h3 whose text begins with the characters "= " is converted to an h4, and any h3 that begins with "== " is converted to an h5, and so on.
 
+### Remove Callouts
+
+Completely remove all callout blocks. It's often helpful to include help text in callout blocks, but usually this help text should be stripped out of the final generated documents.
+
 ## Architecture
 
 N2y's architecture is divided into four main steps:
@@ -135,6 +139,7 @@ Here are some features we're planning to add in the future:
 - Add the ability to customize the where database page content is stored
   (including providing the option not to export the content).
 - Add support for the FileBlock
+- Add `n2y.plugins.removecallouts` plugin
 
 ### v0.4.0
 

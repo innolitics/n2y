@@ -68,7 +68,8 @@ class Block:
             if issubclass(block_type, ListItemBlock):
                 pandoc_ast.append(block_type.list_to_pandoc(blocks))
             else:
-                pandoc_ast.extend(b.to_pandoc() for b in blocks)
+                child_asts = [b.to_pandoc() for b in blocks]
+                pandoc_ast.extend(a for a in child_asts if a is not None)
         return pandoc_ast
 
 
