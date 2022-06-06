@@ -1,4 +1,4 @@
-from pandoc.types import Str, Space
+from pandoc.types import Str
 
 from n2y.utils import process_notion_date, processed_date_to_plain_text
 

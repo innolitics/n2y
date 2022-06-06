@@ -80,6 +80,7 @@ Here are the default block classes that can be extended:
 | HeadingTwoBlock | |
 | HeadingThreeBlock | |
 | ImageBlock | It uses the URL for external images, but downloads uploaded images to the `MEDIA_ROOT` and replaces the path with a relative url based off of `MEDIA_URL`. The "caption" is used for the alt text. |
+| FileBlock | Acts the same way as the ImageBlock, except that in the documents it only ever shows the URL. |
 | NumberedListItemBlock | |
 | ParagraphBlock | |
 | QuoteBlock | |
@@ -133,6 +134,7 @@ Here are some features we're planning to add in the future:
 
 - Add the ability to customize the where database page content is stored
   (including providing the option not to export the content).
+- Add support for the FileBlock
 
 ### v0.4.0
 
