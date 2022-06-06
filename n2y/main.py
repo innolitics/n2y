@@ -99,6 +99,8 @@ def main(raw_args, access_token):
         export_related_databases(node, options=args)
     elif isinstance(node, Page):
         print(node.to_markdown())
+    elif node is None:
+        return 2
 
     return 0
 

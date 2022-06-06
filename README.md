@@ -104,6 +104,10 @@ Notion only support three levels of headers, but sometimes this is not enough. T
 
 Completely remove all callout blocks. It's often helpful to include help text in callout blocks, but usually this help text should be stripped out of the final generated documents.
 
+### Raw Fenced Code Blocks
+
+Any code block whose caption begins with "{=language}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other formats. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
+
 ## Architecture
 
 N2y's architecture is divided into four main steps:

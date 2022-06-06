@@ -202,16 +202,18 @@ def test_builtin_plugins():
         object_id,
         '--plugin', 'n2y.plugins.deepheaders',
         '--plugin', 'n2y.plugins.removecallouts',
+        '--plugin', 'n2y.plugins.rawcodeblocks',
     ])
     assert status == 0
     lines = document_as_markdown.split('\n')
     assert '#### H4' in lines
     assert '##### H5' in lines
     assert not any('should disappear' in l for l in lines)
+    assert not any('```' in l for l in lines)
+    assert 'Raw markdown should show up' in lines
+    assert not 'Raw html should not show up' in lines
 
 
 def test_missing_object_exception():
     invalid_page_id = "11111111111111111111111111111111"
-    with pytest.raises(HTTPResponseError) as exinfo:
-        run_n2y([invalid_page_id])
-    assert exinfo.value.code == APIErrorCode.ObjectNotFound
+    assert run_n2y([invalid_page_id]) != 0

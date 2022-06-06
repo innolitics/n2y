@@ -215,6 +215,7 @@ def test_equation_block():
 def test_code_block():
     notion_block = mock_block("code", {
         "rich_text": [mock_rich_text("const a = 3")],
+        "caption": [],
         "language": "javascript",
     })
     pandoc_ast, markdown = process_block(notion_block)

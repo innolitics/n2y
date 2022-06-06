@@ -53,7 +53,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
             # TODO: add a mechanism to customize this
             result = pandoc.write(
                 pandoc_ast,
-                format='gfm+tex_math_dollars',
+                format='gfm+tex_math_dollars+raw_attribute',
                 options=[
                     '--wrap', 'none',  # don't hard line-wrap
                     '--eol', 'lf',  # use linux-style line endings

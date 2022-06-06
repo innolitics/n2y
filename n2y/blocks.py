@@ -208,10 +208,10 @@ class FencedCodeBlock(Block):
         super().__init__(client, notion_data, get_children)
         self.language = self.notion_data["language"]
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
-        plain_text = ''.join(t.plain_text for t in self.rich_text.items)
-        return CodeBlock(('', [self.language], []), plain_text)
+        return CodeBlock(('', [self.language], []), self.rich_text.to_plain_text())
 
 
 class QuoteBlock(Block):
