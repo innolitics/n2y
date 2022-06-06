@@ -43,12 +43,16 @@ logger = logging.getLogger(__name__)
 class Client:
     """
     An instance of the client class has a few purposes:
+
     1. To store configuration
     2. To retrieve data from Notion
     3. To determine what classes to use to wrap this notion data, based on the configuration
     4. To act as a shared global store for all of the objects that are pulled
-       from Notion (e.g., there may be a lookup table between notion page IDs and
-       local file names so that links can be translated)
+       from Notion.
+
+    In particular there is a cache of all pages and databases which ensure that
+    the database class and page class are instantiated exactly once for each
+    page or database.
     """
 
     def __init__(self, access_token, media_root='.', media_url='', plugins=None, content_property=None):
@@ -63,6 +67,9 @@ class Client:
             "Content-Type": "application/json",
             "Notion-Version": "2022-02-22",
         }
+
+        self.databases_cache = {}
+        self.pages_cache = {}
 
         self.notion_classes = copy.deepcopy(DEFAULT_NOTION_CLASSES)
         self.load_plugins(plugins)
@@ -127,13 +134,33 @@ class Client:
         except KeyError:
             raise NotImplementedError(f'Unknown "{notion_object}" class of type "{object_type}"')
 
-    def wrap_notion_page(self, notion_data, parent=None):
-        page_class = self.get_class("page")
-        return page_class(self, notion_data, parent)
+    def _wrap_notion_page(self, notion_data):
+        """
+        Wrap notion page data in the appropriate class.  If the page class has
+        already been created, then ignore the new notion data and just return
+        the existing version.
 
-    def wrap_notion_database(self, notion_data, parent=None):
+        Note that it may seem redundant to check the cache here, since it's also
+        checked in `get_page`, however unlike databases which are only ever
+        retrieved via `get_database`, pages can be retrieved either through
+        `get_page` or through `get_database_pages`. Thus, it's possible that a
+        database page be first retrieved individually and then retrieved via the
+        full database. In this case, it's unfortunate (but unavoidable) that we
+        retrieved the data from Notion twice, but even so we don't want to
+        replace our existing page instance, along with it's content or other
+        state that has been added to it.
+        """
+        if notion_data["id"] in self.pages_cache:
+            return self.pages_cache[notion_data["id"]]
+        else:
+            page_class = self.get_class("page")
+            page = page_class(self, notion_data)
+            self.pages_cache[page.notion_id] = page
+            return page
+
+    def _wrap_notion_database(self, notion_data):
         database_class = self.get_class("database")
-        return database_class(self, notion_data, parent)
+        return database_class(self, notion_data)
 
     def wrap_notion_block(self, notion_data, get_children):
         block_class = self.get_class("blocks", notion_data["type"])
@@ -184,13 +211,22 @@ class Client:
                 raise e
         return self.get_database(object_id)
 
-    def get_database(self, database_id, parent=None):
-        notion_database = self._get_url(f"{self.base_url}databases/{database_id}")
-        return self.wrap_notion_database(notion_database, parent)
+    def get_database(self, database_id):
+        """
+        Retrieve the database (but not it's pages) if its not in the cache. Even
+        if it is in the cache.
+        """
+        if database_id in self.databases_cache:
+            database = self.databases_cache[database_id]
+        else:
+            notion_database = self._get_url(f"{self.base_url}databases/{database_id}")
+            database = self._wrap_notion_database(notion_database)
+            self.databases_cache[database.notion_id] = database
+        return database
 
-    def get_database_pages(self, database_id, parent):
+    def get_database_pages(self, database_id):
         notion_pages = self.get_database_notion_pages(database_id)
-        return [self.wrap_notion_page(np, parent) for np in notion_pages]
+        return [self._wrap_notion_page(np) for np in notion_pages]
 
     def get_database_notion_pages(self, database_id):
         starting_url = f"{self.base_url}databases/{database_id}/query"
@@ -206,9 +242,17 @@ class Client:
 
         return sum(depaginator(starting_url), [])
 
-    def get_page(self, page_id, parent=None):
-        notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
-        return self.wrap_notion_page(notion_page, parent)
+    def get_page(self, page_id):
+        """
+        Retrieve the page if its not in the cache.
+        """
+        if page_id in self.pages_cache:
+            page = self.pages_cache[page_id]
+        else:
+            notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
+            # _wrap_notion_page will add the page to the cache
+            page = self._wrap_notion_page(notion_page)
+        return page
 
     def get_block(self, block_id, get_children=True):
         notion_block = self.get_notion_block(block_id)

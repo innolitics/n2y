@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, client, notion_data, parent=None):
+    def __init__(self, client, notion_data):
         logger.debug("Instantiating database")
         self.client = client
 
@@ -28,7 +28,6 @@ class Database:
             for k, p in notion_data['properties'].items()
         }
         self.notion_parent = notion_data['parent']
-        self.parent = parent
         self.url = notion_data['url']
         self.archived = notion_data['archived']
 
@@ -37,8 +36,15 @@ class Database:
     @property
     def children(self):
         if self._children is None:
-            self._children = self.client.get_database_pages(self.notion_id, self)
+            self._children = self.client.get_database_pages(self.notion_id)
         return self._children
+
+    @property
+    def parent(self):
+        if self.notion_parent["type"] == "workspace":
+            return None
+        else:
+            return self.client.get_page(self.notion_parent["page_id"])
 
     @property
     def related_database_ids(self):

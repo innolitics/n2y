@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Page:
-    def __init__(self, client, notion_data, parent=None):
+    def __init__(self, client, notion_data):
         logger.debug("Instantiating page")
         self.client = client
 
@@ -28,7 +28,6 @@ class Page:
             for k, npv in notion_data['properties'].items()
         }
         self.notion_parent = notion_data['parent']
-        self.parent = parent
         self.url = notion_data['url']
 
         self._block = None
@@ -55,6 +54,17 @@ class Page:
             # recursively look through blocks for child_pages and child_databases,
             # creating them in order that they appear in the block heirarchy
         return self._children
+
+    @property
+    def parent(self):
+        parent_type = self.notion_parent["type"]
+        if parent_type == "workspace":
+            return None
+        elif parent_type == "page_id":
+            return self.client.get_page(self.notion_parent["page_id"])
+        else:
+            assert parent_type == "database_id"
+            return self.client.get_page(self.notion_parent["database_id"])
 
     def to_pandoc(self):
         return self.block.to_pandoc()
