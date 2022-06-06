@@ -15,7 +15,7 @@ class RawFencedCodeBlock(FencedCodeBlock):
 
     See https://pandoc.org/MANUAL.html#generic-raw-attribute
     """
-    trigger_regex = re.compile(r'{=(.+)}')
+    trigger_regex = re.compile(r'^{=(.+)}')
 
     def __init__(self, client, notion_data, get_children=True):
         super().__init__(client, notion_data, get_children)
