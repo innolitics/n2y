@@ -129,6 +129,11 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.4.1
+
+- Add the ability to customize the where database page content is stored
+  (including providing the option not to export the content).
+
 ### v0.4.0
 
 - Split out the various rich_text and mention types into their own classes

@@ -51,10 +51,12 @@ class Client:
        local file names so that links can be translated)
     """
 
-    def __init__(self, access_token, media_root='.', media_url='', plugins=None):
+    def __init__(self, access_token, media_root='.', media_url='', plugins=None, content_property=None):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
+        self.content_property = content_property
+
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",

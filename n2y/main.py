@@ -34,6 +34,14 @@ def main(raw_args, access_token):
         )
     )
     parser.add_argument(
+        "--content-property", default=None,
+        help=(
+            "Store each database page's content in this property. "
+            "The page's content isn't exported if not set. "
+            "Only applies when dumping a database to YAML."
+        )
+    )
+    parser.add_argument(
         "--media-root", help="Filesystem path to directory where images and media are saved"
     )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
@@ -69,7 +77,13 @@ def main(raw_args, access_token):
     object_id = notion.id_from_share_link(args.object_id)
     media_root = args.media_root or args.output
 
-    client = notion.Client(access_token, media_root, args.media_url, plugins=args.plugin)
+    client = notion.Client(
+        access_token,
+        media_root,
+        args.media_url,
+        plugins=args.plugin,
+        content_property=args.content_property,
+    )
 
     node = client.get_page_or_database(object_id)
 

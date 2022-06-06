@@ -97,10 +97,18 @@ class Database:
         return self.block.to_pandoc()
 
     def to_yaml(self):
+        content_property = self.client.content_property
+        if content_property in self.schema:
+            logger.warning(
+                'The set content property "%s" is shadowing an existing '
+                'property with the same name', content_property,
+            )
         result = []
         for page in self.children:
-            content = page.content_to_markdown()
             properties = page.properties_to_values()
-            # TODO: let the user set the name of the content key
-            result.append({**properties, 'content': content})
+            if content_property is None:
+                result.append(properties)
+            else:
+                content = page.content_to_markdown()
+                result.append({**properties, content_property: content})
         return yaml.dump(result, sort_keys=False)
