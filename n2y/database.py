@@ -106,7 +106,7 @@ class Database:
         result = []
         for page in self.children:
             properties = page.properties_to_values()
-            if content_property is None:
+            if not content_property:
                 result.append(properties)
             else:
                 content = page.content_to_markdown()

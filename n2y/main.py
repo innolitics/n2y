@@ -34,10 +34,10 @@ def main(raw_args, access_token):
         )
     )
     parser.add_argument(
-        "--content-property", default=None,
+        "--content-property", default='content',
         help=(
             "Store each database page's content in this property. "
-            "The page's content isn't exported if not set. "
+            "The page's content isn't exported if it's set to a blank string. "
             "Only applies when dumping a database to YAML."
         )
     )
