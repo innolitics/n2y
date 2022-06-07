@@ -68,8 +68,16 @@ class Block:
             if issubclass(block_type, ListItemBlock):
                 pandoc_ast.append(block_type.list_to_pandoc(blocks))
             else:
-                child_asts = [b.to_pandoc() for b in blocks]
-                pandoc_ast.extend(a for a in child_asts if a is not None)
+                for b in blocks:
+                    result = b.to_pandoc()
+                    if isinstance(result, list):
+                        # a few blocks return lists of nodes
+                        pandoc_ast.extend(result)
+                    elif result is not None:
+                        # a plugin may decide to return None to indicate the
+                        # block should be removed; ideally pandoc.types.Nil
+                        # would handle this, but it doesn't appear to work
+                        pandoc_ast.append(result)
         return pandoc_ast
 
 
@@ -110,6 +118,10 @@ class ParagraphBlock(Block):
     def to_pandoc(self):
         content = self.rich_text.to_pandoc()
         if self.has_children:
+            # Notion allows you to create child blocks for a paragraph; these
+            # child blocks appear indented relative to the paragraph. There's
+            # no way to represent this indentation in pandoc's AST, so we just
+            # append the child blocks afterwards.
             result = [Para(content)]
             children = self.children_to_pandoc()
             result.extend(children)
@@ -337,6 +349,7 @@ class CalloutBlock(Block):
     def __init__(self, client, notion_data, get_children=True):
         super().__init__(client, notion_data, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        # the color and icon are not currently used
 
     def to_pandoc(self):
         content = self.rich_text.to_pandoc()

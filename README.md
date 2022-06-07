@@ -144,6 +144,7 @@ Here are some features we're planning to add in the future:
   (including providing the option not to export the content).
 - Add support for the FileBlock
 - Add `n2y.plugins.removecallouts` plugin
+- Fix a bug that would occur if you had nested paragraphs or callout blocks
 
 ### v0.4.0
 

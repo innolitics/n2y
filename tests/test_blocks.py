@@ -55,6 +55,14 @@ def test_paragraph():
     assert markdown == "paragraph text\n"
 
 
+def test_paragraph_with_child_paragraph():
+    parent = mock_block("paragraph", {"rich_text": [mock_rich_text("parent")]}, True)
+    children = [mock_paragraph_block([("child", [])])]
+    pandoc_ast, markdown = process_parent_block(parent, children)
+    assert pandoc_ast == [Para([Str("parent")]), Para([Str("child")])]
+    assert markdown == "parent\n\nchild\n"
+
+
 def test_heading_1():
     notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One")]})
     pandoc_ast, markdown = process_block(notion_block)
