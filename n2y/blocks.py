@@ -216,6 +216,29 @@ class BookmarkBlock(Block):
 
 
 class FencedCodeBlock(Block):
+    pandoc_highlight_languages = [
+        "abc", "actionscript", "ada", "agda", "apache", "asn1", "asp", "ats", "awk",
+        "bash", "bibtex", "boo", "c", "changelog", "clojure", "cmake", "coffee",
+        "coldfusion", "comments", "commonlisp", "cpp", "cs", "css", "curry", "d",
+        "default", "diff", "djangotemplate", "dockerfile", "dot", "doxygen",
+        "doxygenlua", "dtd", "eiffel", "elixir", "elm", "email", "erlang", "fasm",
+        "fortranfixed", "fortranfree", "fsharp", "gcc", "glsl", "gnuassembler", "go",
+        "graphql", "groovy", "hamlet", "haskell", "haxe", "html", "idris", "ini",
+        "isocpp", "j", "java", "javadoc", "javascript", "javascriptreact", "json",
+        "jsp", "julia", "kotlin", "latex", "lex", "lilypond", "literatecurry",
+        "literatehaskell", "llvm", "lua", "m4", "makefile", "mandoc", "markdown",
+        "mathematica", "matlab", "maxima", "mediawiki", "metafont", "mips", "modelines",
+        "modula2", "modula3", "monobasic", "mustache", "nasm", "nim", "noweb",
+        "objectivec", "objectivecpp", "ocaml", "octave", "opencl", "orgmode", "pascal",
+        "perl", "php", "pike", "postscript", "povray", "powershell", "prolog",
+        "protobuf", "pure", "purebasic", "python", "qml", "r", "raku", "relaxng",
+        "relaxngcompact", "rest", "rhtml", "roff", "ruby", "rust", "sass", "scala",
+        "scheme", "sci", "scss", "sed", "sgml", "sml", "spdxcomments", "sql",
+        "sqlmysql", "sqlpostgresql", "stan", "stata", "swift", "systemverilog", "tcl",
+        "tcsh", "texinfo", "toml", "typescript", "verilog", "vhdl", "xml", "xorg",
+        "xslt", "xul", "yacc", "yaml", "zsh",
+    ]
+
     def __init__(self, client, notion_data, get_children=True):
         super().__init__(client, notion_data, get_children)
         self.language = self.notion_data["language"]
@@ -223,7 +246,16 @@ class FencedCodeBlock(Block):
         self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
-        return CodeBlock(('', [self.language], []), self.rich_text.to_plain_text())
+        # TODO: create a dict to translate the Notion language names to pandoc's
+        # supported language names when they don't match up exactly
+        if self.language not in self.pandoc_highlight_languages:
+            if self.language != "plain text":
+                msg = 'Dropping syntax highlighting for unsupported language "%s"'
+                logger.warning(msg, self.language)
+            language = []
+        else:
+            language = [self.language]
+        return CodeBlock(('', language, []), self.rich_text.to_plain_text())
 
 
 class QuoteBlock(Block):
