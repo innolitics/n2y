@@ -11,7 +11,6 @@ import os.path
 from os.path import isfile, join
 from io import StringIO
 
-import pytest
 import yaml
 try:
     from yaml import CLoader as Loader
@@ -20,7 +19,6 @@ except ImportError:
 
 from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 from n2y.main import main
-from n2y.errors import APIErrorCode, HTTPResponseError
 
 
 def run_n2y(arguments):
@@ -211,7 +209,7 @@ def test_builtin_plugins():
     assert not any('should disappear' in l for l in lines)
     assert not any('```' in l for l in lines)
     assert 'Raw markdown should show up' in lines
-    assert not 'Raw html should not show up' in lines
+    assert 'Raw html should not show up' not in lines
 
 
 def test_missing_object_exception():
