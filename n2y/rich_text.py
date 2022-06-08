@@ -124,6 +124,11 @@ class EquationRichText(RichText):
 
 
 class TextRichText(RichText):
+    @classmethod
+    def from_plain_text(klass, client, string):
+        notion_data = mock_notion_rich_text(string)
+        return klass(client, notion_data)
+
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
 
@@ -143,6 +148,31 @@ class TextRichText(RichText):
             )]
         else:
             return annotated_ast
+
+
+def mock_notion_annotations(annotations=None):
+    if annotations is None:
+        annotations = []
+    return {
+        'bold': True if 'bold' in annotations else False,
+        'italic': True if 'italic' in annotations else False,
+        'strikethrough': True if 'strikethrough' in annotations else False,
+        'underline': True if 'underline' in annotations else False,
+        'code': True if 'code' in annotations else False,
+        'color': 'default'
+    }
+
+
+def mock_notion_rich_text(text, annotations=None, href=None):
+    if annotations is None:
+        annotations = []
+    return {
+        'type': 'text',
+        'text': {'content': text, 'link': None},
+        'annotations': mock_notion_annotations(annotations),
+        'plain_text': text,
+        'href': href,
+    }
 
 
 DEFAULT_RICH_TEXTS = {
@@ -199,3 +229,10 @@ class RichTextArray:
                     self.items[0].plain_text = first_item.plain_text[string_len:]
                     if self.items[0].plain_text == "":
                         self.items.pop(0)
+
+    def prepend(self, string):
+        if len(self.items) > 0:
+            self.items[0].plain_text = string + self.items[0].plain_text
+        else:
+            rich_text = TextRichText.from_plain_text(self.client, string)
+            self.items.append(rich_text)

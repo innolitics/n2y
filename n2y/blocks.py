@@ -152,10 +152,9 @@ class ToDoListItemBlock(BulletedListItemBlock):
         super().__init__(client, notion_data, get_children)
         self.checked = self.notion_data['checked']
 
-        # TODO: Consider doing this at the "to_pandoc" stage
-        box = '☒' if self.checked else '☐'
-        self.rich_text.items[0].plain_text = box + \
-            ' ' + self.rich_text.items[0].plain_text
+        # TODO: Move this into the "to_pandoc" stage
+        box = '☒ ' if self.checked else '☐ '
+        self.rich_text.prepend(box)
 
 
 class NumberedListItemBlock(ListItemBlock):
@@ -394,6 +393,31 @@ class CalloutBlock(Block):
         return result
 
 
+class NoopBlock(Block):
+    def __init__(self, client, notion_data, get_children=True):
+        # don't get the child blocks, as we're not using the data
+        super().__init__(client, notion_data, get_children=False)
+
+    def to_pandoc(self):
+        return None
+
+
+class TableOfContentsBlock(NoopBlock):
+    pass
+
+
+class BreadcrumbBlock(NoopBlock):
+    pass
+
+
+class UnsupportedBlock(NoopBlock):
+    pass
+
+
+class TemplateBlock(NoopBlock):
+    pass
+
+
 DEFAULT_BLOCKS = {
     "paragraph": ParagraphBlock,
     "heading_1": HeadingOneBlock,
@@ -415,15 +439,16 @@ DEFAULT_BLOCKS = {
     "quote": QuoteBlock,
     "equation": EquationBlock,
     "divider": DividerBlock,
-    # "table_of_contents": TableOfContentsBlock,
+    "table_of_contents": TableOfContentsBlock,
+    "breadcrumb": TableOfContentsBlock,
     # "column": ColumnBlock,
     # "column_list": ColumnListBlock,
     # "link_preview": LinkPreviewBlock,
     # "synced_block": SyncedBlock,
-    # "template": TemplateBlock,
+    "template": TemplateBlock,
     # "link_to_page": LinkToPageBlock,
     "code": FencedCodeBlock,
     "table": TableBlock,
     "table_row": RowBlock,
-    # "unsupported": UnsupportedBlock,
+    "unsupported": UnsupportedBlock,
 }

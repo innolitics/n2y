@@ -5,7 +5,6 @@ abstract syntax tree (AST) objects, and then into markdown.
 from unittest import mock
 
 import pytest
-import pandoc
 from pandoc.types import (
     Str, Para, Plain, Space, Header,
     CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link,
@@ -15,7 +14,7 @@ from pandoc.types import (
 )
 
 from n2y.notion import Client
-from tests.utils import newline_lf
+from n2y.utils import pandoc_ast_to_markdown
 from tests.notion_mocks import mock_block, mock_file, mock_paragraph_block, mock_rich_text
 
 
@@ -25,8 +24,8 @@ def process_block(notion_block):
         client = Client('')
         n2y_block = client.get_block('unusedid')
     pandoc_ast = n2y_block.to_pandoc()
-    markdown = pandoc.write(pandoc_ast, format='gfm+tex_math_dollars')
-    return pandoc_ast, newline_lf(markdown)
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    return pandoc_ast, markdown
 
 
 def process_parent_block(notion_block, child_notion_blocks):
@@ -37,8 +36,8 @@ def process_parent_block(notion_block, child_notion_blocks):
             client = Client('')
             n2y_block = client.get_block('unusedid')
     pandoc_ast = n2y_block.to_pandoc()
-    markdown = pandoc.write(pandoc_ast, format='gfm+tex_math_dollars')
-    return pandoc_ast, newline_lf(markdown)
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    return pandoc_ast, markdown
 
 
 def test_unknown_block_type():
@@ -317,7 +316,7 @@ def test_toggle():
     )
 
 
-def test_todo():
+def test_todo_in_paragraph():
     parent = mock_block("paragraph", {"rich_text": [
         mock_rich_text("Task List"),
     ]}, has_children=True)
@@ -339,6 +338,13 @@ def test_todo():
         '-   [x] Task One\n'
         '-   [ ] Task Two\n'
     )
+
+
+@pytest.mark.xfail(reason="Its unclear how to represent empty todos in pandoc")
+def test_todo_empty():
+    notion_block = mock_block("to_do", {"rich_text": [], "checked": False})
+    _, markdown = process_block(notion_block)
+    assert markdown == "-   [ ] \n"
 
 
 def test_callout():

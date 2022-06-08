@@ -146,6 +146,7 @@ Here are some features we're planning to add in the future:
 - Add `n2y.plugins.removecallouts` plugin
 - Fix a bug that would occur if you had nested paragraphs or callout blocks
 - Drop Notion code highlighting language if its not supported
+- Ignore table of contents, breadcrumb, template, and unsupported blocks
 
 ### v0.4.0
 

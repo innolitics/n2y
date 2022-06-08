@@ -1,6 +1,9 @@
 from datetime import datetime
 import uuid
 
+from n2y.rich_text import mock_notion_rich_text as mock_rich_text
+from n2y.rich_text import mock_notion_annotations as mock_annotations
+
 
 def mock_user(**kwargs):
     return {'object': 'user', 'id': str(uuid.uuid4()), **kwargs}
@@ -8,31 +11,6 @@ def mock_user(**kwargs):
 
 def mock_person_user(name, email):
     return mock_user(name=name, type="person", person={"email": email})
-
-
-def mock_annotations(annotations=None):
-    if annotations is None:
-        annotations = []
-    return {
-        'bold': True if 'bold' in annotations else False,
-        'italic': True if 'italic' in annotations else False,
-        'strikethrough': True if 'strikethrough' in annotations else False,
-        'underline': True if 'underline' in annotations else False,
-        'code': True if 'code' in annotations else False,
-        'color': 'default'
-    }
-
-
-def mock_rich_text(text, annotations=None, href=None):
-    if annotations is None:
-        annotations = []
-    return {
-        'type': 'text',
-        'text': {'content': text, 'link': None},
-        'annotations': mock_annotations(annotations),
-        'plain_text': text,
-        'href': href,
-    }
 
 
 def mock_rich_text_array(text_blocks_descriptors):

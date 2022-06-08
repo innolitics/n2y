@@ -40,9 +40,9 @@ PANDOC_PARSE_ERROR = 64
 def pandoc_ast_to_markdown(pandoc_ast):
     # This function tries to avoid calling the separate pandoc binary (which is
     # slow) for basic cases with just spaces and strings
-    if len(pandoc_ast) == 0:
+    if pandoc_ast == []:
         return ""
-    elif all(type(n) in [Str, Space] for n in pandoc_ast):
+    elif type(pandoc_ast) == list and all(type(n) in [Str, Space] for n in pandoc_ast):
         # TODO: optimize performance for some other basic cases
         return ''.join(
             ' ' if isinstance(n, Space) else n[0]
@@ -62,6 +62,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
         except ProcessExecutionError as err:
             if err.retcode == PANDOC_PARSE_ERROR:
                 lines = []
+                # TODO: update this code to make it not print so much
                 for element, path in pandoc.iter(pandoc_ast, path=True):
                     path_str = ".".join(str(i) for _, i in path)
                     lines.append(f"{path_str} {element}")
