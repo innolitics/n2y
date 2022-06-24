@@ -71,6 +71,13 @@ def test_heading_1():
     assert markdown == "# Heading One\n"
 
 
+def test_heading_1_bolding_stripped():
+    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One", ["bold"])]})
+    pandoc_ast, markdown = process_block(notion_block)
+    assert pandoc_ast == Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])
+    assert markdown == "# Heading One\n"
+
+
 def test_heading_2():
     notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
     pandoc_ast, markdown = process_block(notion_block)

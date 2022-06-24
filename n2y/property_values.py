@@ -25,7 +25,12 @@ class TitlePropertyValue(PropertyValue):
         self.rich_text = client.wrap_notion_rich_text_array(notion_data['title'])
 
     def to_value(self):
-        return self.rich_text.to_markdown()
+        # Notion allows styling of the title, however, in their UI they display
+        # the title property without any styling. Thus, if you copy/paste styled
+        # text into a title this styling can be hidden and can re-appear after
+        # the document conversion. To avoid this surprise, we only generate
+        # plain text here.
+        return self.rich_text.to_plain_text()
 
 
 class TextPropertyValue(PropertyValue):

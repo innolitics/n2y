@@ -188,6 +188,12 @@ class HeadingBlock(Block):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
+        # The Notion UI allows one to bold the text in a header, but the bold
+        # styling isn't displayed. Thus, to avoid unexpected appearances of
+        # bold text in the generated documents, bolding is removed.
+        for rich_text in self.rich_text:
+            rich_text.bold = False
+
     def to_pandoc(self):
         return Header(self.level, ('', [], []), self.rich_text.to_pandoc())
 

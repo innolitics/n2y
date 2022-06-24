@@ -203,6 +203,9 @@ class RichTextArray:
     def __len__(self):
         return len(self.items)
 
+    def __iter__(self):
+        return iter(self.items)
+
     def to_pandoc(self):
         return sum([item.to_pandoc() for item in self.items], [])
 

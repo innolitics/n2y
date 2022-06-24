@@ -140,7 +140,10 @@ Here are some features we're planning to add in the future:
 
 ### v0.4.2
 
-- Sanatize filenames (so that a notion page called "HFE/UE Report" won't attempt to create a directory.
+- Sanitize filenames (so that a notion page called "HFE/UE Report" won't attempt to create a directory.
+- Remove styling that is tracked in Notion but is not visible in their UI, so as
+  to avoid generating confusing output. In particular, remove styling from page
+  titles and bolding for header blocks.
 
 ### v0.4.1
 
