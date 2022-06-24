@@ -3,7 +3,10 @@ import hashlib
 import logging
 import json
 from os import path, makedirs
+import os
 from shutil import copyfileobj
+import shutil
+import tempfile
 from urllib.parse import urljoin, urlparse
 import importlib.util
 
@@ -336,15 +339,33 @@ class Client:
         page followed by an md5 hash.
         """
         url_path = path.basename(urlparse(url).path)
-        _, file_extension = path.splitext(url_path)
-        makedirs(path.dirname(self.media_root), exist_ok=True)
+        _, extension = path.splitext(url_path)
         with requests.get(url, stream=True) as request_stream:
-            num_hash_characters = 8  # just long enough to avoid collisions
-            hash = hashlib.sha256(request_stream.raw.data).hexdigest()[:num_hash_characters]
-            relative_filepath = "".join([page.filename, "-", hash, file_extension])
-            full_filepath = path.join(self.media_root, relative_filepath)
-            with open(full_filepath, 'wb') as file_stream:
-                copyfileobj(request_stream.raw, file_stream)
+            content_iterator = request_stream.iter_content(4096)
+            return self.save_file(content_iterator, page, extension)
+
+    def save_file(self, content_iterator, page, extension):
+        """
+        Save the content in the provided iterator into a file in MEDIA_ROOT. The
+        file name is determined from the page name, file extension, and an md5
+        hash of the content. The md5 hash is calculated as the data is streamed
+        to a temporary file, which is then moved to the final location once the
+        md5 hash can be calculated.
+        """
+        temp_fd, temp_filepath = tempfile.mkstemp()
+        hash_md5 = hashlib.md5()
+        with os.fdopen(temp_fd, 'wb') as temp_file:
+            for chunk in content_iterator:
+                hash_md5.update(chunk)
+                temp_file.write(chunk)
+
+        num_hash_characters = 8  # just long enough to avoid collisions
+        hash = hash_md5.hexdigest()[:num_hash_characters]
+        relative_filepath = "".join([page.filename, "-", hash, extension])
+        full_filepath = path.join(self.media_root, relative_filepath)
+
+        makedirs(path.dirname(full_filepath), exist_ok=True)
+        shutil.move(temp_filepath, full_filepath)
         return urljoin(self.media_url, relative_filepath)
 
 

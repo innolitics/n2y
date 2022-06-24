@@ -108,6 +108,14 @@ Completely remove all callout blocks. It's often helpful to include help text in
 
 Any code block whose caption begins with "{=language}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other formats. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
 
+### Mermaid Fenced Code Blocks
+
+Adds support for generating mermaid diagrams from codeblocks with the "mermaid" language, as supported in the Notion UI.
+
+This plugin assumes that the `mmdc` mermaid commandline tool is available, and will throw an exception if it is not.
+
+If there are errors with the mermaid syntax, it is treated as a normal codeblock and the warning is logged.
+
 ## Architecture
 
 N2y's architecture is divided into four main steps:
@@ -144,7 +152,9 @@ Here are some features we're planning to add in the future:
 - Remove styling that is tracked in Notion but is not visible in their UI, so as
   to avoid generating confusing output. In particular, remove styling from page
   titles and bolding for header blocks.
-- Ignore (and pring warnings and links) if there are unsupported blocks.
+- Ignore (and print warnings and links) if there are unsupported blocks.
+- Fix issue where images with the same name would collide with each other
+- Add a mermaid diagram plugin
 
 ### v0.4.1
 
