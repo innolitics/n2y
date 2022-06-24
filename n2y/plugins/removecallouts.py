@@ -9,7 +9,7 @@ class RemoveCalloutBlock(CalloutBlock):
     be included in generated documents.
     """
 
-    def __init__(self, client, notion_data, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True):
         pass
 
     def to_pandoc(self):

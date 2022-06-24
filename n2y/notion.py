@@ -169,9 +169,9 @@ class Client:
         database_class = self.get_class("database")
         return database_class(self, notion_data)
 
-    def wrap_notion_block(self, notion_data, get_children):
+    def wrap_notion_block(self, notion_data, page, get_children):
         block_class = self.get_class("blocks", notion_data["type"])
-        return block_class(self, notion_data, get_children)
+        return block_class(self, notion_data, page, get_children)
 
     def wrap_notion_user(self, notion_data):
         user_class = self.get_class("user")
@@ -265,18 +265,18 @@ class Client:
             page = self._wrap_notion_page(notion_page)
         return page
 
-    def get_block(self, block_id, get_children=True):
+    def get_block(self, block_id, page, get_children=True):
         notion_block = self.get_notion_block(block_id)
-        return self.wrap_notion_block(notion_block, get_children)
+        return self.wrap_notion_block(notion_block, page, get_children)
 
     def get_notion_block(self, block_id):
         url = f"{self.base_url}blocks/{block_id}"
         response = requests.get(url, headers=self.headers)
         return self._parse_response(response)
 
-    def get_child_blocks(self, block_id, get_children):
+    def get_child_blocks(self, block_id, page, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        return [self.wrap_notion_block(b, get_children) for b in child_notion_blocks]
+        return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
     def get_child_notion_blocks(self, block_id):
         starting_url = f"{self.base_url}blocks/{block_id}/children"

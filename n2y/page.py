@@ -28,7 +28,7 @@ class Page:
             for k, npv in notion_data['properties'].items()
         }
         self.notion_parent = notion_data['parent']
-        self.url = notion_data['url']
+        self.notion_url = notion_data['url']
 
         self._block = None
         self._children = None
@@ -43,7 +43,7 @@ class Page:
     @property
     def block(self):
         if self._block is None:
-            self._block = self.client.get_block(self.notion_id)
+            self._block = self.client.get_block(self.notion_id, page=self)
         return self._block
 
     @property

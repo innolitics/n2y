@@ -13,8 +13,8 @@ class DeepHeadersBlock(HeadingThreeBlock):
     """
     trigger_regex = re.compile(r'^(=+) ')
 
-    def __init__(self, client, notion_data, get_children=True):
-        super().__init__(client, notion_data, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         result = self.rich_text.matches(self.trigger_regex)
         if result:
             number_of_equal_signs = len(result.group(1))

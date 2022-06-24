@@ -17,8 +17,8 @@ class RawFencedCodeBlock(FencedCodeBlock):
     """
     trigger_regex = re.compile(r'^{=(.+)}')
 
-    def __init__(self, client, notion_data, get_children=True):
-        super().__init__(client, notion_data, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         result = self.caption.matches(self.trigger_regex)
         if result:
             self.raw_lang = result.group(1)
