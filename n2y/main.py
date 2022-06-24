@@ -7,6 +7,7 @@ from n2y import notion
 from n2y.database import Database
 from n2y.page import Page
 from n2y.errors import APIErrorCode, APIResponseError
+from n2y.utils import sanitize_filename
 
 logger = None
 
@@ -111,7 +112,7 @@ def export_database_as_markdown_files(database, options):
     counts = {'unnamed': 0, 'duplicate': 0}
     for page in database.children:
         # TODO: switch to using the database's natural keys as the file names
-        file_name = page.title.to_plain_text()
+        file_name = sanitize_filename(page.title.to_plain_text())
         if file_name:
             if file_name not in seen_file_names:
                 seen_file_names.add(file_name)
@@ -135,7 +136,7 @@ def export_related_databases(seed_database, options):
 
     def _export_related_databases(database):
         seen_database_ids.add(database.notion_id)
-        file_name = database.title.to_plain_text()
+        file_name = sanitize_filename(database.title.to_plain_text())
         if file_name not in seen_file_names:
             seen_file_names.add(file_name)
             with open(os.path.join(options.output, f"{file_name}.yml"), 'w') as f:

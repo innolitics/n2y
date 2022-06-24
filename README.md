@@ -138,6 +138,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.4.2
+
+- Sanatize filenames (so that a notion page called "HFE/UE Report" won't attempt to create a directory.
+
 ### v0.4.1
 
 - Add the ability to customize the where database page content is stored

@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+import re
 
 import pandoc
 from pandoc.types import Str, Space
@@ -87,3 +88,12 @@ def fromisoformat(datestring):
         return datetime.fromisoformat(datestring[:-1] + '+00:00')
     else:
         return datetime.fromisoformat(datestring)
+
+
+def sanitize_filename(filename):
+    """Taken from django."""
+    s = str(filename).strip().replace(" ", "_")
+    s = re.sub(r"(?u)[^-\w.]", "", s)
+    if s in {"", ".", ".."}:
+        raise ValueError("Could not derive file name from '%s'" % filename)
+    return s
