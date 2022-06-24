@@ -152,17 +152,16 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "![Image **caption**](Unknown.jpeg)" in lines
-    # TODO: add more blocks to the document, along with assertions
+    assert "![Image **caption**](All_Blocks_Test_Page-4e1e6c89.jpeg)" in lines
 
     # "Unknown.jpeg" is a file block in the Notion page
-    assert os.path.exists(tmp_path / "Unknown.jpeg")
+    assert os.path.exists(tmp_path / "All_Blocks_Test_Page-4e1e6c89.jpeg")
 
 
 def test_page_in_database_to_markdown():
     '''
     This test exports a single page, or "row", that is in a database. Unlike
-    pages that are not in a databe, who only have a single "Title" property,
+    pages that are not in a database, who only have a single "Title" property,
     pages in a database will have properties for all of the "columns" in that
     database.
 

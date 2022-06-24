@@ -1,9 +1,10 @@
 import copy
+import hashlib
 import logging
 import json
 from os import path, makedirs
 from shutil import copyfileobj
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import importlib.util
 
 import requests
@@ -327,14 +328,24 @@ class Client:
             raise HTTPResponseError(error.response)
         return response.json()
 
-    def download_file(self, url, file_path):
-        # TODO: append created time as hex to end of file to prevent collisions?
-        local_filename = path.join(self.media_root, file_path)
-        makedirs(path.dirname(local_filename), exist_ok=True)
+    def download_file(self, url, page):
+        """
+        Download a file from a given URL into the MEDIA_ROOT.
+
+        Preserve the file extension from the URL, but use the name of the parent
+        page followed by an md5 hash.
+        """
+        url_path = path.basename(urlparse(url).path)
+        _, file_extension = path.splitext(url_path)
+        makedirs(path.dirname(self.media_root), exist_ok=True)
         with requests.get(url, stream=True) as request_stream:
-            with open(local_filename, 'wb') as file_stream:
+            num_hash_characters = 8  # just long enough to avoid collisions
+            hash = hashlib.sha256(request_stream.raw.data).hexdigest()[:num_hash_characters]
+            relative_filepath = "".join([page.filename, "-", hash, file_extension])
+            full_filepath = path.join(self.media_root, relative_filepath)
+            with open(full_filepath, 'wb') as file_stream:
                 copyfileobj(request_stream.raw, file_stream)
-        return urljoin(self.media_url, file_path)
+        return urljoin(self.media_url, relative_filepath)
 
 
 def id_from_share_link(share_link):

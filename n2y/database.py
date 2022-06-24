@@ -3,7 +3,7 @@ import logging
 import yaml
 
 from n2y.property_values import RelationPropertyValue
-from n2y.utils import fromisoformat
+from n2y.utils import fromisoformat, sanitize_filename
 
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,10 @@ class Database:
         self.archived = notion_data['archived']
 
         self._children = None
+
+    @property
+    def filename(self):
+        return sanitize_filename(self.title.to_plain_text())
 
     @property
     def children(self):

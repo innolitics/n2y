@@ -1,7 +1,6 @@
 from itertools import groupby
 import logging
-from os import path
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin
 
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
@@ -292,10 +291,7 @@ class FileBlock(Block):
         if self.file.type == "external":
             url = self.file.url
         elif self.file.type == "file":
-            # TODO: log warning if there are name collisions
-            # TODO: save files in a folder associated with the page
-            file_path = path.basename(urlparse(self.file.url).path)
-            url = self.client.download_file(self.file.url, file_path)
+            url = self.client.download_file(self.file.url, self.page)
         if self.caption:
             caption_ast = self.caption.to_pandoc()
         else:
@@ -314,10 +310,7 @@ class ImageBlock(Block):
         if self.file.type == "external":
             url = self.file.url
         elif self.file.type == "file":
-            # TODO: log warning if there are name collisions
-            # TODO: save images in a folder associated with the page
-            file_path = path.basename(urlparse(self.file.url).path)
-            url = self.client.download_file(self.file.url, file_path)
+            url = self.client.download_file(self.file.url, self.page)
         return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
 
 

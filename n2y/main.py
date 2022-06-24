@@ -7,7 +7,6 @@ from n2y import notion
 from n2y.database import Database
 from n2y.page import Page
 from n2y.errors import APIErrorCode, APIResponseError
-from n2y.utils import sanitize_filename
 
 logger = None
 
@@ -112,15 +111,13 @@ def export_database_as_markdown_files(database, options):
     seen_file_names = set()
     counts = {'unnamed': 0, 'duplicate': 0}
     for page in database.children:
-        # TODO: switch to using the database's natural keys as the file names
-        file_name = sanitize_filename(page.title.to_plain_text())
-        if file_name:
-            if file_name not in seen_file_names:
-                seen_file_names.add(file_name)
-                with open(os.path.join(options.output, f"{file_name}.md"), 'w') as f:
+        if page.filename:
+            if page.filename not in seen_file_names:
+                seen_file_names.add(page.filename)
+                with open(os.path.join(options.output, f"{page.filename}.md"), 'w') as f:
                     f.write(page.to_markdown())
             else:
-                logger.warning('Skipping page named "%s" since it has been used', file_name)
+                logger.warning('Skipping page named "%s" since it has been used', page.filename)
                 counts['duplicate'] += 1
         else:
             counts['unnamed'] += 1
@@ -137,13 +134,12 @@ def export_related_databases(seed_database, options):
 
     def _export_related_databases(database):
         seen_database_ids.add(database.notion_id)
-        file_name = sanitize_filename(database.title.to_plain_text())
-        if file_name not in seen_file_names:
-            seen_file_names.add(file_name)
-            with open(os.path.join(options.output, f"{file_name}.yml"), 'w') as f:
+        if database.filename not in seen_file_names:
+            seen_file_names.add(database.filename)
+            with open(os.path.join(options.output, f"{database.filename}.yml"), 'w') as f:
                 f.write(database.to_yaml())
         else:
-            logger.warning('Database name "%s" has been used', file_name)
+            logger.warning('Database name "%s" has been used', database.filename)
         for database_id in database.related_database_ids:
             if database_id not in seen_database_ids:
                 try:

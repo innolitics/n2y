@@ -73,7 +73,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
                     f"This is likely due to a bug in n2y or a plugin: {err.stderr}"
                 )
                 logger.error(msg)
-            raise PandocASTParseError(msg)
+                raise PandocASTParseError(msg)
         return result
 
 
@@ -94,6 +94,6 @@ def sanitize_filename(filename):
     """Taken from django."""
     s = str(filename).strip().replace(" ", "_")
     s = re.sub(r"(?u)[^-\w.]", "", s)
-    if s in {"", ".", ".."}:
+    if s in {".", ".."}:
         raise ValueError("Could not derive file name from '%s'" % filename)
     return s

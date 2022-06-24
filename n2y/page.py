@@ -2,7 +2,7 @@ import logging
 
 import yaml
 
-from n2y.utils import pandoc_ast_to_markdown, fromisoformat
+from n2y.utils import pandoc_ast_to_markdown, fromisoformat, sanitize_filename
 from n2y.property_values import TitlePropertyValue
 
 
@@ -39,6 +39,11 @@ class Page:
             # Notion ensure's there is always exactly one title property
             if isinstance(property_value, TitlePropertyValue):
                 return property_value.rich_text
+
+    @property
+    def filename(self):
+        # TODO: switch to using the database's natural keys as the file names
+        return sanitize_filename(self.title.to_plain_text())
 
     @property
     def block(self):
