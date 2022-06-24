@@ -2,7 +2,7 @@ from datetime import datetime
 import uuid
 
 from n2y.rich_text import mock_notion_rich_text as mock_rich_text
-from n2y.rich_text import mock_notion_annotations as mock_annotations
+from n2y.rich_text import mock_notion_annotations as mock_annotations  # noqa: F401
 
 
 def mock_user(**kwargs):

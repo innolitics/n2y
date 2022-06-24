@@ -102,7 +102,7 @@ def test_unshared_related_databases(tmpdir):
     ])
     assert status == 0
     generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
-    assert generated_files == {"Database with Relationship to Unshared Database.yml"}
+    assert generated_files == {"Database_with_Relationship_to_Unshared_Database.yml"}
     # TODO: add an assertion that checks that warnings were displayed in stderr
     # (at the moment, they don't appear to be because the related pages simply
     # don't show up at all)
