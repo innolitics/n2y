@@ -57,10 +57,10 @@ class DateMention(Mention):
 class LinkPreviewMention(Mention):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.url = notion_data["url"]
+        self.url = notion_data["link_preview"]["url"]
 
     def to_pandoc(self):
-        return [Str(self.href)]
+        return [Str(self.url)]
 
 
 # TODO: handle template button date and user mentions
