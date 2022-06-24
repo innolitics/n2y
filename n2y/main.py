@@ -67,7 +67,8 @@ def main(raw_args, access_token):
 
     args = parser.parse_args(raw_args)
 
-    logging.basicConfig(format=args.logging_format, level=logging.__dict__[args.verbosity])
+    logging_level = logging.__dict__[args.verbosity]
+    logging.basicConfig(format=args.logging_format, level=logging_level)
     global logger
     logger = logging.getLogger(__name__)
 
