@@ -143,6 +143,8 @@ Here are some features we're planning to add in the future:
 - Make it so that plugins and other configuration can be set for only a sub-set
   of the exported pages, that way multiple configurations can be applied in a
   single export
+- Make page and database mentions more efficient; fix bug related to circular references with page mentions
+- Fix pagination bug that occurred with databases with more than 100 pages
 
 ## Changelog
 
