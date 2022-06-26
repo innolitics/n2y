@@ -199,7 +199,7 @@ def test_builtin_plugins(tmp_path):
         object_id,
         '--plugin', 'n2y.plugins.deepheaders',
         '--plugin', 'n2y.plugins.removecallouts',
-        #'--plugin', 'n2y.plugins.rawcodeblocks',
+        # '--plugin', 'n2y.plugins.rawcodeblocks',
         '--plugin', 'n2y.plugins.mermaid',
         '--media-root', str(tmp_path),
     ])
@@ -217,8 +217,8 @@ def test_builtin_plugins(tmp_path):
     assert sum(1 for l in lines if l == '``` mermaid') == 0
 
     # TODO: re-enable rawcodeblocks once multiple plugins can apply to the same block
-    #assert 'Raw markdown should show up' in lines
-    #assert 'Raw html should not show up' not in lines
+    # assert 'Raw markdown should show up' in lines
+    # assert 'Raw html should not show up' not in lines
 
 
 def test_missing_object_exception():

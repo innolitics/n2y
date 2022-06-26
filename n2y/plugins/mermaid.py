@@ -38,13 +38,15 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                     url = self.client.save_file(content_iterator, self.page, '.png')
                 return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
             except subprocess.CalledProcessError as exc:
+                # as of now, mmdc does not ever return a non-zero error code, so
+                # this won't ever be hit
                 msg = (
                     "Unable to convert mermaid diagram (%s) into an image. "
                     "The mermaid-cli returned error code %d and printed: %s"
                 )
                 logger.error(msg, self.notion_url, exc.returncode, exc.stderr)
                 return super().to_pandoc()
-            except:
+            except subprocess.SubprocessError:
                 msg = "Unable to convert mermaid diagram (%s) into an image"
                 logger.exception(msg, self.notion_url)
                 return super().to_pandoc()

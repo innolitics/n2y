@@ -4,7 +4,6 @@ import logging
 import json
 from os import path, makedirs
 import os
-from shutil import copyfileobj
 import shutil
 import tempfile
 from urllib.parse import urljoin, urlparse
@@ -147,7 +146,7 @@ class Client:
 
     def _wrap_notion_page(self, notion_data):
         """
-        Wrap notion page data in the appropriate class.  If the page class has
+        Wrap notion page data in the appropriate class. If the page class has
         already been created, then ignore the new notion data and just return
         the existing version.
 
