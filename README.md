@@ -143,9 +143,6 @@ Here are some features we're planning to add in the future:
 - Make it so that plugins and other configuration can be set for only a sub-set
   of the exported pages, that way multiple configurations can be applied in a
   single export
-- Make page and database mentions more efficient; fix bug related to circular references with page mentions
-- Fix pagination bug that occurred with databases with more than 100 pages
-
 ## Changelog
 
 ### v0.4.2
@@ -157,6 +154,9 @@ Here are some features we're planning to add in the future:
 - Ignore (and print warnings and links) if there are unsupported blocks.
 - Fix issue where images with the same name would collide with each other
 - Add a mermaid diagram plugin
+- Make page and database mentions more efficient; fix bug related to circular references with page mentions
+- Fix pagination bug that occurred with databases with more than 100 pages
+
 
 ### v0.4.1
 

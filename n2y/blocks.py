@@ -253,6 +253,12 @@ class FencedCodeBlock(Block):
         "xslt", "xul", "yacc", "yaml", "zsh",
     ]
 
+    # TODO: finish filling in this mapping from Notion language names to
+    # pandoc's supported language names
+    notion_to_pandoc_highlight_languages = {
+        'c#': 'cs',
+    }
+
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.language = self.notion_data["language"]
@@ -260,15 +266,16 @@ class FencedCodeBlock(Block):
         self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
-        # TODO: create a dict to translate the Notion language names to pandoc's
-        # supported language names when they don't match up exactly
-        if self.language not in self.pandoc_highlight_languages:
-            if self.language != "plain text":
+        pandoc_language = self.notion_to_pandoc_highlight_languages.get(
+            self.language, self.language,
+        )
+        if pandoc_language not in self.pandoc_highlight_languages:
+            if pandoc_language != "plain text":
                 msg = 'Dropping syntax highlighting for unsupported language "%s"'
-                logger.warning(msg, self.language)
+                logger.warning(msg, pandoc_language)
             language = []
         else:
-            language = [self.language]
+            language = [pandoc_language]
         return CodeBlock(('', language, []), self.rich_text.to_plain_text())
 
 
