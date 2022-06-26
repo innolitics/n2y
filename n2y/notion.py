@@ -193,9 +193,11 @@ class Client:
         rich_text_class = self.get_class("rich_texts", notion_data["type"])
         return rich_text_class(self, notion_data)
 
-    def wrap_notion_mention(self, notion_data):
+    def wrap_notion_mention(self, notion_data, plain_text):
+        # here we pass in the plain_text to avoid the need to query the page
+        # just to get its title
         mention_class = self.get_class("mentions", notion_data["type"])
-        return mention_class(self, notion_data)
+        return mention_class(self, notion_data, plain_text)
 
     def wrap_notion_property(self, notion_data):
         property_class = self.get_class("properties", notion_data["type"])
