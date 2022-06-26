@@ -45,13 +45,17 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                     "The mermaid-cli returned error code %d and printed: %s"
                 )
                 logger.error(msg, self.notion_url, exc.returncode, exc.stderr)
-                return super().to_pandoc()
             except subprocess.SubprocessError:
                 msg = "Unable to convert mermaid diagram (%s) into an image"
                 logger.exception(msg, self.notion_url)
-                return super().to_pandoc()
-        else:
-            return super().to_pandoc()
+            except FileNotFoundError:
+                msg = (
+                    "Unable to find the mermaid-cli executable, `mmdc`, on the PATH. "
+                    "See here: https://github.com/mermaid-js/mermaid-cli "
+                    "Mermaid diagram (%s) in code blocks will not be converted to images."
+                )
+                logger.error(msg, self.notion_url)
+        return super().to_pandoc()
 
 
 notion_classes = {
