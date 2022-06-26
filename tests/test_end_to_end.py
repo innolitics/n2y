@@ -52,6 +52,18 @@ def test_simple_database_to_yaml():
     assert database[0]["content"] is None
 
 
+def test_big_database_to_yaml():
+    '''
+    The database can be seen here:
+    https://fresh-pencil-9f3.notion.site/9341a0ddf7d4442d94ad74e5100f72af
+    '''
+    object_id = '9341a0ddf7d4442d94ad74e5100f72af'
+    status, stdoutput, _ = run_n2y([object_id, '--output', 'yaml'])
+    assert status == 0
+    database = yaml.load(stdoutput, Loader=Loader)
+    assert len(database) == 101
+
+
 def test_simple_database_to_markdown_files(tmpdir):
     '''
     The database can be seen here:

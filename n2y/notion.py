@@ -241,18 +241,16 @@ class Client:
         return [self._wrap_notion_page(np) for np in notion_pages]
 
     def get_database_notion_pages(self, database_id):
-        starting_url = f"{self.base_url}databases/{database_id}/query"
-
-        def depaginator(url):
-            while True:
-                data = self._post_url(url)
-                yield data["results"]
-                if not data["has_more"]:
-                    return
-                else:
-                    url = data["next_cursor"]
-
-        return sum(depaginator(starting_url), [])
+        results = []
+        url = f"{self.base_url}databases/{database_id}/query"
+        request_data = {}
+        while True:
+            data = self._post_url(url, request_data)
+            results.extend(data["results"])
+            if not data["has_more"]:
+                return results
+            else:
+                request_data["start_cursor"] = data["next_cursor"]
 
     def get_page(self, page_id):
         """
@@ -284,19 +282,16 @@ class Client:
         return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
     def get_child_notion_blocks(self, block_id):
-        starting_url = f"{self.base_url}blocks/{block_id}/children"
-
-        def depaginator(url):
-            while True:
-                data = self._get_url(url)
-                yield data["results"]
-                if not data["has_more"]:
-                    return
-                else:
-                    cursor = data["next_cursor"]
-                    url = f"{starting_url}?start_cursor={cursor}"
-
-        return sum(depaginator(starting_url), [])
+        url = f"{self.base_url}blocks/{block_id}/children"
+        params = {}
+        results = []
+        while True:
+            data = self._get_url(url, params)
+            results.extend(data["results"])
+            if not data["has_more"]:
+                return results
+            else:
+                params["start_cursor"] = data["next_cursor"]
 
     def get_page_property(self, page_id, property_id):
         notion_property = self.get_notion_page_property(page_id, property_id)
@@ -307,12 +302,16 @@ class Client:
         response = requests.get(url, headers=self.headers)
         return self._parse_response(response)
 
-    def _get_url(self, url):
-        response = requests.get(url, headers=self.headers)
+    def _get_url(self, url, params=None):
+        if params is None:
+            params = {}
+        response = requests.get(url, headers=self.headers, params=params)
         return self._parse_response(response)
 
-    def _post_url(self, url):
-        response = requests.post(url, headers=self.headers)
+    def _post_url(self, url, data=None):
+        if data is None:
+            data = {}
+        response = requests.post(url, headers=self.headers, json=data)
         return self._parse_response(response)
 
     def _parse_response(self, response):
