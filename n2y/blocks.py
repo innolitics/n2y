@@ -82,7 +82,8 @@ class Block:
 
     @property
     def notion_url(self):
-        fragment = '#' + self.notion_id
+        # the notion URL's don't work if the dashes from the block ID are present
+        fragment = '#' + self.notion_id.replace('-', '')
         if self.page is None:
             return fragment
         else:
