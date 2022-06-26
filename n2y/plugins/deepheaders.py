@@ -1,6 +1,7 @@
 import re
 
 from n2y.blocks import HeadingThreeBlock
+from n2y.errors import UseNextClass
 
 
 class DeepHeadersBlock(HeadingThreeBlock):
@@ -20,6 +21,8 @@ class DeepHeadersBlock(HeadingThreeBlock):
             number_of_equal_signs = len(result.group(1))
             self.level += number_of_equal_signs
             self.rich_text.lstrip(result.group(0))
+        else:
+            raise UseNextClass()
 
 
 notion_classes = {

@@ -1,4 +1,3 @@
-import copy
 import hashlib
 import logging
 import json
@@ -12,8 +11,8 @@ import importlib.util
 import requests
 
 from n2y.errors import (
-    HTTPResponseError, APIResponseError, ObjectNotFound, PluginError, is_api_error_code,
-    APIErrorCode
+    HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
+    UseNextClass, is_api_error_code, APIErrorCode
 )
 from n2y.file import File
 from n2y.page import Page
@@ -81,9 +80,18 @@ class Client:
         self.databases_cache = {}
         self.pages_cache = {}
 
-        self.notion_classes = copy.deepcopy(DEFAULT_NOTION_CLASSES)
+        self.notion_classes = self.get_default_classes()
         self.load_plugins(plugins)
         self.plugin_data = {}
+
+    def get_default_classes(self):
+        notion_classes = {}
+        for notion_object, object_types in DEFAULT_NOTION_CLASSES.items():
+            if type(object_types) == dict:
+                notion_classes[notion_object] = {k: [v] for k, v in object_types.items()}
+            else:
+                notion_classes[notion_object] = [object_types]
+        return notion_classes
 
     def load_plugins(self, plugins):
         if plugins is not None:
@@ -114,7 +122,7 @@ class Client:
                     # assumes all of the default classes have a single parent class
                     base_class = class_being_replaced.__bases__[0]
                     if issubclass(plugin_class, base_class):
-                        self.notion_classes[notion_object][object_type] = plugin_class
+                        self.notion_classes[notion_object][object_type].append(plugin_class)
                     else:
                         raise PluginError(
                             f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
@@ -123,26 +131,33 @@ class Client:
                 else:
                     raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
         elif notion_object_has_types and not isinstance(object_types, dict):
-            raise PluginError(
-                f'Expecting a dict for "{notion_object}", found "{type(object_types)}"')
+            raise PluginError(f'Expecting dict for "{notion_object}", found "{type(object_types)}"')
         else:
             plugin_class = object_types
             base_class = default_object_types
             if issubclass(plugin_class, base_class):
-                self.notion_classes[notion_object] = plugin_class
+                self.notion_classes[notion_object].append(plugin_class)
             else:
                 raise PluginError(
                     f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
                     f'override the base class "{base_class.__name__}"',
                 )
 
-    def get_class(self, notion_object, object_type=None):
+    def get_class_list(self, notion_object, object_type=None):
         if object_type is None:
             return self.notion_classes[notion_object]
         try:
             return self.notion_classes[notion_object][object_type]
         except KeyError:
             raise NotImplementedError(f'Unknown "{notion_object}" class of type "{object_type}"')
+
+    def instantiate_class(self, notion_object, object_type, *args, **kwargs):
+        class_list = self.get_class_list(notion_object, object_type)
+        for klass in reversed(class_list):
+            try:
+                return klass(*args, **kwargs)
+            except UseNextClass:
+                logger.debug("Skipping %s due to UseNextClass exception", klass.__name__)
 
     def _wrap_notion_page(self, notion_data):
         """
@@ -163,48 +178,44 @@ class Client:
         if notion_data["id"] in self.pages_cache:
             return self.pages_cache[notion_data["id"]]
         else:
-            page_class = self.get_class("page")
-            page = page_class(self, notion_data)
+            page = self.instantiate_class("page", None, self, notion_data)
             self.pages_cache[page.notion_id] = page
             return page
 
     def _wrap_notion_database(self, notion_data):
-        database_class = self.get_class("database")
-        return database_class(self, notion_data)
+        return self.instantiate_class("database", None, self, notion_data)
 
     def wrap_notion_block(self, notion_data, page, get_children):
-        block_class = self.get_class("blocks", notion_data["type"])
-        return block_class(self, notion_data, page, get_children)
+        return self.instantiate_class(
+            "blocks", notion_data["type"],
+            self, notion_data, page, get_children,
+        )
 
     def wrap_notion_user(self, notion_data):
-        user_class = self.get_class("user")
-        return user_class(self, notion_data)
+        return self.instantiate_class("user", None, self, notion_data)
 
     def wrap_notion_file(self, notion_data):
-        file_class = self.get_class("file")
-        return file_class(self, notion_data)
+        return self.instantiate_class("file", None, self, notion_data)
 
     def wrap_notion_rich_text_array(self, notion_data):
-        rich_text_array_class = self.get_class("rich_text_array")
-        return rich_text_array_class(self, notion_data)
+        return self.instantiate_class("rich_text_array", None, self, notion_data)
 
     def wrap_notion_rich_text(self, notion_data):
-        rich_text_class = self.get_class("rich_texts", notion_data["type"])
-        return rich_text_class(self, notion_data)
+        return self.instantiate_class("rich_texts", notion_data["type"], self, notion_data)
 
     def wrap_notion_mention(self, notion_data, plain_text):
         # here we pass in the plain_text to avoid the need to query the page
         # just to get its title
-        mention_class = self.get_class("mentions", notion_data["type"])
-        return mention_class(self, notion_data, plain_text)
+        return self.instantiate_class(
+            "mentions", notion_data["type"],
+            self, notion_data, plain_text,
+        )
 
     def wrap_notion_property(self, notion_data):
-        property_class = self.get_class("properties", notion_data["type"])
-        return property_class(self, notion_data)
+        return self.instantiate_class("properties", notion_data["type"], self, notion_data)
 
     def wrap_notion_property_value(self, notion_data):
-        property_value_class = self.get_class("property_values", notion_data["type"])
-        return property_value_class(self, notion_data)
+        return self.instantiate_class("property_values", notion_data["type"], self, notion_data)
 
     def get_page_or_database(self, object_id):
         """

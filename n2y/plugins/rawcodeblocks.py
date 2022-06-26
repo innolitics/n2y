@@ -3,6 +3,7 @@ import re
 from pandoc.types import RawBlock, Format
 
 from n2y.blocks import FencedCodeBlock
+from n2y.errors import UseNextClass
 
 
 class RawFencedCodeBlock(FencedCodeBlock):
@@ -23,13 +24,10 @@ class RawFencedCodeBlock(FencedCodeBlock):
         if result:
             self.raw_lang = result.group(1)
         else:
-            self.raw_lang = None
+            raise UseNextClass()
 
     def to_pandoc(self):
-        if self.raw_lang is None:
-            return super().to_pandoc()
-        else:
-            return RawBlock(Format(self.raw_lang), self.rich_text.to_plain_text())
+        return RawBlock(Format(self.raw_lang), self.rich_text.to_plain_text())
 
 
 notion_classes = {

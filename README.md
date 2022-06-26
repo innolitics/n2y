@@ -52,17 +52,40 @@ n2y PAGE_LINK > page.md
 
 ## Plugins
 
-TODO: Update the plugin documentation to explain all of the object types as well as the default classes for each of them. For now, please see the source code to understand how the plugin system works.
+At the core of n2y are a set of python classes that represent the various parts of a Notion workspace:
 
-At the core of n2y are a set of python classes that subclass the `Block` class. These classes are responsible for converting the Notion data into pandoc abstract syntax tree objects. We use a python wrapper library that makes it easier to work with pandoc's AST. See [here](https://boisgera.github.io/pandoc/document/) for details. See the [Notion API documentation](https://developers.notion.com/reference/block) for details about their data structures.
+| Notion Object Type | Description |
+| --- | --- |
+| Page | Represents a Notion page (which may or may not be in a database) |
+| Database | A Notion database, which can also be though of as a set of Notion pages with some structured meta data, or properties |
+| Property | A type descriptor for a property (or column) in a Notion database |
+| PropertyValue | A particular value that a particular page in database has for a particular Property |
+| Block | A bit of content within a Page |
+| RichTextArray | A sequence of formatted text in Notion; present in many blocks and property values |
+| RichText | A segment of text with the same styling |
+| Mention | A reference to another Notion object (e.g., a page, database, block, user, etc. )
+| User | A notion user; used in property values and in page, block, and database metadata |
+| File | A file |
 
-The default implementation of these block classes can be modified using a plugin system. To create a plugin, follow these steps:
+The `Property`, `PropertyValue`, `Block`, `RichText`, and `Mention` classes have subclasses that represent the various subtypes. E.g., there is a `ParagraphBlock` that represents paragraph.
+
+These classes are responsible for converting the Notion data into pandoc abstract syntax tree objects. We use a python wrapper library that makes it easier to work with pandoc's AST. See [here](https://boisgera.github.io/pandoc/document/) for details. See the [Notion API documentation](https://developers.notion.com/reference/block) for details about their data structures.
+
+The default implementation of these classes can be modified using a plugin system. To create a plugin, follow these steps:
 
 1. Create a new Python module
 2. Subclass the various notion classes, modifying their constructor or `to_pandoc` method as desired
 3. Run n2y with the `--plugin` argument pointing to your python module
 
 See the [builtin plugins](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for examples.
+
+### Using Multiple Plugins
+
+You can use multiple plugins. If two plugins provide classes for the same notion object, then the last one that was loaded will be instantiated.
+
+Often you'll want to use a different class only in certain situations. For example, you may want to use a different Page class with its own unique behavior only for pages in a particular database.
+
+If your plugin class raise the `n2y.errors.UseNextClass` exception in its constructor, then n2y will move on to the next class (which may be the builtin class if only one plugin was used).
 
 ### Default Block Class's
 
@@ -143,6 +166,7 @@ Here are some features we're planning to add in the future:
 - Make it so that plugins and other configuration can be set for only a sub-set
   of the exported pages, that way multiple configurations can be applied in a
   single export
+
 ## Changelog
 
 ### v0.4.2
@@ -156,6 +180,7 @@ Here are some features we're planning to add in the future:
 - Add a mermaid diagram plugin
 - Make page and database mentions more efficient; fix bug related to circular references with page mentions
 - Fix pagination bug that occurred with databases with more than 100 pages
+- Make it easier to use multiple plugins for the same class
 
 
 ### v0.4.1

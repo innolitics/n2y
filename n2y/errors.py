@@ -19,6 +19,13 @@ class PluginError(N2YError):
     pass
 
 
+class UseNextClass(Exception):
+    """
+    Used by plugin classes to indicate that the next class should be used instead of them.
+    """
+    pass
+
+
 class RequestTimeoutError(N2YError):
     """
     Exception for requests that timeout.

@@ -3,7 +3,8 @@ import pytest
 from n2y.blocks import ParagraphBlock
 from n2y.notion import Client
 from n2y.page import Page
-from n2y.errors import PluginError
+from n2y.errors import PluginError, UseNextClass
+from tests.notion_mocks import mock_paragraph_block
 
 
 def test_load_plugin_invalid_notion_object():
@@ -23,12 +24,27 @@ def test_load_plugin_invalid_object_type():
 
 def test_load_plugin_valid_page():
     client = Client('')
-    assert client.get_class("page") == Page
 
     class MyPage(Page):
         pass
     client.load_plugin({"page": MyPage})
-    assert client.get_class("page") == MyPage
+    assert client.get_class_list("page") == [Page, MyPage]
+
+
+def test_get_class_fallthrough():
+    client = Client('')
+
+    class SometimesParagraph(ParagraphBlock):
+        def __init__(self, client, notion_data, page=None, get_children=False):
+            super().__init__(client, notion_data, page, get_children)
+            if self.rich_text.to_plain_text() != "sometimes":
+                raise UseNextClass()
+
+    client.load_plugin({"blocks": {"paragraph": SometimesParagraph}})
+    sometimes = client.wrap_notion_block(mock_paragraph_block([("sometimes", {})]), None, False)
+    othertimes = client.wrap_notion_block(mock_paragraph_block([("othertimes", {})]), None, False)
+    assert type(sometimes) == SometimesParagraph
+    assert type(othertimes) == ParagraphBlock
 
 
 def test_load_plugin_invalid_page_class():
@@ -43,12 +59,11 @@ def test_load_plugin_invalid_page_class():
 
 def test_load_plugin_valid_block():
     client = Client('')
-    assert client.get_class("blocks", "paragraph") == ParagraphBlock
 
     class MyParagraphBlock(ParagraphBlock):
         pass
     client.load_plugin({"blocks": {"paragraph": MyParagraphBlock}})
-    assert client.get_class("blocks", "paragraph") == MyParagraphBlock
+    assert client.get_class_list("blocks", "paragraph") == [ParagraphBlock, MyParagraphBlock]
 
 
 def test_load_plugin_invalid_block_mapping():
