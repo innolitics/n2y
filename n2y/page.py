@@ -69,7 +69,7 @@ class Page:
             return self.client.get_page(self.notion_parent["page_id"])
         else:
             assert parent_type == "database_id"
-            return self.client.get_page(self.notion_parent["database_id"])
+            return self.client.get_database(self.notion_parent["database_id"])
 
     def to_pandoc(self):
         return self.block.to_pandoc()
