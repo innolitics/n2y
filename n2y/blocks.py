@@ -1,7 +1,6 @@
 from itertools import groupby
 import logging
-import importlib.util
-from os import path
+from urllib.parse import urljoin
 
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
@@ -11,59 +10,24 @@ from pandoc.types import (
 )
 
 
-# Notes:
-# A single Notion block may have multiple lines of text.
-# A page is a block that puts children into its "content" attribute.
-# We transform page blocks into other block types.
-#
-# Pandoc makes each word a block, and spaces are blocks too!
-#
-# Block types used here that do not exist in Notion:
-#   container - block with no top-level content, only children (used to parse a page and lists)
-#   bulleted_list - Notion has bulleted_list_item, but no enclosing container
-#   numbered_list - Notion has numbered_list_item, but no enclusing container
-
-
 logger = logging.getLogger(__name__)
 
 
-def load_plugins(filename):
-    # TODO: Consider storing the imported classes on the `Client` instance. This
-    # will make it easier to test the plugin system in isolation, since given
-    # that the plugins are globals right now, if we have a test that uses the
-    # plugins it will mutate the global module state. Furthermore, by moving the
-    # plugin block class references onto the `Client` class it will make it
-    # easier to dynamically enable or disable certain plugin classes for certain
-    # notion pages, which is a feature we will likely need in the future.
-
-    # TODO: Make it possible to swap out the RichText classes too
-
-    # TODO: Make it possible to modify the property value code too; note that we
-    # should probably create a hierarchy of classes, similar to how the Block
-    # classes work
-
-    abs_path = path.abspath(filename)
-    plugin_spec = importlib.util.spec_from_file_location("plugins", abs_path)
-    plugin_module = importlib.util.module_from_spec(plugin_spec)
-    plugin_spec.loader.exec_module(plugin_module)
-    for (key, value) in plugin_module.exports.items():
-        if key in globals():
-            class_to_replace = globals()[key]
-            plugin_base_class_names = [b.__name__ for b in value.__bases__]
-            # plugins can only override classes in this file that are derrived from a Block
-            if class_to_replace.__name__ in plugin_base_class_names \
-                    and issubclass(class_to_replace, Block):
-                globals()[key] = value
-            else:
-                logger.warning(
-                    'Cannot import plugin "%s" because it is not '
-                    'derrived from a known class.', key)
-        else:
-            raise NotImplementedError(f'Unknown plugin type "{key}".')
-
-
 class Block:
-    def __init__(self, client, notion_block, get_children=True):
+    """
+    A Notion page's content consists of a tree of nested Blocks.
+
+    See here for a listing of all of them: https://developers.notion.com/reference/block
+
+    This class that wraps the Notion blocks and also is responsible for
+    transforming them into Pandoc abstract syntax tree. A single Notion block
+    often has multiple lines of text.
+
+    Pandoc's data model doesn't line up exactly with Notion's, for example
+    Notion doesn't have a wrapper around lists, while Pandoc does.
+    """
+
+    def __init__(self, client, notion_data, page=None, get_children=True):
         """
         The Notion client object is passed down for the following reasons:
         1. Some child objects may be unknown until the block is processed.
@@ -73,20 +37,21 @@ class Block:
         """
         logger.debug('Instantiating "%s" block', type(self).__name__)
         self.client = client
+        self.page = page
 
-        self.notion_id = notion_block['id']
-        self.created_time = notion_block['created_time']
-        self.created_by = notion_block['created_by']
-        self.last_edited_time = notion_block['last_edited_time']
-        self.last_edited_by = notion_block['last_edited_by']
-        self.has_children = notion_block['has_children']
-        self.archived = notion_block['archived']
-        self.notion_type = notion_block['type']
-        self.notion_data = notion_block[notion_block['type']]
+        self.notion_id = notion_data['id']
+        self.created_time = notion_data['created_time']
+        self.created_by = notion_data['created_by']
+        self.last_edited_time = notion_data['last_edited_time']
+        self.last_edited_by = notion_data['last_edited_by']
+        self.has_children = notion_data['has_children']
+        self.archived = notion_data['archived']
+        self.notion_type = notion_data['type']
+        self.notion_data = notion_data[notion_data['type']]
 
         if get_children:
             if self.has_children:
-                children = self.client.get_child_blocks(self.notion_id, get_children)
+                children = self.client.get_child_blocks(self.notion_id, page, get_children)
             else:
                 children = []
         else:
@@ -103,8 +68,26 @@ class Block:
             if issubclass(block_type, ListItemBlock):
                 pandoc_ast.append(block_type.list_to_pandoc(blocks))
             else:
-                pandoc_ast.extend(b.to_pandoc() for b in blocks)
+                for b in blocks:
+                    result = b.to_pandoc()
+                    if isinstance(result, list):
+                        # a few blocks return lists of nodes
+                        pandoc_ast.extend(result)
+                    elif result is not None:
+                        # a plugin may decide to return None to indicate the
+                        # block should be removed; ideally pandoc.types.Nil
+                        # would handle this, but it doesn't appear to work
+                        pandoc_ast.append(result)
         return pandoc_ast
+
+    @property
+    def notion_url(self):
+        # the notion URL's don't work if the dashes from the block ID are present
+        fragment = '#' + self.notion_id.replace('-', '')
+        if self.page is None:
+            return fragment
+        else:
+            return urljoin(self.page.notion_url, fragment)
 
 
 class ListItemBlock(Block):
@@ -114,8 +97,8 @@ class ListItemBlock(Block):
 
 
 class ChildPageBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.title = self.notion_data["title"]
 
     def to_pandoc(self):
@@ -128,8 +111,8 @@ class ChildPageBlock(Block):
 
 
 class EquationBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.expression = self.notion_data["expression"]
 
     def to_pandoc(self):
@@ -137,13 +120,17 @@ class EquationBlock(Block):
 
 
 class ParagraphBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
         content = self.rich_text.to_pandoc()
         if self.has_children:
+            # Notion allows you to create child blocks for a paragraph; these
+            # child blocks appear indented relative to the paragraph. There's
+            # no way to represent this indentation in pandoc's AST, so we just
+            # append the child blocks afterwards.
             result = [Para(content)]
             children = self.children_to_pandoc()
             result.extend(children)
@@ -153,8 +140,8 @@ class ParagraphBlock(Block):
 
 
 class BulletedListItemBlock(ListItemBlock):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
@@ -165,24 +152,23 @@ class BulletedListItemBlock(ListItemBlock):
         return content
 
     @classmethod
-    def list_to_pandoc(klass, blocks):
-        return BulletList([b.to_pandoc() for b in blocks])
+    def list_to_pandoc(klass, items):
+        return BulletList([b.to_pandoc() for b in items])
 
 
 class ToDoListItemBlock(BulletedListItemBlock):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.checked = self.notion_data['checked']
 
-        # TODO: Consider doing this at the "to_pandoc" stage
-        box = '☒' if self.checked else '☐'
-        self.rich_text.items[0].plain_text.text = box + \
-            ' ' + self.rich_text.items[0].plain_text.text
+        # TODO: Move this into the "to_pandoc" stage
+        box = '☒ ' if self.checked else '☐ '
+        self.rich_text.prepend(box)
 
 
 class NumberedListItemBlock(ListItemBlock):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
@@ -193,14 +179,20 @@ class NumberedListItemBlock(ListItemBlock):
         return content
 
     @classmethod
-    def list_to_pandoc(klass, blocks):
-        return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in blocks])
+    def list_to_pandoc(klass, items):
+        return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in items])
 
 
 class HeadingBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+
+        # The Notion UI allows one to bold the text in a header, but the bold
+        # styling isn't displayed. Thus, to avoid unexpected appearances of
+        # bold text in the generated documents, bolding is removed.
+        for rich_text in self.rich_text:
+            rich_text.bold = False
 
     def to_pandoc(self):
         return Header(self.level, ('', [], []), self.rich_text.to_pandoc())
@@ -224,13 +216,10 @@ class DividerBlock(Block):
 
 
 class BookmarkBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.url = self.notion_data["url"]
-        if self.notion_data["caption"]:
-            self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
-        else:
-            self.caption = None
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
         if self.caption:
@@ -241,29 +230,68 @@ class BookmarkBlock(Block):
 
 
 class FencedCodeBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    pandoc_highlight_languages = [
+        "abc", "actionscript", "ada", "agda", "apache", "asn1", "asp", "ats", "awk",
+        "bash", "bibtex", "boo", "c", "changelog", "clojure", "cmake", "coffee",
+        "coldfusion", "comments", "commonlisp", "cpp", "cs", "css", "curry", "d",
+        "default", "diff", "djangotemplate", "dockerfile", "dot", "doxygen",
+        "doxygenlua", "dtd", "eiffel", "elixir", "elm", "email", "erlang", "fasm",
+        "fortranfixed", "fortranfree", "fsharp", "gcc", "glsl", "gnuassembler", "go",
+        "graphql", "groovy", "hamlet", "haskell", "haxe", "html", "idris", "ini",
+        "isocpp", "j", "java", "javadoc", "javascript", "javascriptreact", "json",
+        "jsp", "julia", "kotlin", "latex", "lex", "lilypond", "literatecurry",
+        "literatehaskell", "llvm", "lua", "m4", "makefile", "mandoc", "markdown",
+        "mathematica", "matlab", "maxima", "mediawiki", "metafont", "mips", "modelines",
+        "modula2", "modula3", "monobasic", "mustache", "nasm", "nim", "noweb",
+        "objectivec", "objectivecpp", "ocaml", "octave", "opencl", "orgmode", "pascal",
+        "perl", "php", "pike", "postscript", "povray", "powershell", "prolog",
+        "protobuf", "pure", "purebasic", "python", "qml", "r", "raku", "relaxng",
+        "relaxngcompact", "rest", "rhtml", "roff", "ruby", "rust", "sass", "scala",
+        "scheme", "sci", "scss", "sed", "sgml", "sml", "spdxcomments", "sql",
+        "sqlmysql", "sqlpostgresql", "stan", "stata", "swift", "systemverilog", "tcl",
+        "tcsh", "texinfo", "toml", "typescript", "verilog", "vhdl", "xml", "xorg",
+        "xslt", "xul", "yacc", "yaml", "zsh",
+    ]
+
+    # TODO: finish filling in this mapping from Notion language names to
+    # pandoc's supported language names
+    notion_to_pandoc_highlight_languages = {
+        'c#': 'cs',
+    }
+
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.language = self.notion_data["language"]
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
-        plain_text = ''.join(t.plain_text.text for t in self.rich_text.items)
-        return CodeBlock(('', [self.language], []), plain_text)
+        pandoc_language = self.notion_to_pandoc_highlight_languages.get(
+            self.language, self.language,
+        )
+        if pandoc_language not in self.pandoc_highlight_languages:
+            if pandoc_language != "plain text":
+                msg = 'Dropping syntax highlighting for unsupported language "%s"'
+                logger.warning(msg, pandoc_language)
+            language = []
+        else:
+            language = [pandoc_language]
+        return CodeBlock(('', language, []), self.rich_text.to_plain_text())
 
 
 class QuoteBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
         return BlockQuote([Para(self.rich_text.to_pandoc())])
 
 
-class ImageBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
-        self.file = client.wrap_notion_file(block['image'])
+class FileBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.file = client.wrap_notion_file(notion_data['file'])
         self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
 
     def to_pandoc(self):
@@ -271,13 +299,32 @@ class ImageBlock(Block):
         if self.file.type == "external":
             url = self.file.url
         elif self.file.type == "file":
-            url = self.file.download()
+            url = self.client.download_file(self.file.url, self.page)
+        if self.caption:
+            caption_ast = self.caption.to_pandoc()
+        else:
+            caption_ast = [Str(url)]
+        return Para([Link(('', [], []), caption_ast, (url, ''))])
+
+
+class ImageBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.file = client.wrap_notion_file(notion_data['image'])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
+
+    def to_pandoc(self):
+        url = None
+        if self.file.type == "external":
+            url = self.file.url
+        elif self.file.type == "file":
+            url = self.client.download_file(self.file.url, self.page)
         return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
 
 
 class TableBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.has_column_header = self.notion_data['has_column_header']
         self.has_row_header = self.notion_data['has_row_header']
         self.table_width = self.notion_data['table_width']
@@ -312,8 +359,8 @@ class TableBlock(Block):
 
 
 class RowBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.cells = [client.wrap_notion_rich_text_array(nc) for nc in self.notion_data["cells"]]
 
     def to_pandoc(self):
@@ -333,8 +380,8 @@ class ToggleBlock(Block):
     to add html classes and replicate the interactive behavior found in Notion.
     """
 
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
@@ -346,9 +393,10 @@ class ToggleBlock(Block):
 
 
 class CalloutBlock(Block):
-    def __init__(self, client, block, get_children=True):
-        super().__init__(client, block, get_children)
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        # the color and icon are not currently used
 
     def to_pandoc(self):
         content = self.rich_text.to_pandoc()
@@ -361,23 +409,104 @@ class CalloutBlock(Block):
         return result
 
 
+class NoopBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        # don't get the child blocks, as we're not using the data
+        super().__init__(client, notion_data, page, get_children=False)
+
+    def to_pandoc(self):
+        return None
+
+
+class TableOfContentsBlock(NoopBlock):
+    pass
+
+
+class BreadcrumbBlock(NoopBlock):
+    pass
+
+
+class UnsupportedBlock(NoopBlock):
+    pass
+
+
+class TemplateBlock(NoopBlock):
+    pass
+
+
+class WarningBlock(NoopBlock):
+    def to_pandoc(self):
+        logger.warning('Skipping unsupported "%s" block (%s)', self.notion_type, self.notion_url)
+        return None
+
+
+class ChildDatabaseBlock(WarningBlock):
+    pass
+
+
+class EmbedBlock(WarningBlock):
+    pass
+
+
+class VideoBlock(WarningBlock):
+    pass
+
+
+class PdfBlock(WarningBlock):
+    pass
+
+
+class ColumnBlock(WarningBlock):
+    pass
+
+
+class ColumnListBlock(WarningBlock):
+    pass
+
+
+class LinkPreviewBlock(WarningBlock):
+    pass
+
+
+class SyncedBlock(WarningBlock):
+    pass
+
+
+class LinkToPageBlock(WarningBlock):
+    pass
+
+
 DEFAULT_BLOCKS = {
-    "child_page": ChildPageBlock,
     "paragraph": ParagraphBlock,
     "heading_1": HeadingOneBlock,
     "heading_2": HeadingTwoBlock,
     "heading_3": HeadingThreeBlock,
-    "divider": DividerBlock,
-    "numbered_list_item": NumberedListItemBlock,
     "bulleted_list_item": BulletedListItemBlock,
+    "numbered_list_item": NumberedListItemBlock,
     "to_do": ToDoListItemBlock,
-    "bookmark": BookmarkBlock,
+    "toggle": ToggleBlock,
+    "child_page": ChildPageBlock,
+    "child_database": ChildDatabaseBlock,
+    "embed": EmbedBlock,
     "image": ImageBlock,
-    "code": FencedCodeBlock,
+    "video": VideoBlock,
+    "file": FileBlock,
+    "pdf": PdfBlock,
+    "bookmark": BookmarkBlock,
+    "callout": CalloutBlock,
     "quote": QuoteBlock,
+    "equation": EquationBlock,
+    "divider": DividerBlock,
+    "table_of_contents": TableOfContentsBlock,
+    "breadcrumb": TableOfContentsBlock,
+    "column": ColumnBlock,
+    "column_list": ColumnListBlock,
+    "link_preview": LinkPreviewBlock,
+    "synced_block": SyncedBlock,
+    "template": TemplateBlock,
+    "link_to_page": LinkToPageBlock,
+    "code": FencedCodeBlock,
     "table": TableBlock,
     "table_row": RowBlock,
-    "toggle": ToggleBlock,
-    "equation": EquationBlock,
-    "callout": CalloutBlock,
+    "unsupported": UnsupportedBlock,
 }

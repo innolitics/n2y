@@ -1,8 +1,34 @@
 from enum import Enum
 
 
-class RequestTimeoutError(Exception):
-    """Exception for requests that timeout.
+class N2YError(Exception):
+    pass
+
+
+class PandocASTParseError(N2YError):
+    """
+    Raised if there was an error parsing the AST we provided to Pandoc.
+    """
+    pass
+
+
+class PluginError(N2YError):
+    """
+    Raised due to various errors loading a plugin.
+    """
+    pass
+
+
+class UseNextClass(Exception):
+    """
+    Used by plugin classes to indicate that the next class should be used instead of them.
+    """
+    pass
+
+
+class RequestTimeoutError(N2YError):
+    """
+    Exception for requests that timeout.
     The request that we made waits for a specified period of time or maximum number of
     retries to get the response. But if no response comes within the limited time or
     retries, then this Exception is raised.
@@ -14,8 +40,9 @@ class RequestTimeoutError(Exception):
         super().__init__(message)
 
 
-class HTTPResponseError(Exception):
-    """Exception for HTTP errors.
+class HTTPResponseError(N2YError):
+    """
+    Exception for HTTP errors.
     Responses from the API use HTTP response codes that are used to indicate general
     classes of success and error.
     """
@@ -77,6 +104,13 @@ class APIResponseError(HTTPResponseError):
 
     def __init__(self, response, message, code) -> None:
         super().__init__(response, f"{message} [{code}]")
+        self.code = code
+
+
+class ObjectNotFound(APIResponseError):
+    def __init__(self, response, message) -> None:
+        code = APIErrorCode.ObjectNotFound
+        super().__init__(response, f"{message} [{code}]", code)
         self.code = code
 
 

@@ -1,22 +1,48 @@
 import re
+import logging
 from collections import deque
 
 from pandoc.types import (
-    Str, Space, SoftBreak, Strong, Emph, Strikeout, Code, Link, Underline, Math,
-    InlineMath
+    Str, Space, SoftBreak, Strong, Emph, Strikeout, Code, Link,
+    Underline, Math, InlineMath
 )
 
 from n2y.utils import pandoc_ast_to_markdown
 
 
-class PlainText:
-    def __init__(self, client, text):
+logger = logging.getLogger(__name__)
+
+
+class RichText:
+    """
+    A sequence of text that contains the same styling throughout. It also may
+    contain an @-mention or an equation (both of which may be styled as well).
+    """
+
+    def __init__(self, client, notion_data):
         self.client = client
-        self.text = text
+
+        self.plain_text = notion_data['plain_text']
+        self.href = notion_data.get('href', None)
+        self.notion_type = notion_data['type']
+
+        annotations = notion_data['annotations']
+        self.bold = annotations["bold"]
+        self.italic = annotations["italic"]
+        self.strikethrough = annotations["strikethrough"]
+        self.underline = annotations["underline"]
+        self.code = annotations["code"]
+        self.color = annotations["color"]
 
     def to_pandoc(self):
+        raise NotImplementedError()
+
+    def to_markdown(self):
+        return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
+
+    def plain_text_to_pandoc(self):
         ast = []
-        match = re.findall(r"( +)|(\S+)|(\n+)|(\t+)", self.text)
+        match = re.findall(r"( +)|(\S+)|(\n+)|(\t+)", self.plain_text)
 
         for m in match:
             space, word, newline, tab = m
@@ -30,148 +56,155 @@ class PlainText:
                 ast.append(Space())
         return ast
 
+    def annotate_pandoc_ast(self, target):
+        """
+        Pandoc's Strong, Emph, Underline, and Strikeout all accept sub-trees of
+        inlines. Code does not. This is likely because `a *bold* word` does not
+        create a bold word, but *a `code` word* does produce a bolded code word.
+        Thus, it's not generally feasible for `annotate_pandoc_ast` to properly
+        wrap any ast in a `Code`. If `Code` formatting is to be preserved, then
+        the subclasses of `RichText` must apply it separately.
+        """
+        blank_space = [Space(), SoftBreak()]
 
-class Annotations:
-    def __init__(self, client, block):
-        self.client = client
-        # TODO: replace with explicit attribute setters
-        for key, value in block.items():
-            self.__dict__[key] = value
+        if all(n in blank_space for n in target):
+            return target
 
-    def listify(self, obj):
-        return obj if type(obj) == list else [obj]
-
-    def to_pandoc(self, target):
         prependages = deque()
         appendages = deque()
         problematic_annotations = [
             self.bold, self.italic, self.strikethrough
         ]
 
-        if True in problematic_annotations:
-            blank_space = [Space(), SoftBreak()]
+        # Notion's data model allows space to be bolded, italicized, or
+        # strick through, but markdown's doesn't. Thus, since these annotations
+        # aren't visible around blank space anyway, we don't apply the
+        # annotation to the blank space
+        if any(problematic_annotations):
             while target[0] in blank_space:
                 prependages.append(target.pop(0))
             while target[-1] in blank_space:
                 appendages.appendleft(target.pop(-1))
 
         result = target
-        if self.code:
-            result = self.listify(Code(("", [], []), result))
         if self.bold:
-            result = self.listify(Strong(result))
+            result = [Strong(result)]
         if self.italic:
-            result = self.listify(Emph(result))
+            result = [Emph(result)]
         if self.underline:
-            result = self.listify(Underline(result))
+            result = [Underline(result)]
         if self.strikethrough:
-            result = self.listify(Strikeout(result))
+            result = [Strikeout(result)]
 
         return list(prependages) + result + list(appendages)
 
 
-class InlineEquation:
+class MentionRichText(RichText):
     def __init__(self, client, notion_data):
-        self.client = client
-        self.expression = notion_data['expression']
+        super().__init__(client, notion_data)
+        self.mention = client.wrap_notion_mention(notion_data['mention'], notion_data["plain_text"])
 
     def to_pandoc(self):
-        return [Math(InlineMath(), self.expression)]
+        if self.code:
+            logger.warning('Code formatting is being dropped on mention "%s"', self.plain_text)
+        mention_ast = self.mention.to_pandoc()
+        return self.annotate_pandoc_ast(mention_ast)
 
 
-# TODO: figure out where to put this once the property_values classes are done
-# probably shoudl use a client.wrap_property_value method to avoid the circular import
-def simplify_date(data):
-    if data is None:
-        return None
-    if data["end"] is None:
-        return data["start"]
-    else:
-        return f'{data["start"]} to {data["end"]}'
-
-
-class Mention:
-    """
-    Just display the name of the mentions; one can imagine various other ways
-    one may want to display these; e.g., using links.
-    """
-
-    def __init__(self, client, block):
-        self.client = client
-        # TODO: replace this list with explicit property setters
-        for key, value in block.items():
-            self.__dict__[key] = value
+class EquationRichText(RichText):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.expression = notion_data['equation']['expression']
 
     def to_pandoc(self):
-        if self.type == 'user':
-            return [Str(self.user["name"])]
-        if self.type == 'page':
-            # TODO: at least replace with the page title
-            # TODO: incorporate when implementing https://github.com/innolitics/n2y/issues/24
-            page_id = self.page['id']
-            return [Str(f'Link to page "{page_id}"')]
-        if self.type == 'database':
-            # TODO: at least replace with the database title
-            # TODO: incorporate when implementing https://github.com/innolitics/n2y/issues/24
-            database_id = self.database['id']
-            return [Str(f'Link to database "{database_id}"')]
-        if self.type == 'date':
-            return [Str(simplify_date(self.date))]
-        if self.type == 'link_preview':
+        if self.code:
+            logger.warning('Code formatting is being dropped on equation "%s"', self.expression)
+        equation_ast = [Math(InlineMath(), self.expression)]
+        return self.annotate_pandoc_ast(equation_ast)
+
+
+class TextRichText(RichText):
+    @classmethod
+    def from_plain_text(klass, client, string):
+        notion_data = mock_notion_rich_text(string)
+        return klass(client, notion_data)
+
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+
+    def to_pandoc(self):
+        if not self.code:
+            plain_text_ast = self.plain_text_to_pandoc()
+            annotated_ast = self.annotate_pandoc_ast(plain_text_ast)
+        else:
+            code_ast = [Code(("", [], []), self.plain_text)]
+            annotated_ast = self.annotate_pandoc_ast(code_ast)
+
+        if self.href:
             return [Link(
                 ('', [], []),
-                self.plain_text.to_pandoc(),
+                annotated_ast,
                 (self.href, '')
             )]
         else:
-            raise NotImplementedError(f'Unknown mention type: "{self.type}"')
+            return annotated_ast
 
 
-class RichText():
-    def __init__(self, client, notion_data):
-        self.client = client
-        self.plain_text = PlainText(client, notion_data['plain_text'])
-        self.href = notion_data.get('href', None)
-        self.annotations = Annotations(client, notion_data['annotations'])
-        self.notion_type = notion_data['type']
-        if self.notion_type == 'text':
-            # we don't use the text object right now since all of the data in it
-            # appears to be present in the top-level notion data anyway
-            pass
-        elif self.notion_type == 'equation':
-            self.equation = InlineEquation(client, notion_data['equation'])
-        elif self.notion_type == 'mention':
-            self.mention = Mention(client, notion_data['mention'])
+def mock_notion_annotations(annotations=None):
+    if annotations is None:
+        annotations = []
+    return {
+        'bold': True if 'bold' in annotations else False,
+        'italic': True if 'italic' in annotations else False,
+        'strikethrough': True if 'strikethrough' in annotations else False,
+        'underline': True if 'underline' in annotations else False,
+        'code': True if 'code' in annotations else False,
+        'color': 'default'
+    }
 
-    def to_pandoc(self):
-        # TODO: look into applying annotations to equation or mention types (is
-        # that even a possible combination)?
-        if self.notion_type == 'text':
-            if self.annotations.code:
-                return self.annotations.to_pandoc(self.plain_text.text)
-            elif self.href:
-                return [Link(
-                    ('', [], []),
-                    self.annotations.to_pandoc(self.plain_text.to_pandoc()),
-                    (self.href, ''))]
-            else:
-                return self.annotations.to_pandoc(self.plain_text.to_pandoc())
-        elif self.notion_type == 'equation':
-            return self.equation.to_pandoc()
-        elif self.notion_type == 'mention':
-            return self.mention.to_pandoc()
-        else:
-            raise NotImplementedError(f'Unknown rich text object type: "{self.notion_type}"')
 
-    def to_markdown(self):
-        return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
+def mock_notion_rich_text(text, annotations=None, href=None):
+    if annotations is None:
+        annotations = []
+    return {
+        'type': 'text',
+        'text': {'content': text, 'link': None},
+        'annotations': mock_notion_annotations(annotations),
+        'plain_text': text,
+        'href': href,
+    }
+
+
+DEFAULT_RICH_TEXTS = {
+    "text": TextRichText,
+    "equation": EquationRichText,
+    "mention": MentionRichText,
+}
 
 
 class RichTextArray:
+    """
+    Contains a sequence or styled text.
+
+    For example, the sentence with a single bolded word
+
+        "The man ran to *eat* the hot dog."
+
+    would be represented as a `RichTextArray` with three elements. The first
+    would contain "The man ran to ", the second would contain "eat", and would
+    be bolded, and the third would contain " the hot dog.".
+    """
+
     def __init__(self, client, notion_data):
         self.client = client
         assert isinstance(notion_data, list)
-        self.items = [RichText(client, i) for i in notion_data]
+        self.items = [client.wrap_notion_rich_text(i) for i in notion_data]
+
+    def __len__(self):
+        return len(self.items)
+
+    def __iter__(self):
+        return iter(self.items)
 
     def to_pandoc(self):
         return sum([item.to_pandoc() for item in self.items], [])
@@ -180,4 +213,29 @@ class RichTextArray:
         return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
 
     def to_plain_text(self):
-        return ''.join(item.plain_text.text for item in self.items)
+        return ''.join(item.plain_text for item in self.items)
+
+    def matches(self, regexp):
+        if len(self.items) > 0:
+            first_item = self.items[0]
+
+            # don't match EquationRichText or MentionRichText
+            if isinstance(first_item, TextRichText):
+                return regexp.match(first_item.plain_text)
+
+    def lstrip(self, string):
+        if len(self.items) > 0:
+            first_item = self.items[0]
+            if isinstance(first_item, TextRichText):
+                string_len = len(string)
+                if first_item.plain_text[:string_len] == string:
+                    self.items[0].plain_text = first_item.plain_text[string_len:]
+                    if self.items[0].plain_text == "":
+                        self.items.pop(0)
+
+    def prepend(self, string):
+        if len(self.items) > 0:
+            self.items[0].plain_text = string + self.items[0].plain_text
+        else:
+            rich_text = TextRichText.from_plain_text(self.client, string)
+            self.items.append(rich_text)

@@ -3,7 +3,7 @@ import sys
 import logging
 import argparse
 
-from n2y import blocks, notion
+from n2y import notion
 from n2y.database import Database
 from n2y.page import Page
 from n2y.errors import APIErrorCode, APIResponseError
@@ -34,10 +34,18 @@ def main(raw_args, access_token):
         )
     )
     parser.add_argument(
+        "--content-property", default='content',
+        help=(
+            "Store each database page's content in this property. "
+            "The page's content isn't exported if it's set to a blank string. "
+            "Only applies when dumping a database to YAML."
+        )
+    )
+    parser.add_argument(
         "--media-root", help="Filesystem path to directory where images and media are saved"
     )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
-    parser.add_argument("--plugins", '-p', help="Plugin file")
+    parser.add_argument("--plugin", '-p', action='append', help="Plugin module")
     parser.add_argument(
         "--output", '-o', default='./',
         help="Relative path to output directory",
@@ -58,7 +66,8 @@ def main(raw_args, access_token):
 
     args = parser.parse_args(raw_args)
 
-    logging.basicConfig(format=args.logging_format, level=logging.__dict__[args.verbosity])
+    logging_level = logging.__dict__[args.verbosity]
+    logging.basicConfig(format=args.logging_format, level=logging_level)
     global logger
     logger = logging.getLogger(__name__)
 
@@ -68,14 +77,18 @@ def main(raw_args, access_token):
 
     object_id = notion.id_from_share_link(args.object_id)
     media_root = args.media_root or args.output
-    if args.plugins:
-        blocks.load_plugins(args.plugins)
 
-    client = notion.Client(access_token, media_root, args.media_url)
+    client = notion.Client(
+        access_token,
+        media_root,
+        args.media_url,
+        plugins=args.plugin,
+        content_property=args.content_property,
+    )
 
     node = client.get_page_or_database(object_id)
 
-    # TODO: in the future, determing the natural keys for each row in the
+    # TODO: in the future, determining the natural keys for each row in the
     # database and calculate them up-front; prune out any pages where the
     # natural key is empty. Furthermore, add duplicate handling here.
 
@@ -87,6 +100,8 @@ def main(raw_args, access_token):
         export_related_databases(node, options=args)
     elif isinstance(node, Page):
         print(node.to_markdown())
+    elif node is None:
+        return 2
 
     return 0
 
@@ -96,15 +111,13 @@ def export_database_as_markdown_files(database, options):
     seen_file_names = set()
     counts = {'unnamed': 0, 'duplicate': 0}
     for page in database.children:
-        # TODO: switch to using the database's natural keys as the file names
-        file_name = page.title
-        if file_name:
-            if file_name not in seen_file_names:
-                seen_file_names.add(file_name)
-                with open(os.path.join(options.output, f"{file_name}.md"), 'w') as f:
+        if page.filename:
+            if page.filename not in seen_file_names:
+                seen_file_names.add(page.filename)
+                with open(os.path.join(options.output, f"{page.filename}.md"), 'w') as f:
                     f.write(page.to_markdown())
             else:
-                logger.warning('Skipping page named "%s" since it has been used', file_name)
+                logger.warning('Skipping page named "%s" since it has been used', page.filename)
                 counts['duplicate'] += 1
         else:
             counts['unnamed'] += 1
@@ -121,13 +134,12 @@ def export_related_databases(seed_database, options):
 
     def _export_related_databases(database):
         seen_database_ids.add(database.notion_id)
-        file_name = database.title.to_markdown()
-        if file_name not in seen_file_names:
-            seen_file_names.add(file_name)
-            with open(os.path.join(options.output, f"{file_name}.yml"), 'w') as f:
+        if database.filename not in seen_file_names:
+            seen_file_names.add(database.filename)
+            with open(os.path.join(options.output, f"{database.filename}.yml"), 'w') as f:
                 f.write(database.to_yaml())
         else:
-            logger.warning('Database name "%s" has been used', file_name)
+            logger.warning('Database name "%s" has been used', database.filename)
         for database_id in database.related_database_ids:
             if database_id not in seen_database_ids:
                 try:

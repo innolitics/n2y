@@ -3,14 +3,14 @@ import logging
 import yaml
 
 from n2y.property_values import RelationPropertyValue
-from n2y.utils import fromisoformat
+from n2y.utils import fromisoformat, sanitize_filename
 
 
 logger = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, client, notion_data, parent=None):
+    def __init__(self, client, notion_data):
         logger.debug("Instantiating database")
         self.client = client
 
@@ -28,17 +28,27 @@ class Database:
             for k, p in notion_data['properties'].items()
         }
         self.notion_parent = notion_data['parent']
-        self.parent = parent
         self.url = notion_data['url']
         self.archived = notion_data['archived']
 
         self._children = None
 
     @property
+    def filename(self):
+        return sanitize_filename(self.title.to_plain_text())
+
+    @property
     def children(self):
         if self._children is None:
-            self._children = self.client.get_database_pages(self.notion_id, self)
+            self._children = self.client.get_database_pages(self.notion_id)
         return self._children
+
+    @property
+    def parent(self):
+        if self.notion_parent["type"] == "workspace":
+            return None
+        else:
+            return self.client.get_page(self.notion_parent["page_id"])
 
     @property
     def related_database_ids(self):
@@ -97,10 +107,18 @@ class Database:
         return self.block.to_pandoc()
 
     def to_yaml(self):
+        content_property = self.client.content_property
+        if content_property in self.schema:
+            logger.warning(
+                'The set content property "%s" is shadowing an existing '
+                'property with the same name', content_property,
+            )
         result = []
         for page in self.children:
-            content = page.content_to_markdown()
             properties = page.properties_to_values()
-            # TODO: let the user set the name of the content key
-            result.append({**properties, 'content': content})
+            if not content_property:
+                result.append(properties)
+            else:
+                content = page.content_to_markdown()
+                result.append({**properties, content_property: content})
         return yaml.dump(result, sort_keys=False)

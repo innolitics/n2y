@@ -11,7 +11,6 @@ import os.path
 from os.path import isfile, join
 from io import StringIO
 
-import pytest
 import yaml
 try:
     from yaml import CLoader as Loader
@@ -20,7 +19,6 @@ except ImportError:
 
 from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 from n2y.main import main
-from n2y.errors import APIErrorCode, HTTPResponseError
 
 
 def run_n2y(arguments):
@@ -52,6 +50,18 @@ def test_simple_database_to_yaml():
     assert database[0]["Name"] == "A"
     assert database[0]["Tags"] == ["a", "b"]
     assert database[0]["content"] is None
+
+
+def test_big_database_to_yaml():
+    '''
+    The database can be seen here:
+    https://fresh-pencil-9f3.notion.site/9341a0ddf7d4442d94ad74e5100f72af
+    '''
+    object_id = '9341a0ddf7d4442d94ad74e5100f72af'
+    status, stdoutput, _ = run_n2y([object_id, '--output', 'yaml'])
+    assert status == 0
+    database = yaml.load(stdoutput, Loader=Loader)
+    assert len(database) == 101
 
 
 def test_simple_database_to_markdown_files(tmpdir):
@@ -104,7 +114,7 @@ def test_unshared_related_databases(tmpdir):
     ])
     assert status == 0
     generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
-    assert generated_files == {"Database with Relationship to Unshared Database.yml"}
+    assert generated_files == {"Database_with_Relationship_to_Unshared_Database.yml"}
     # TODO: add an assertion that checks that warnings were displayed in stderr
     # (at the moment, they don't appear to be because the related pages simply
     # don't show up at all)
@@ -128,7 +138,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     https://fresh-pencil-9f3.notion.site/Test-Page-5f18c7d7eda44986ae7d938a12817cc0
     '''
     object_id = '5f18c7d7eda44986ae7d938a12817cc0'
-    status, document_as_markdown, _ = run_n2y([object_id, '--media-root', str(tmp_path)])
+    status, document_as_markdown, stderr = run_n2y([object_id, '--media-root', str(tmp_path)])
     lines = document_as_markdown.split('\n')
     metadata = parse_yaml_front_matter(document_as_markdown)
     assert metadata['title'] == 'All Blocks Test Page'
@@ -154,17 +164,16 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "![Image **caption**](Unknown.jpeg)" in lines
-    # TODO: add more blocks to the document, along with assertions
+    assert "![Image **caption**](All_Blocks_Test_Page-5c264631.jpeg)" in lines
 
-    # "Unknown.jpeg" is a file block in the Notion page
-    assert os.path.exists(tmp_path / "Unknown.jpeg")
+    # from a file block in the Notion page
+    assert os.path.exists(tmp_path / "All_Blocks_Test_Page-5c264631.jpeg")
 
 
 def test_page_in_database_to_markdown():
     '''
     This test exports a single page, or "row", that is in a database. Unlike
-    pages that are not in a databe, who only have a single "Title" property,
+    pages that are not in a database, who only have a single "Title" property,
     pages in a database will have properties for all of the "columns" in that
     database.
 
@@ -192,8 +201,37 @@ def test_simple_page_to_markdown():
     assert "Page content" in document_as_markdown
 
 
+def test_builtin_plugins(tmp_path):
+    '''
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/Plugins-Test-96d71e2876eb47b285833582e8cf27eb
+    '''
+    object_id = "96d71e2876eb47b285833582e8cf27eb"
+    status, document_as_markdown, _ = run_n2y([
+        object_id,
+        '--plugin', 'n2y.plugins.deepheaders',
+        '--plugin', 'n2y.plugins.removecallouts',
+        '--plugin', 'n2y.plugins.rawcodeblocks',
+        '--plugin', 'n2y.plugins.mermaid',
+        '--media-root', str(tmp_path),
+    ])
+    assert status == 0
+    lines = document_as_markdown.split('\n')
+    assert '#### H4' in lines
+    assert '##### H5' in lines
+    assert not any('should disappear' in l for l in lines)
+
+    # there are two mermaid diagrams on the page; one has a syntax error and not
+    # be swapped out for an image, while the other should be swapped out
+    # NOTE: Due to an issue with mermaid-cli, it seems that it does NOT report
+    # failed runs using a non-zero error code, thus this assertion is set to 0
+    # for now, but ideally it would be 1
+    assert sum(1 for l in lines if l == '``` mermaid') == 0
+
+    assert 'Raw markdown should show up' in lines
+    assert 'Raw html should not show up' not in lines
+
+
 def test_missing_object_exception():
     invalid_page_id = "11111111111111111111111111111111"
-    with pytest.raises(HTTPResponseError) as exinfo:
-        run_n2y([invalid_page_id])
-    assert exinfo.value.code == APIErrorCode.ObjectNotFound
+    assert run_n2y([invalid_page_id]) != 0
