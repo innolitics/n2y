@@ -28,7 +28,7 @@ class Database:
             for k, p in notion_data['properties'].items()
         }
         self.notion_parent = notion_data['parent']
-        self.url = notion_data['url']
+        self.notion_url = notion_data['url']
         self.archived = notion_data['archived']
 
         self._children = None
@@ -93,9 +93,10 @@ class Database:
                     logger.error(
                         'Unable to identify related database for relationship "%s" '
                         'property in the "%s" database because there are no values '
-                        'in the entire database',
+                        'in the entire database (%s)',
                         prop_name,
                         database_title,
+                        self.notion_url,
                     )
                 else:
                     related_page = self.client.get_page(related_page_id)
@@ -108,17 +109,25 @@ class Database:
 
     def to_yaml(self):
         content_property = self.client.content_property
+        id_property = self.client.id_property
         if content_property in self.schema:
             logger.warning(
-                'The set content property "%s" is shadowing an existing '
+                'The content property "%s" is shadowing an existing '
                 'property with the same name', content_property,
             )
-        result = []
+        if id_property in self.schema:
+            logger.warning(
+                'The id property "%s" is shadowing an existing '
+                'property with the same name', content_property,
+            )
+        results = []
         for page in self.children:
-            properties = page.properties_to_values()
-            if not content_property:
-                result.append(properties)
-            else:
+            result = page.properties_to_values()
+            if content_property:
                 content = page.content_to_markdown()
-                result.append({**properties, content_property: content})
-        return yaml.dump(result, sort_keys=False)
+                result[content_property] = content
+            if id_property:
+                notion_id = page.notion_id
+                result[id_property] = notion_id
+            results.append(result)
+        return yaml.dump(results, sort_keys=False)

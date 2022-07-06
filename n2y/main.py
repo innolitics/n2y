@@ -34,10 +34,18 @@ def main(raw_args, access_token):
         )
     )
     parser.add_argument(
-        "--content-property", default='content',
+        "--content-property", default='',
         help=(
             "Store each database page's content in this property. "
             "The page's content isn't exported if it's set to a blank string. "
+            "Only applies when dumping a database to YAML."
+        )
+    )
+    parser.add_argument(
+        "--id-property", default='id',
+        help=(
+            "Store each database page's id in this property. "
+            "The page's id isn't exported if it's set to a blank string. "
             "Only applies when dumping a database to YAML."
         )
     )
@@ -84,6 +92,7 @@ def main(raw_args, access_token):
         args.media_url,
         plugins=args.plugin,
         content_property=args.content_property,
+        id_property=args.id_property,
     )
 
     node = client.get_page_or_database(object_id)
