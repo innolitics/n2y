@@ -271,8 +271,8 @@ class FencedCodeBlock(Block):
         )
         if pandoc_language not in self.pandoc_highlight_languages:
             if pandoc_language != "plain text":
-                msg = 'Dropping syntax highlighting for unsupported language "%s"'
-                logger.warning(msg, pandoc_language)
+                msg = 'Dropping syntax highlighting for unsupported language "%s" (%s)'
+                logger.warning(msg, pandoc_language, self.notion_url)
             language = []
         else:
             language = [pandoc_language]

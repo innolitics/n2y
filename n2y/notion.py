@@ -63,12 +63,14 @@ class Client:
         media_root='.',
         media_url='',
         plugins=None,
-        content_property=None
+        content_property=None,
+        id_property=None,
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
         self.content_property = content_property
+        self.id_property = id_property
 
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
