@@ -468,8 +468,9 @@ class LinkPreviewBlock(WarningBlock):
     pass
 
 
-class SyncedBlock(WarningBlock):
-    pass
+class SyncedBlock(Block):
+    def to_pandoc(self):
+        return self.children_to_pandoc()
 
 
 class LinkToPageBlock(WarningBlock):
