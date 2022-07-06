@@ -162,6 +162,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "Callout block" in lines
     assert "$e^{-i \\pi} = -1$" in lines
     assert "``` javascript\nCode Block\n```" in document_as_markdown
+    assert lines.count("This is a synced block.") == 2
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines

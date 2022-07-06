@@ -468,8 +468,13 @@ class LinkPreviewBlock(WarningBlock):
     pass
 
 
-class SyncedBlock(WarningBlock):
-    pass
+class SyncedBlock(Block):
+    def to_pandoc(self):
+        synced_block_shared = self.has_children
+        if not synced_block_shared:
+            logger.warning('Skipping un-shared synced block (%s)', self.notion_url)
+            return None
+        return self.children_to_pandoc()
 
 
 class LinkToPageBlock(WarningBlock):

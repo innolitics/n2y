@@ -41,7 +41,7 @@ PANDOC_PARSE_ERROR = 64
 def pandoc_ast_to_markdown(pandoc_ast):
     # This function tries to avoid calling the separate pandoc binary (which is
     # slow) for basic cases with just spaces and strings
-    if pandoc_ast == []:
+    if pandoc_ast is None or pandoc_ast == []:
         return ""
     elif type(pandoc_ast) == list and all(type(n) in [Str, Space] for n in pandoc_ast):
         # TODO: optimize performance for some other basic cases
