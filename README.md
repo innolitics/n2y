@@ -182,6 +182,7 @@ Here are some features we're planning to add in the future:
 - Fix pagination bug that occurred with databases with more than 100 pages
 - Make it easier to use multiple plugins for the same class by adding the "UseNextClass" exception
 - Add the ability to include notion ids in export YAML files using the `id_property` commandline argument
+- Add support for the SyncedBlock
 
 ### v0.4.1
 
