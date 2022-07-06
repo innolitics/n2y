@@ -42,14 +42,18 @@ def test_simple_database_to_yaml():
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     '''
     object_id = '176fa24d4b7f4256877e60a1035b45a4'
-    status, stdoutput, _ = run_n2y([object_id, '--output', 'yaml'])
+    status, stdoutput, _ = run_n2y([
+        object_id,
+        '--output', 'yaml',
+        '--content-property', 'Content',
+    ])
     assert status == 0
     unsorted_database = yaml.load(stdoutput, Loader=Loader)
     database = sorted(unsorted_database, key=lambda row: row["Name"])
     assert len(database) == 3
     assert database[0]["Name"] == "A"
     assert database[0]["Tags"] == ["a", "b"]
-    assert database[0]["content"] is None
+    assert database[0]["Content"] is None
 
 
 def test_big_database_to_yaml():
@@ -98,7 +102,7 @@ def test_simple_related_databases(tmpdir):
     ])
     assert status == 0
     generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
-    assert generated_files == {"A.yml", "B.yml"}
+    assert generated_files == {"A.yml", "B.yml", "C.yml"}
 
 
 def test_unshared_related_databases(tmpdir):
