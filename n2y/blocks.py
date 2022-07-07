@@ -257,6 +257,12 @@ class FencedCodeBlock(Block):
     # pandoc's supported language names
     notion_to_pandoc_highlight_languages = {
         'c#': 'cs',
+        'c++': 'cpp',
+        'f#': 'fsharp',
+        'objective-c': 'objectivec',
+        'docker': 'dockerfile',
+        'coffee': 'coffeescript',
+        'shell': 'bash',  # seems better than nothing
     }
 
     def __init__(self, client, notion_data, page, get_children=True):
