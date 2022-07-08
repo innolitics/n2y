@@ -479,7 +479,8 @@ class SyncedBlock(Block):
         if not self.original and self.shared:
             return self.client.get_child_blocks(
                 self.notion_data["synced_from"]["block_id"],
-                self.page, True)
+                self.page, True,
+            )
         return self.children
 
     def to_pandoc(self):
