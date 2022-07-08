@@ -475,9 +475,24 @@ class LinkPreviewBlock(WarningBlock):
 
 
 class SyncedBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        self.original = notion_data[notion_data["type"]]["synced_from"] is None
+        super().__init__(client, notion_data, page, get_children=self.original)
+        # Synced blocks will always have children unless not shared
+        # (There will always be at least one UnsupportedBlock child)
+        self.shared = self.has_children
+        self.children = self._get_synced_block_children()
+
+    def _get_synced_block_children(self):
+        if not self.original and self.shared:
+            return self.client.get_child_blocks(
+                self.notion_data["synced_from"]["block_id"],
+                self.page, True,
+            )
+        return self.children
+
     def to_pandoc(self):
-        synced_block_shared = self.has_children
-        if not synced_block_shared:
+        if not self.shared:
             logger.warning('Skipping un-shared synced block (%s)', self.notion_url)
             return None
         return self.children_to_pandoc()
