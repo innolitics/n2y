@@ -472,6 +472,8 @@ class SyncedBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         self.original = notion_data[notion_data["type"]]["synced_from"] is None
         super().__init__(client, notion_data, page, get_children=self.original)
+        # Synced blocks will always have children unless not shared
+        # (There will always be at least one UnsupportedBlock child)
         self.shared = self.has_children
         self.children = self._get_synced_block_children()
 
