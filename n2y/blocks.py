@@ -470,9 +470,9 @@ class LinkPreviewBlock(WarningBlock):
 
 class SyncedBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
-        super().__init__(client, notion_data, page, get_children)
+        self.original = notion_data[notion_data["type"]]["synced_from"] is None
+        super().__init__(client, notion_data, page, get_children=self.original)
         self.shared = self.has_children
-        self.original = self.notion_data["synced_from"] is None
         self.children = self._get_synced_block_children()
 
     def _get_synced_block_children(self):
