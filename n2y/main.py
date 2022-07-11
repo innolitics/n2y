@@ -66,6 +66,10 @@ def main(raw_args, access_token):
         "--logging-format", default='%(asctime)s - %(levelname)s: %(message)s',
         help="Default format used when logging",
     )
+    parser.add_argument(
+        "--database-config", default=None,
+        help="Configuration for databases"  # TODO: Add more helpful message/description
+    )
 
     # TODO: Add the ability to dump out a "schema" file that contains the schema
     # for a set of databases
