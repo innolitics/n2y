@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import logging
 import argparse
 
@@ -90,6 +91,12 @@ def main(raw_args, access_token):
     object_id = notion.id_from_share_link(args.object_id)
     media_root = args.media_root or args.output
 
+    database_config = database_config_json_to_dict(args.database_config)
+    valid_database_config = database_config is not None
+    if not valid_database_config:
+        logger.critical('Database config validation failed.')  # TODO: Write better error message
+        return 1
+
     client = notion.Client(
         access_token,
         media_root,
@@ -117,6 +124,32 @@ def main(raw_args, access_token):
         return 2
 
     return 0
+
+
+def database_config_json_to_dict(config_json):
+    try:
+        config = json.loads(config_json)
+    except json.JSONDecodeError:
+        return None
+    if not validate_database_config(config):
+        return None
+    return config
+
+
+def validate_database_config(config):
+    try:
+        for database_id, config_values in config.items():
+            database_id_correct_length = len(database_id) == 32
+            if not database_id_correct_length:
+                return False
+            for key, values in config_values.items():
+                if key not in ["sorts", "filters"]:
+                    return False
+                if not isinstance(values, dict) and not isinstance(values, list):
+                    return False
+    except AttributeError:
+        return False
+    return True
 
 
 def export_database_as_markdown_files(database, options):
