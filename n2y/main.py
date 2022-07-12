@@ -130,6 +130,8 @@ def main(raw_args, access_token):
 def database_config_json_to_dict(config_json):
     try:
         config = json.loads(config_json)
+    except TypeError:
+        return {}
     except json.JSONDecodeError:
         return None
     if not validate_database_config(config):
