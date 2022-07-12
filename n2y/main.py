@@ -146,7 +146,7 @@ def validate_database_config(config):
             if not database_id_correct_length:
                 return False
             for key, values in config_values.items():
-                if key not in ["sorts", "filters"]:
+                if key not in ["sorts", "filter"]:
                     return False
                 if not isinstance(values, dict) and not isinstance(values, list):
                     return False
