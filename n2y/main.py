@@ -69,7 +69,8 @@ def main(raw_args, access_token):
     )
     parser.add_argument(
         "--database-config", default='{}',
-        help="A JSON string in the format {database_id: {sorts: {...}, filter: {...}}}. Will get passed to the Notion API directly"  # noqa: E501
+        help="A JSON string in the format {database_id: {sorts: {...}, filter: {...}}}. "
+             "Will get passed to the Notion API directly"
     )
 
     # TODO: Add the ability to dump out a "schema" file that contains the schema
@@ -94,7 +95,10 @@ def main(raw_args, access_token):
     database_config = database_config_json_to_dict(args.database_config)
     valid_database_config = database_config is not None
     if not valid_database_config:
-        logger.critical('Database config validation failed. Please make sure you pass in a JSON string with the format {database_id: {sorts: {...}, filter: {...}}}')  # noqa: E501
+        logger.critical(
+            'Database config validation failed. Please make sure you pass in '
+            'a JSON string with the format {database_id: {sorts: {...}, filter: {...}}}'
+        )
         return 1
 
     client = notion.Client(
