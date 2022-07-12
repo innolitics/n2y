@@ -104,6 +104,7 @@ def main(raw_args, access_token):
         plugins=args.plugin,
         content_property=args.content_property,
         id_property=args.id_property,
+        database_config=database_config,
     )
 
     node = client.get_page_or_database(object_id)
