@@ -183,6 +183,7 @@ Here are some features we're planning to add in the future:
 - Make it easier to use multiple plugins for the same class by adding the "UseNextClass" exception
 - Add the ability to include notion ids in export YAML files using the `id_property` commandline argument
 - Add support for the SyncedBlock
+- Add support for filtering and sorting databases using the `--database-config` property
 
 ### v0.4.1
 
