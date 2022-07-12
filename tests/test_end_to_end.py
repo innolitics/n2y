@@ -6,6 +6,7 @@ in the codebase. The login for this throw-away account is in the Innolitics'
 used to create them.
 """
 import sys
+import json
 from os import listdir
 import os.path
 from os.path import isfile, join
@@ -87,6 +88,45 @@ def test_simple_database_to_markdown_files(tmpdir):
     assert metadata["Name"] == "A"
     assert metadata["Tags"] == ["a", "b"]
     assert "content" not in metadata
+
+
+def test_simple_database_config():
+    '''
+    The database can be seen here:
+    https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
+    '''
+    database_id = '176fa24d4b7f4256877e60a1035b45a4'
+    database_config = {
+        database_id: {
+            "sorts": [
+                {
+                    "property": "Name",
+                    "direction": "descending",
+                }
+            ],
+            "filter": {
+                "or": [
+                    {
+                        "property": "Name",
+                        "rich_text": {"contains": "A"}
+                    },
+                    {
+                        "property": "Name",
+                        "rich_text": {"contains": "C"}
+                    }
+                ]
+            },
+        }
+    }
+    status, stdoutput, _ = run_n2y([
+        database_id,
+        '--database-config', json.dumps(database_config),
+    ])
+    assert status == 0
+    database = yaml.load(stdoutput, Loader=Loader)
+    assert len(database) == 2
+    assert database[0]["Name"] == "C"
+    assert database[1]["Name"] == "A"
 
 
 def test_simple_related_databases(tmpdir):
