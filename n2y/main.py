@@ -126,6 +126,11 @@ def main(raw_args, access_token):
     elif isinstance(node, Page):
         print(node.to_markdown())
     elif node is None:
+        msg = (
+            "Unable to find database or page with id %s. "
+            "Perhaps its not shared with the integration?"
+        )
+        logger.error(msg, object_id)
         return 2
 
     return 0
