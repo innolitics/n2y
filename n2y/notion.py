@@ -23,6 +23,7 @@ from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
+from n2y.utils import strip_dashes
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -65,12 +66,14 @@ class Client:
         plugins=None,
         content_property=None,
         id_property=None,
+        database_config=None,
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
         self.content_property = content_property
         self.id_property = id_property
+        self.database_config = database_config if database_config is not None else {}
 
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
@@ -256,7 +259,7 @@ class Client:
     def get_database_notion_pages(self, database_id):
         results = []
         url = f"{self.base_url}databases/{database_id}/query"
-        request_data = {}
+        request_data = self._create_database_request_data(database_id)
         while True:
             data = self._post_url(url, request_data)
             results.extend(data["results"])
@@ -264,6 +267,10 @@ class Client:
                 return results
             else:
                 request_data["start_cursor"] = data["next_cursor"]
+
+    def _create_database_request_data(self, dashed_database_id):
+        database_id = strip_dashes(dashed_database_id)
+        return self.database_config[database_id] if database_id in self.database_config else {}
 
     def get_page(self, page_id):
         """

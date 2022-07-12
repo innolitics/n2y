@@ -97,3 +97,7 @@ def sanitize_filename(filename):
     if s in {".", ".."}:
         raise ValueError("Could not derive file name from '%s'" % filename)
     return s
+
+
+def strip_dashes(string):
+    return string.replace("-", "")
