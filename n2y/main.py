@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import logging
 import argparse
 
@@ -8,6 +7,8 @@ from n2y import notion
 from n2y.database import Database
 from n2y.page import Page
 from n2y.errors import APIErrorCode, APIResponseError
+from n2y.utils import id_from_share_link
+from n2y.config import database_config_json_to_dict
 
 logger = None
 
@@ -44,8 +45,7 @@ def main(raw_args, access_token):
     )
     # TODO: Consider making id-property and url-property available when dumping
     # to markdown files, and not just when dumping to YAML; if we do this, we
-    # should probably move some code out of Database.to_yaml into the Page; also
-    # be sure to update the end-to-end tests
+    # should probably move some code out of Database.to_yaml into the Page
     parser.add_argument(
         "--id-property", default='id',
         help=(
@@ -101,7 +101,7 @@ def main(raw_args, access_token):
         logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
-    object_id = notion.id_from_share_link(args.object_id)
+    object_id = id_from_share_link(args.object_id)
     media_root = args.media_root or args.output
 
     database_config = database_config_json_to_dict(args.database_config)
@@ -147,32 +147,6 @@ def main(raw_args, access_token):
         return 2
 
     return 0
-
-
-def database_config_json_to_dict(config_json):
-    try:
-        config = json.loads(config_json)
-    except json.JSONDecodeError:
-        return None
-    if not validate_database_config(config):
-        return None
-    return config
-
-
-def validate_database_config(config):
-    try:
-        for database_id, config_values in config.items():
-            database_id_correct_length = len(database_id) == 32
-            if not database_id_correct_length:
-                return False
-            for key, values in config_values.items():
-                if key not in ["sorts", "filter"]:
-                    return False
-                if not isinstance(values, dict) and not isinstance(values, list):
-                    return False
-    except AttributeError:
-        return False
-    return True
 
 
 def export_database_as_markdown_files(database, options):

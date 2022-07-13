@@ -5,8 +5,16 @@ from n2y.rich_text import mock_notion_rich_text as mock_rich_text
 from n2y.rich_text import mock_notion_annotations as mock_annotations  # noqa: F401
 
 
+def mock_id():
+    return str(uuid.uuid4())
+
+
+def mock_id_stripped():
+    return mock_id()
+
+
 def mock_user(**kwargs):
-    return {'object': 'user', 'id': str(uuid.uuid4()), **kwargs}
+    return {'object': 'user', 'id': mock_id(), **kwargs}
 
 
 def mock_person_user(name, email):
@@ -21,7 +29,7 @@ def mock_block(block_type, content, has_children=False, **kwargs):
     created_by = mock_user()
     created_time = datetime.now().isoformat()
     return {
-        'id': str(uuid.uuid4()),
+        'id': mock_id(),
         'created_time': created_time,
         'created_by': created_by,
         'last_edited_time': created_time,
@@ -51,7 +59,7 @@ def mock_file(url):
 
 def mock_property_value(property_value_type, content):
     return {
-        'id': str(uuid.uuid4()),
+        'id': mock_id(),
         'type': property_value_type,
         property_value_type: content,
     }
@@ -74,7 +82,7 @@ def mock_rollup_property_value(rollup_type, content):
 
 def mock_select_option(name, **kwargs):
     return {
-        'id': str(uuid.uuid4()),
+        'id': mock_id(),
         'name': name,
         'color': 'green',
         **kwargs,
@@ -82,4 +90,4 @@ def mock_select_option(name, **kwargs):
 
 
 def mock_relation_value():
-    return {"id": str(uuid.uuid4)}
+    return {"id": mock_id()}

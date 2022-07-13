@@ -270,9 +270,9 @@ class Client:
             else:
                 request_data["start_cursor"] = data["next_cursor"]
 
-    def _create_database_request_data(self, dashed_database_id):
-        database_id = strip_dashes(dashed_database_id)
-        return self.database_config[database_id] if database_id in self.database_config else {}
+    def _create_database_request_data(self, database_id):
+        stripped_database_id = strip_dashes(database_id)
+        return self.database_config.get(stripped_database_id, {})
 
     def get_page(self, page_id):
         """
@@ -389,11 +389,3 @@ class Client:
         makedirs(path.dirname(full_filepath), exist_ok=True)
         shutil.move(temp_filepath, full_filepath)
         return urljoin(self.media_url, relative_filepath)
-
-
-def id_from_share_link(share_link):
-    hyphens_removed = share_link.replace("-", "")
-    if not hyphens_removed.startswith("https://www.notion.so/"):
-        return hyphens_removed
-    else:
-        return hyphens_removed.split("/")[-1].split("?")[0]
