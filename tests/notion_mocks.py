@@ -9,10 +9,6 @@ def mock_id():
     return str(uuid.uuid4())
 
 
-def mock_id_stripped():
-    return mock_id()
-
-
 def mock_user(**kwargs):
     return {'object': 'user', 'id': mock_id(), **kwargs}
 
