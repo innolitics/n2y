@@ -81,8 +81,12 @@ def main(raw_args, access_token):
     )
     parser.add_argument(
         "--database-config", default='{}',
-        help="A JSON string in the format {database_id: {sorts: {...}, filter: {...}}}. "
-             "Will get passed to the Notion API directly"
+        help=(
+            "A JSON string in the format {database_id: {sorts: {...}, filter: {...}}}. "
+            "These can be used to filter and sort databases. See "
+            "https://developers.notion.com/reference/post-database-query-filter and "
+            "https://developers.notion.com/reference/post-database-query-sort"
+        )
     )
 
     # TODO: Add the ability to dump out a "schema" file that contains the schema
