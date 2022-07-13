@@ -99,5 +99,13 @@ def sanitize_filename(filename):
     return s
 
 
+def id_from_share_link(share_link):
+    hyphens_removed = share_link.replace("-", "")
+    if not hyphens_removed.startswith("https://www.notion.so/"):
+        return hyphens_removed
+    else:
+        return hyphens_removed.split("/")[-1].split("?")[0]
+
+
 def strip_dashes(string):
     return string.replace("-", "")
