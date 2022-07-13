@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 def database_config_json_to_dict(config_json):
     try:
         config = json.loads(config_json)
-    except json.JSONDecodeError:
-        logger.error("Error parsing the data config JSON")
+    except json.JSONDecodeError as exc:
+        logger.error("Error parsing the data config JSON: %s", exc.msg)
         return None
     if not validate_database_config(config):
         return None
