@@ -1,7 +1,7 @@
 import json
 import logging
 
-from n2y.utils import strip_dashes
+from n2y.utils import strip_hyphens
 
 
 logger = logging.getLogger(__name__)
@@ -40,4 +40,4 @@ def validate_database_config(config):
 
 
 def _valid_id(notion_id):
-    return len(strip_dashes(notion_id)) == 32
+    return len(strip_hyphens(notion_id)) == 32

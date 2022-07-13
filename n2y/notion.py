@@ -23,7 +23,7 @@ from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
-from n2y.utils import strip_dashes
+from n2y.utils import strip_hyphens
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -271,7 +271,7 @@ class Client:
                 request_data["start_cursor"] = data["next_cursor"]
 
     def _create_database_request_data(self, database_id):
-        stripped_database_id = strip_dashes(database_id)
+        stripped_database_id = strip_hyphens(database_id)
         return self.database_config.get(stripped_database_id, {})
 
     def get_page(self, page_id):
