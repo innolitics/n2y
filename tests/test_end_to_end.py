@@ -55,6 +55,8 @@ def test_simple_database_to_yaml():
     assert database[0]["Name"] == "A"
     assert database[0]["Tags"] == ["a", "b"]
     assert database[0]["Content"] is None
+    assert database[0]["id"] is not None
+    assert database[0]["url"] is not None
 
 
 def test_big_database_to_yaml():

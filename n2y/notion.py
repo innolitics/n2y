@@ -66,6 +66,7 @@ class Client:
         plugins=None,
         content_property=None,
         id_property=None,
+        url_property=None,
         database_config=None,
     ):
         self.access_token = access_token
@@ -73,6 +74,7 @@ class Client:
         self.media_url = media_url
         self.content_property = content_property
         self.id_property = id_property
+        self.url_property = url_property
         self.database_config = database_config if database_config is not None else {}
 
         self.base_url = "https://api.notion.com/v1/"

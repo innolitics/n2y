@@ -110,6 +110,7 @@ class Database:
     def to_yaml(self):
         content_property = self.client.content_property
         id_property = self.client.id_property
+        url_property = self.client.url_property
         if content_property in self.schema:
             logger.warning(
                 'The content property "%s" is shadowing an existing '
@@ -118,7 +119,12 @@ class Database:
         if id_property in self.schema:
             logger.warning(
                 'The id property "%s" is shadowing an existing '
-                'property with the same name', content_property,
+                'property with the same name', id_property,
+            )
+        if url_property in self.schema:
+            logger.warning(
+                'The url property "%s" is shadowing an existing '
+                'property with the same name', url_property,
             )
         results = []
         for page in self.children:
@@ -129,5 +135,7 @@ class Database:
             if id_property:
                 notion_id = page.notion_id
                 result[id_property] = notion_id
+            if url_property:
+                result[url_property] = page.notion_url
             results.append(result)
         return yaml.dump(results, sort_keys=False)

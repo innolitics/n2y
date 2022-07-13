@@ -169,6 +169,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.5.0
+
+- Add support for dumping the notion urls using `--url-property`.
+
 ### v0.4.2
 
 - Sanitize filenames (so that a notion page called "HFE/UE Report" won't attempt to create a directory.

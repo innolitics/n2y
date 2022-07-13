@@ -42,10 +42,22 @@ def main(raw_args, access_token):
             "Only applies when dumping a database to YAML."
         )
     )
+    # TODO: Consider making id-property and url-property available when dumping
+    # to markdown files, and not just when dumping to YAML; if we do this, we
+    # should probably move some code out of Database.to_yaml into the Page; also
+    # be sure to update the end-to-end tests
     parser.add_argument(
         "--id-property", default='id',
         help=(
             "Store each database page's id in this property. "
+            "The page's id isn't exported if it's set to a blank string. "
+            "Only applies when dumping a database to YAML."
+        )
+    )
+    parser.add_argument(
+        "--url-property", default='url',
+        help=(
+            "Store each database page's url in this property. "
             "The page's id isn't exported if it's set to a blank string. "
             "Only applies when dumping a database to YAML."
         )
@@ -108,6 +120,7 @@ def main(raw_args, access_token):
         plugins=args.plugin,
         content_property=args.content_property,
         id_property=args.id_property,
+        url_property=args.url_property,
         database_config=database_config,
     )
 
