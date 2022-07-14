@@ -3,7 +3,7 @@ import logging
 from collections import deque
 
 from pandoc.types import (
-    Str, Space, SoftBreak, Strong, Emph, Strikeout, Code, Link,
+    Str, Space, LineBreak, Strong, Emph, Strikeout, Code, Link,
     Underline, Math, InlineMath
 )
 
@@ -51,7 +51,7 @@ class RichText:
             if word:
                 ast.append(Str(word))
             for _ in range(len(newline)):
-                ast.append(SoftBreak())
+                ast.append(LineBreak())
             for _ in range(len(tab) * 4):  # 4 spaces per tab
                 ast.append(Space())
         return ast
@@ -65,7 +65,7 @@ class RichText:
         wrap any ast in a `Code`. If `Code` formatting is to be preserved, then
         the subclasses of `RichText` must apply it separately.
         """
-        blank_space = [Space(), SoftBreak()]
+        blank_space = [Space(), LineBreak()]
 
         if all(n in blank_space for n in target):
             return target
