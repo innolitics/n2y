@@ -176,6 +176,10 @@ def test_rollup_date_empty():
     assert process_property_value(notion_data) is None
 
 
+# TODO: Add some more tests for different types of rollups, including arrays of
+# different types of values
+
+
 @pytest.mark.xfail
 def test_rollup_date_array():
     notion_data = mock_rollup_property_value('array', [

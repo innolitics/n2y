@@ -172,6 +172,7 @@ Here are some features we're planning to add in the future:
 ### v0.5.0
 
 - Add support for dumping the notion urls using `--url-property`.
+- Add support for all types of rollups (including arrays of other values)
 
 ### v0.4.2
 

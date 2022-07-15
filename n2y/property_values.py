@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 class PropertyValue:
     def __init__(self, client, notion_data):
         self.client = client
-        self.notion_property_id = notion_data['id']
+        self.notion_property_id = notion_data.get(
+            'id', None)  # will be none for rollup array values
         self.notion_type = notion_data['type']
 
     def to_value(self):
@@ -189,15 +190,35 @@ class RollupPropertyValue(PropertyValue):
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
         notion_rollup = notion_data["rollup"]
+        self.rollup_type = notion_rollup["type"]
         self.function = notion_rollup["function"]
-        if notion_rollup["type"] == "date":
+        if self.rollup_type == "date":
             self.value = process_notion_date(notion_rollup['date'])
+        elif self.rollup_type == "string":
+            self.value = notion_rollup['string']
+        elif self.rollup_type == "number":
+            self.value = notion_rollup['number']
+        elif self.rollup_type == "array":
+            self.value = [
+                self.client.wrap_notion_property_value(pv)
+                for pv in notion_rollup['array']
+            ]
         else:
+            logger.warning("Unhandled rollup type %s", notion_rollup["type"])
             self.value = notion_rollup[notion_rollup["type"]]
         # TODO: handle arrays of dates
 
     def to_value(self):
-        return self.value
+        if self.rollup_type == "date":
+            return self.value
+        elif self.rollup_type == "string":
+            return self.value
+        elif self.rollup_type == "number":
+            return self.value
+        elif self.rollup_type == "array":
+            return [pv.to_value() for pv in self.value]
+        else:
+            return self.value
 
 
 class CreatedTimePropertyValue(PropertyValue):
