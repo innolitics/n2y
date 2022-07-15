@@ -73,14 +73,15 @@ class Database:
         actually has a value of a page in the related database. Finally, we
         retrieve the related page and get the database ID from the parent.
         """
+        ids = []
         database_title = self.title.to_plain_text()
         if len(self.children) == 0:
             logger.error(
                 'Unable to identify relationships for empty database "%s"',
                 database_title
             )
+            return ids
         first_page = self.children[0]
-        ids = []
         for prop_name, prop in first_page.properties.items():
             if isinstance(prop, RelationPropertyValue):
                 related_page_id = None
