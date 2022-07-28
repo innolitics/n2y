@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import tempfile
+import json
 
 from pandoc.types import Para, Image
 
@@ -10,6 +11,12 @@ from n2y.errors import UseNextClass
 
 
 logger = logging.getLogger(__name__)
+
+mermaid_config = {
+    "flowchart": {
+        "useMaxWidth": False
+    }
+}
 
 
 class MermaidFencedCodeBlock(FencedCodeBlock):
@@ -32,10 +39,14 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
     def to_pandoc(self):
         temp_fd, temp_filepath = tempfile.mkstemp(suffix=".png")
         os.close(temp_fd)
+        temp_config_fd, temp_config_filepath = tempfile.mkstemp(suffix=".json")
+        os.write(temp_config_fd, json.dumps(mermaid_config).encode("utf-8"))
+        os.close(temp_config_fd)
         try:
             diagram_as_bytes = self.rich_text.to_plain_text().encode()
             subprocess.run([
                 'mmdc',
+                '--configFile', temp_config_filepath,
                 '-o', temp_filepath,
             ], capture_output=True, input=diagram_as_bytes, check=True)
             with open(temp_filepath, 'rb') as temp_file:
