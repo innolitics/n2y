@@ -1,8 +1,35 @@
+from unittest import mock
 from datetime import datetime
 import uuid
 
 from n2y.rich_text import mock_notion_rich_text as mock_rich_text
 from n2y.rich_text import mock_notion_annotations as mock_annotations  # noqa: F401
+from n2y.notion import Client
+from n2y.utils import pandoc_ast_to_markdown
+
+
+def process_block(notion_block):
+    with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
+        mock_get_notion_block.return_value = notion_block
+        client = Client('')
+        page = None
+        n2y_block = client.get_block('unusedid', page)
+    pandoc_ast = n2y_block.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    return pandoc_ast, markdown
+
+
+def process_parent_block(notion_block, child_notion_blocks):
+    with mock.patch.object(Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
+        with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
+            mock_get_child_notion_blocks.return_value = child_notion_blocks
+            mock_get_notion_block.return_value = notion_block
+            client = Client('')
+            page = None
+            n2y_block = client.get_block('unusedid', page)
+    pandoc_ast = n2y_block.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    return pandoc_ast, markdown
 
 
 def mock_id():

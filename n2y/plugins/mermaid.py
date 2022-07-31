@@ -33,7 +33,8 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
         temp_fd, temp_filepath = tempfile.mkstemp(suffix=".png")
         os.close(temp_fd)
         try:
-            diagram_as_bytes = self.rich_text.to_plain_text().encode()
+            diagram_as_text = self.rich_text.to_plain_text()
+            diagram_as_bytes = diagram_as_text.encode()
             subprocess.run([
                 'mmdc',
                 '-o', temp_filepath,

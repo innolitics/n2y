@@ -139,6 +139,10 @@ This plugin assumes that the `mmdc` mermaid commandline tool is available, and w
 
 If there are errors with the mermaid syntax, it is treated as a normal codeblock and the warning is logged.
 
+### Linked Header Blocks
+
+Replace headers with links back to the originating notion block.
+
 ## Architecture
 
 N2y's architecture is divided into four main steps:
@@ -173,6 +177,7 @@ Here are some features we're planning to add in the future:
 
 - Add support for dumping the notion urls using `--url-property`.
 - Add support for all types of rollups (including arrays of other values)
+- Add plugin for creating headers that link back to the notion blocks
 
 ### v0.4.2
 
