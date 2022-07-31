@@ -63,6 +63,13 @@ def main(raw_args, access_token):
         )
     )
     parser.add_argument(
+        "--filename-property", default=None,
+        help=(
+            "The database property used to generate the filename for its pages. "
+            "Only applies when dumping a database to markdown files."
+        )
+    )
+    parser.add_argument(
         "--media-root", help="Filesystem path to directory where images and media are saved"
     )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
@@ -125,14 +132,11 @@ def main(raw_args, access_token):
         content_property=args.content_property,
         id_property=args.id_property,
         url_property=args.url_property,
+        filename_property=args.filename_property,
         database_config=database_config,
     )
 
     node = client.get_page_or_database(object_id)
-
-    # TODO: in the future, determining the natural keys for each row in the
-    # database and calculate them up-front; prune out any pages where the
-    # natural key is empty. Furthermore, add duplicate handling here.
 
     if isinstance(node, Database) and args.format == 'markdown':
         export_database_as_markdown_files(node, options=args)

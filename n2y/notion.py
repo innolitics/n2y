@@ -67,6 +67,7 @@ class Client:
         content_property=None,
         id_property=None,
         url_property=None,
+        filename_property=None,
         database_config=None,
     ):
         self.access_token = access_token
@@ -75,6 +76,7 @@ class Client:
         self.content_property = content_property
         self.id_property = id_property
         self.url_property = url_property
+        self.filename_property = filename_property
         self.database_config = database_config if database_config is not None else {}
 
         self.base_url = "https://api.notion.com/v1/"

@@ -41,11 +41,6 @@ class Page:
                 return property_value.rich_text
 
     @property
-    def filename(self):
-        # TODO: switch to using the database's natural keys as the file names
-        return sanitize_filename(self.title.to_plain_text())
-
-    @property
     def block(self):
         if self._block is None:
             self._block = self.client.get_block(self.notion_id, page=self)
@@ -70,6 +65,21 @@ class Page:
         else:
             assert parent_type == "database_id"
             return self.client.get_database(self.notion_parent["database_id"])
+
+    @property
+    def filename(self):
+        # TODO: switch to using the database's natural keys as the file names
+        filename_property = self.client.filename_property
+        if filename_property is None:
+            return sanitize_filename(self.title.to_plain_text())
+        elif filename_property in self.properties:
+            return sanitize_filename(self.properties[filename_property].to_value())
+        else:
+            logger.warning(
+                'Invalid filename property, "%s". Valid options are %s',
+                filename_property, ", ".join(self.properties.keys()),
+            )
+            return sanitize_filename(self.title.to_plain_text())
 
     def to_pandoc(self):
         return self.block.to_pandoc()
