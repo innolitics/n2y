@@ -15,7 +15,7 @@ from pandoc.types import (
 
 from n2y.notion import Client
 from n2y.utils import pandoc_ast_to_markdown
-from tests.notion_mocks import mock_block, mock_file, mock_paragraph_block, mock_rich_text
+from n2y.notion_mocks import mock_block, mock_file, mock_paragraph_block, mock_rich_text
 
 
 def process_block(notion_block):
