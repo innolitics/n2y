@@ -285,13 +285,18 @@ class FencedCodeBlock(Block):
         return CodeBlock(('', language, []), self.rich_text.to_plain_text())
 
 
-class QuoteBlock(Block):
+class QuoteBlock(ParagraphBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
 
     def to_pandoc(self):
-        return BlockQuote([Para(self.rich_text.to_pandoc())])
+        pandoc_ast = super().to_pandoc()
+        return (
+            BlockQuote(pandoc_ast)
+            if isinstance(pandoc_ast, list)
+            else BlockQuote([pandoc_ast])
+        )
 
 
 class FileBlock(Block):
