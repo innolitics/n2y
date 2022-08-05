@@ -295,7 +295,7 @@ class QuoteBlock(ParagraphBlock):
         return (
             BlockQuote(pandoc_ast)
             if isinstance(pandoc_ast, list)
-            else BlockQuote([super().to_pandoc()])
+            else BlockQuote([pandoc_ast])
         )
 
 
