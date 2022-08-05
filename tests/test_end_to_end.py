@@ -192,6 +192,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     # TODO: look into why there's extra space in between the list entries
     assert status == 0
     assert "Text block" in lines
+    assert "Text *italics* too" in lines
     assert "-   [ ] To do list block" in lines
     assert "# Heading 1" in lines
     assert "## Heading 2" in lines
@@ -199,7 +200,8 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "-   List block" in lines
     assert "1.  Number list block" in lines
     assert "-   Toggle list" in lines
-    assert "> Block quote" in lines
+    assert "> Block quote single paragraph" in lines
+    assert "> Block quote second paragraph" in lines
     assert "---" in lines
     assert "Callout block" in lines
     assert "$e^{-i \\pi} = -1$" in lines
