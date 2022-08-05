@@ -42,11 +42,13 @@ class RichText:
 
     def plain_text_to_pandoc(self):
         ast = []
-        match = re.findall(r"( +)|(\S+)|(\n+)|(\t+)", self.plain_text)
+        match = re.findall(r"( +)|(\xa0+)|(\S+)|(\n+)|(\t+)", self.plain_text)
 
         for m in match:
-            space, word, newline, tab = m
+            space, latin1_space, word, newline, tab = m
             for _ in range(len(space)):
+                ast.append(Space())
+            for _ in range(len(latin1_space)):
                 ast.append(Space())
             if word:
                 ast.append(Str(word))
