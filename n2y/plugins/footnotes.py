@@ -1,4 +1,5 @@
 import re
+import logging
 
 from pandoc.types import Note, Str, Para
 
@@ -8,6 +9,8 @@ from n2y.errors import UseNextClass
 
 
 plugin_data_key = "n2y.plugins.footnotes"
+
+logger = logging.getLogger(__name__)
 
 
 class ParagraphWithFootnoteBlock(ParagraphBlock):
@@ -24,7 +27,11 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
     def _attach_footnote_data(self):
         if plugin_data_key not in self.client.plugin_data:
             self.client.plugin_data[plugin_data_key] = {}
-        self.client.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
+        if self._footnote() not in self.client.plugin_data[plugin_data_key]:
+            self.client.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
+        else:
+            msg = 'Multiple footnotes for "[%s]". Skipping latest (%s)'
+            logger.warning(msg, self._footnote(), self.notion_url)
 
     def _is_footnote(self):
         return self._footnote() is not None
