@@ -4,6 +4,7 @@ from pandoc.types import Note, Str, Para
 
 from n2y.rich_text import TextRichText
 from n2y.blocks import ParagraphBlock
+from n2y.errors import UseNextClass
 
 
 plugin_data_key = "n2y.plugins.footnotes"
@@ -12,16 +13,18 @@ plugin_data_key = "n2y.plugins.footnotes"
 class ParagraphWithFootnoteBlock(ParagraphBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self._attach_footnote_data_if_exists()
+        if self._is_footnote():
+            self._attach_footnote_data()
+        else:
+            raise UseNextClass()
 
     def to_pandoc(self):
         return None if self._is_footnote() else super().to_pandoc()
 
-    def _attach_footnote_data_if_exists(self):
-        if self._is_footnote():
-            if plugin_data_key not in self.client.plugin_data:
-                self.client.plugin_data[plugin_data_key] = {}
-            self.client.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
+    def _attach_footnote_data(self):
+        if plugin_data_key not in self.client.plugin_data:
+            self.client.plugin_data[plugin_data_key] = {}
+        self.client.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
 
     def _is_footnote(self):
         return self._footnote() is not None
