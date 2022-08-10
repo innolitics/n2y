@@ -157,11 +157,23 @@ def main(raw_args, access_token):
     return 0
 
 
+def get_database_pages_and_prefetch_blocks(database):
+    pages = []
+    for page in database.children:
+        # We're doing this because plugins may need to do some preprocessing
+        # on blocks before they're rendred by to_pandoc(). Because page.block
+        # is a lazy-loaded property, we need to pre-fetch it to make sure all
+        # block contructors are called before all block to_pandoc() calls.
+        _ = page.block
+        pages.append(page)
+    return pages
+
+
 def export_database_as_markdown_files(database, options):
     os.makedirs(options.output, exist_ok=True)
     seen_file_names = set()
     counts = {'unnamed': 0, 'duplicate': 0}
-    for page in database.children:
+    for page in get_database_pages_and_prefetch_blocks(database):
         if page.filename:
             if page.filename not in seen_file_names:
                 seen_file_names.add(page.filename)
