@@ -6,6 +6,9 @@ from n2y.rich_text import TextRichText
 from n2y.blocks import ParagraphBlock
 
 
+plugin_data_key = "n2y.plugins.footnotes"
+
+
 class ParagraphWithFootnoteBlock(ParagraphBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
@@ -16,9 +19,9 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
 
     def _attach_footnote_data_if_exists(self):
         if self._is_footnote():
-            if "footnotes" not in self.client.plugin_data:
-                self.client.plugin_data["footnotes"] = {}
-            self.client.plugin_data["footnotes"][self._footnote()] = self._footnote_ast()
+            if plugin_data_key not in self.client.plugin_data:
+                self.client.plugin_data[plugin_data_key] = {}
+            self.client.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
 
     def _is_footnote(self):
         return self._footnote() is not None
@@ -46,7 +49,7 @@ class TextRichTextWithFootnoteRef(TextRichText):
             if len(refs) != 1:
                 pandoc_ast.append(token)
                 continue
-            block = self.client.plugin_data["footnotes"][refs[0]]
+            block = self.client.plugin_data[plugin_data_key][refs[0]]
             footnote = Note(block) if isinstance(block, list) else Note([block])
             pandoc_ast.append(footnote)
         return pandoc_ast
