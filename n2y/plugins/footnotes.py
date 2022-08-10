@@ -42,20 +42,33 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
 
 
 class TextRichTextWithFootnoteRef(TextRichText):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        if not self._is_footnote():
+            raise UseNextClass()
+
     def to_pandoc(self):
         pandoc_ast = []
         for token in super().to_pandoc():
-            if not isinstance(token, Str):
+            ref = self._footnote_from_token(token)
+            if ref is None:
                 pandoc_ast.append(token)
-                continue
-            refs = re.findall(r"\[\^(\d+)\]", token[0])
-            if len(refs) != 1:
-                pandoc_ast.append(token)
-                continue
-            block = self.client.plugin_data[plugin_data_key][refs[0]]
-            footnote = Note(block) if isinstance(block, list) else Note([block])
-            pandoc_ast.append(footnote)
+            else:
+                block = self.client.plugin_data[plugin_data_key][ref]
+                footnote = Note(block) if isinstance(block, list) else Note([block])
+                pandoc_ast.append(footnote)
         return pandoc_ast
+
+    def _is_footnote(self):
+        return any(self._footnote_from_token(t) is not None for t in super().to_pandoc())
+
+    def _footnote_from_token(self, token):
+        if not isinstance(token, Str):
+            return None
+        refs = re.findall(r"\[\^(\d+)\]", token[0])
+        if len(refs) != 1:
+            return None
+        return refs[0]
 
 
 notion_classes = {
