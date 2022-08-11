@@ -22,7 +22,7 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
             raise UseNextClass()
 
     def to_pandoc(self):
-        return None if self._is_footnote() else super().to_pandoc()
+        return None
 
     def _attach_footnote_data(self):
         if plugin_data_key not in self.page.plugin_data:
