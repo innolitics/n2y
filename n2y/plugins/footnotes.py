@@ -33,7 +33,7 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
                 msg = 'Empty footnote "[%s]" (%s)'
                 logger.warning(msg, self._footnote(), self.notion_url)
         else:
-            msg = 'Multiple footnotes for "[%s]". Skipping latest (%s)'
+            msg = 'Multiple footnotes for "[%s]", skipping latest (%s)'
             logger.warning(msg, self._footnote(), self.notion_url)
 
     def _is_footnote(self):
