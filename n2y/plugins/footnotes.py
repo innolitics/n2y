@@ -30,7 +30,8 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
         if self._footnote() not in self.page.plugin_data[plugin_data_key]:
             self.page.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
             if self._footnote_ast_empty():
-                logger.warning('Empty footnote "[%s]"', self._footnote())
+                msg = 'Empty footnote "[%s]" (%s)'
+                logger.warning(msg, self._footnote(), self.notion_url)
         else:
             msg = 'Multiple footnotes for "[%s]". Skipping latest (%s)'
             logger.warning(msg, self._footnote(), self.notion_url)
