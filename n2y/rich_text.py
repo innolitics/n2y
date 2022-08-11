@@ -8,6 +8,7 @@ from pandoc.types import (
 )
 
 from n2y.utils import pandoc_ast_to_markdown
+from n2y.notion_mocks import mock_rich_text
 
 
 logger = logging.getLogger(__name__)
@@ -134,7 +135,7 @@ class EquationRichText(RichText):
 class TextRichText(RichText):
     @classmethod
     def from_plain_text(klass, client, string, block=None):
-        notion_data = mock_notion_rich_text(string)
+        notion_data = mock_rich_text(string)
         return klass(client, notion_data, block)
 
     def __init__(self, client, notion_data, block=None):

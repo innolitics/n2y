@@ -372,7 +372,10 @@ class TableBlock(Block):
 class RowBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.cells = [client.wrap_notion_rich_text_array(nc, self) for nc in self.notion_data["cells"]]
+        self.cells = [
+            client.wrap_notion_rich_text_array(nc, self)
+            for nc in self.notion_data["cells"]
+        ]
 
     def to_pandoc(self):
         cells = [Cell(
