@@ -33,6 +33,8 @@ class Page:
         self._block = None
         self._children = None
 
+        self.plugin_data = {}
+
     @property
     def title(self):
         for property_value in self.properties.values():

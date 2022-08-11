@@ -263,6 +263,7 @@ def test_builtin_plugins(tmp_path):
         '--plugin', 'n2y.plugins.removecallouts',
         '--plugin', 'n2y.plugins.rawcodeblocks',
         '--plugin', 'n2y.plugins.mermaid',
+        '--plugin', 'n2y.plugins.footnotes',
         '--media-root', str(tmp_path),
     ])
     assert status == 0
@@ -280,6 +281,11 @@ def test_builtin_plugins(tmp_path):
 
     assert 'Raw markdown should show up' in lines
     assert 'Raw html should not show up' not in lines
+
+    assert "# Header with Footnotes[^1]" in lines
+    assert "Paragraph with footnote.[^2]" in lines
+    assert "[^1]: First **footnote**." in lines
+    assert "[^2]: Second footnote" in lines
 
 
 def test_missing_object_exception():
