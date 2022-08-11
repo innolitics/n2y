@@ -25,10 +25,10 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
         return None if self._is_footnote() else super().to_pandoc()
 
     def _attach_footnote_data(self):
-        if plugin_data_key not in self.client.plugin_data:
-            self.client.plugin_data[plugin_data_key] = {}
-        if self._footnote() not in self.client.plugin_data[plugin_data_key]:
-            self.client.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
+        if plugin_data_key not in self.page.plugin_data:
+            self.page.plugin_data[plugin_data_key] = {}
+        if self._footnote() not in self.page.plugin_data[plugin_data_key]:
+            self.page.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
         else:
             msg = 'Multiple footnotes for "[%s]". Skipping latest (%s)'
             logger.warning(msg, self._footnote(), self.notion_url)
@@ -61,11 +61,11 @@ class TextRichTextWithFootnoteRef(TextRichText):
             if ref is None:
                 pandoc_ast.append(token)
                 continue
-            if ref not in self.client.plugin_data[plugin_data_key]:
+            if ref not in self.block.page.plugin_data[plugin_data_key]:
                 pandoc_ast.append(token)
                 logger.warning('Missing footnote "[%s]". Rendering as plain text', ref)
                 continue
-            block = self.client.plugin_data[plugin_data_key][ref]
+            block = self.block.page.plugin_data[plugin_data_key][ref]
             footnote = Note(block) if isinstance(block, list) else Note([block])
             pandoc_ast.append(footnote)
         return pandoc_ast
