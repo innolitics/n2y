@@ -29,7 +29,7 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
             self.page.plugin_data[plugin_data_key] = {}
         if self._footnote() not in self.page.plugin_data[plugin_data_key]:
             self.page.plugin_data[plugin_data_key][self._footnote()] = self._footnote_ast()
-            if self._footnote_ast_empty():
+            if self._footnote_empty():
                 msg = 'Empty footnote "[%s]" (%s)'
                 logger.warning(msg, self._footnote(), self.notion_url)
         else:
@@ -56,9 +56,8 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
             paragraph_footnote_stripped = Para(ast[0][2:])
             return paragraph_footnote_stripped
 
-    def _footnote_ast_empty(self):
-        ast = self._footnote_ast()
-        return len(ast[0][0]) == 0 if isinstance(ast, list) else len(ast[0]) == 0
+    def _footnote_empty(self):
+        return len(self.rich_text.to_plain_text()) == 0
 
 
 class TextRichTextWithFootnoteRef(TextRichText):
