@@ -77,10 +77,16 @@ class TextRichTextWithFootnoteRef(TextRichText):
                 pandoc_ast.append(token)
                 logger.warning('Missing footnote "[%s]". Rendering as plain text', ref)
                 continue
-            block = self.block.page.plugin_data[plugin_data_key][ref]
-            footnote = Note(block) if isinstance(block, list) else Note([block])
-            pandoc_ast.append(footnote)
+            self._append_footnote_to_ast(pandoc_ast, token, ref)
         return pandoc_ast
+
+    def _append_footnote_to_ast(self, pandoc_ast, token, ref):
+        block = self.block.page.plugin_data[plugin_data_key][ref]
+        footnote = Note(block) if isinstance(block, list) else Note([block])
+        prefix, suffix = token[0].split(f"[^{ref}]")
+        pandoc_ast.append(Str(prefix))
+        pandoc_ast.append(footnote)
+        pandoc_ast.append(Str(suffix))
 
     def _is_footnote(self):
         return any(self._footnote_from_token(t) is not None for t in super().to_pandoc())
