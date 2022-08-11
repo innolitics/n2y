@@ -75,7 +75,8 @@ class TextRichTextWithFootnoteRef(TextRichText):
                 continue
             if ref not in self.block.page.plugin_data[plugin_data_key]:
                 pandoc_ast.append(token)
-                logger.warning('Missing footnote "[%s]". Rendering as plain text', ref)
+                msg = 'Missing footnote "[%s]". Rendering as plain text (%s)'
+                logger.warning(msg, ref, self.block.notion_url)
                 continue
             self._append_footnote_to_ast(pandoc_ast, token, ref)
         return pandoc_ast
