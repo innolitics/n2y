@@ -45,7 +45,13 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
 
     def _footnote_ast(self):
         ast = super().to_pandoc()
-        return Para(ast[0][2:]) if not isinstance(ast, list) else [Para(ast[0][0][2:])] + ast[1:]
+        if isinstance(ast, list):
+            first_paragraph_footnote_stripped = Para(ast[0][0][2:])
+            remaining_paragraphs = ast[1:]
+            return [first_paragraph_footnote_stripped] + remaining_paragraphs
+        else:
+            paragraph_footnote_stripped = Para(ast[0][2:])
+            return paragraph_footnote_stripped
 
 
 class TextRichTextWithFootnoteRef(TextRichText):
