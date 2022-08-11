@@ -49,8 +49,8 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
 
 
 class TextRichTextWithFootnoteRef(TextRichText):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, block=None):
+        super().__init__(client, notion_data, block)
         if not self._is_footnote():
             raise UseNextClass()
 
