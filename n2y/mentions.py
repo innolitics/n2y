@@ -4,15 +4,16 @@ from n2y.utils import process_notion_date, processed_date_to_plain_text
 
 
 class Mention:
-    def __init__(self, client, notion_data, plain_text):
+    def __init__(self, client, notion_data, plain_text, block=None):
         self.client = client
+        self.block = block
         self.plain_text = plain_text
         self.notion_type = notion_data["type"]
 
 
 class UserMention(Mention):
-    def __init__(self, client, notion_data, plain_text):
-        super().__init__(client, notion_data, plain_text)
+    def __init__(self, client, notion_data, plain_text, block=None):
+        super().__init__(client, notion_data, plain_text, block)
         self.user = client.wrap_notion_user(notion_data["user"])
 
     def to_pandoc(self):
@@ -20,8 +21,8 @@ class UserMention(Mention):
 
 
 class PageMention(Mention):
-    def __init__(self, client, notion_data, plain_text):
-        super().__init__(client, notion_data, plain_text)
+    def __init__(self, client, notion_data, plain_text, block=None):
+        super().__init__(client, notion_data, plain_text, block)
         self.notion_page_id = notion_data["page"]["id"]
 
     def to_pandoc(self):
@@ -31,8 +32,8 @@ class PageMention(Mention):
 
 
 class DatabaseMention(Mention):
-    def __init__(self, client, notion_data, plain_text):
-        super().__init__(client, notion_data, plain_text)
+    def __init__(self, client, notion_data, plain_text, block=None):
+        super().__init__(client, notion_data, plain_text, block)
         self.notion_database_id = notion_data["database"]["id"]
 
     def to_pandoc(self):
@@ -40,8 +41,8 @@ class DatabaseMention(Mention):
 
 
 class DateMention(Mention):
-    def __init__(self, client, notion_data, plain_text):
-        super().__init__(client, notion_data, plain_text)
+    def __init__(self, client, notion_data, plain_text, block=None):
+        super().__init__(client, notion_data, plain_text, block)
         self.processed_date = process_notion_date(notion_data["date"])
 
     def to_pandoc(self):
@@ -51,8 +52,8 @@ class DateMention(Mention):
 
 
 class LinkPreviewMention(Mention):
-    def __init__(self, client, notion_data, plain_text):
-        super().__init__(client, notion_data, plain_text)
+    def __init__(self, client, notion_data, plain_text, block=None):
+        super().__init__(client, notion_data, plain_text, block)
         self.url = notion_data["link_preview"]["url"]
 
     def to_pandoc(self):

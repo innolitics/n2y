@@ -81,11 +81,9 @@ See the [builtin plugins](https://github.com/innolitics/n2y/tree/rich-text-exten
 
 ### Using Multiple Plugins
 
-You can use multiple plugins. If two plugins provide classes for the same notion object, then the last one that was loaded will be instantiated.
+You can use multiple plugins. If two plugins provide classes for the same notion object, then the last one that was loaded will be instantiated first.
 
-Often you'll want to use a different class only in certain situations. For example, you may want to use a different Page class with its own unique behavior only for pages in a particular database.
-
-If your plugin class raise the `n2y.errors.UseNextClass` exception in its constructor, then n2y will move on to the next class (which may be the builtin class if only one plugin was used).
+Often you'll want to use a different class only in certain situations. For example, you may want to use a different Page class with its own unique behavior only for pages in a particular database. To accomplish this you can use the `n2y.errors.UseNextClass` exception. If your plugin class raise the `n2y.errors.UseNextClass` exception in its constructor, then n2y will move on to the next class (which may be the builtin class if only one plugin was used).
 
 ### Default Block Class's
 
@@ -144,9 +142,17 @@ If there are errors with the mermaid syntax, it is treated as a normal codeblock
 N2y's architecture is divided into four main steps:
 
 1. Configuration
-2. Retrieve data from Notion (by instantiating the `Block` instances)
+2. Retrieve data from Notion (by instantiating various Notion object instances, e.g., `Page`, `Block`, `RichText`, etc.)
 3. Convert to the pandoc AST (by calling `block.to_pandoc()`)
 4. Writing the pandoc AST into markdown or YAML
+
+Every page object has a `parent` property, which may be a page, a database, or a workspace.
+
+Every block has a `page` property which refers to the page that contains it.
+
+Every rich text object and mention has a `block` property that is either refers
+back to the block that contains it, or is None if the rich text is within a
+property value or some other location.
 
 ## Releases
 
@@ -173,6 +179,7 @@ Here are some features we're planning to add in the future:
 
 - Add support for dumping the notion urls using `--url-property`.
 - Add support for all types of rollups (including arrays of other values)
+- Add a property to rich text arrays, rich text, and mention instances back to the block they're contained in IF they happen to be contained in a block (some rich text arrays, etc. are from property values). This is useful when developing plugins.
 
 ### v0.4.2
 
@@ -202,7 +209,7 @@ Here are some features we're planning to add in the future:
 
 ### v0.4.0
 
-- Split out the various rich_text and mention types into their own classes
+- Split out the various rich\_text and mention types into their own classes
 - Add plugin support for all notion classes
 - Improve error handling when the pandoc conversion fails
 - Add a builtin "deep header" plugin which makes it possible to use h4 and h5
@@ -212,7 +219,7 @@ Here are some features we're planning to add in the future:
 
 - Add support for exporting sets of linked YAML files
 - Extend support to all property value types (including rollupws, etc.)
-- Removed the "name_column" option (will be replaced with better natural key handling)
+- Removed the "name\_column" option (will be replaced with better natural key handling)
 
 ### v0.2.4
 

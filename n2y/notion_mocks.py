@@ -1,9 +1,6 @@
 from datetime import datetime
 import uuid
 
-from n2y.rich_text import mock_notion_rich_text as mock_rich_text
-from n2y.rich_text import mock_notion_annotations as mock_annotations  # noqa: F401
-
 
 def mock_id():
     return str(uuid.uuid4())
@@ -19,6 +16,62 @@ def mock_person_user(name, email):
 
 def mock_rich_text_array(text_blocks_descriptors):
     return [mock_rich_text(t, a) for t, a in text_blocks_descriptors]
+
+
+def mock_rich_text(text, annotations=None, href=None, mention=None):
+    if annotations is None:
+        annotations = []
+    if mention is None:
+        rich_text_type = 'text'
+        content = {'content': text, 'link': None},
+    else:
+        rich_text_type = 'mention'
+        content = mention
+    return {
+        'type': rich_text_type,
+        'annotations': mock_annotations(annotations),
+        'plain_text': text,
+        'href': href,
+        rich_text_type: content,
+    }
+
+
+def mock_annotations(annotations=None):
+    if annotations is None:
+        annotations = []
+    return {
+        'bold': True if 'bold' in annotations else False,
+        'italic': True if 'italic' in annotations else False,
+        'strikethrough': True if 'strikethrough' in annotations else False,
+        'underline': True if 'underline' in annotations else False,
+        'code': True if 'code' in annotations else False,
+        'color': 'default'
+    }
+
+
+def mock_user_mention():
+    return {
+        'type': 'user',
+        'user': mock_user(),
+    }
+
+
+def mock_page_mention():
+    return {
+        'type': 'page',
+        'page': {
+            'id': mock_id(),
+        },
+    }
+
+
+def mock_database_mention():
+    return {
+        'type': 'database',
+        'database': {
+            'id': mock_id(),
+        },
+    }
 
 
 def mock_block(block_type, content, has_children=False, **kwargs):
