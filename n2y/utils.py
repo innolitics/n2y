@@ -50,31 +50,44 @@ def pandoc_ast_to_markdown(pandoc_ast):
             for n in pandoc_ast
         )
     else:
-        try:
-            # TODO: add a mechanism to customize this
-            result = pandoc.write(
-                pandoc_ast,
-                format='gfm+tex_math_dollars+raw_attribute',
-                options=[
-                    '--wrap', 'none',  # don't hard line-wrap
-                    '--eol', 'lf',  # use linux-style line endings
-                ],
+        return pandoc_write_or_log_errors(
+            pandoc_ast,
+            format='gfm+tex_math_dollars+raw_attribute',
+            options=[
+                '--wrap', 'none',  # don't hard line-wrap
+                '--eol', 'lf',  # use linux-style line endings
+            ],
+        )
+
+
+def pandoc_ast_to_html(pandoc_ast):
+    return pandoc_write_or_log_errors(
+        pandoc_ast,
+        format='html+smart',
+        options=[],
+    )
+
+
+def pandoc_write_or_log_errors(pandoc_ast, format, options):
+    try:
+        # TODO: add a mechanism to customize this
+        return pandoc.write(pandoc_ast, format=format, options=options)
+    except ProcessExecutionError as err:
+        if err.retcode == PANDOC_PARSE_ERROR:
+            lines = []
+            # TODO: update this code to make it not print so much
+            for element, path in pandoc.iter(pandoc_ast, path=True):
+                path_str = ".".join(str(i) for _, i in path)
+                lines.append(f"{path_str} {element}")
+                logger.error("Pandoc AST:\n%s", "\n".join(lines))
+            msg = (
+                "Pandoc couldn't parse the generated AST. "
+                f"This is likely due to a bug in n2y or a plugin: {err.stderr}"
             )
-        except ProcessExecutionError as err:
-            if err.retcode == PANDOC_PARSE_ERROR:
-                lines = []
-                # TODO: update this code to make it not print so much
-                for element, path in pandoc.iter(pandoc_ast, path=True):
-                    path_str = ".".join(str(i) for _, i in path)
-                    lines.append(f"{path_str} {element}")
-                    logger.error("Pandoc AST:\n%s", "\n".join(lines))
-                msg = (
-                    "Pandoc couldn't parse the generated AST. "
-                    f"This is likely due to a bug in n2y or a plugin: {err.stderr}"
-                )
-                logger.error(msg)
-                raise PandocASTParseError(msg)
-        return result
+            logger.error(msg)
+            raise PandocASTParseError(msg)
+        else:
+            raise
 
 
 def fromisoformat(datestring):
