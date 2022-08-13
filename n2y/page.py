@@ -2,7 +2,7 @@ import logging
 
 import yaml
 
-from n2y.utils import pandoc_ast_to_markdown, fromisoformat, sanitize_filename
+from n2y.utils import pandoc_ast_to_html, pandoc_ast_to_markdown, fromisoformat, sanitize_filename
 from n2y.property_values import TitlePropertyValue
 
 
@@ -101,4 +101,21 @@ class Page:
             '---',
             yaml.dump(self.properties_to_values()) + '---',
             self.content_to_markdown() or '',
+        ])
+
+    def content_to_html(self):
+        pandoc_ast = self.to_pandoc()
+        if pandoc_ast is not None:
+            return pandoc_ast_to_html(pandoc_ast)
+        else:
+            return ''
+
+    def to_html(self):
+        # currently, the html output is generated for jekyll sites, hence the
+        # inclusion of the YAML front matter
+        # if someone needs just the HTML we should generalize
+        return '\n'.join([
+            '---',
+            yaml.dump(self.properties_to_values()) + '---',
+            self.content_to_html() or '',
         ])

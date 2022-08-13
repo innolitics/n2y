@@ -27,12 +27,13 @@ def main(raw_args, access_token):
     parser.add_argument("object_id", help="The id or url for a Notion database or page")
     parser.add_argument(
         "--format", '-f',
-        choices=["yaml", "yaml-related", "markdown"], default="yaml",
+        choices=["yaml", "yaml-related", "markdown", "html"], default="yaml",
         help=(
             "Select output type (only applies to databases)\n"
             "  yaml - log yaml to stdout\n"
             "  yaml-related - save all related databases to a set of YAML files\n"
             "  markdown - create a markdown file for each page"
+            "  html - create an html file for each page"
         )
     )
     parser.add_argument(
@@ -140,6 +141,8 @@ def main(raw_args, access_token):
 
     if isinstance(node, Database) and args.format == 'markdown':
         export_database_as_markdown_files(node, options=args)
+    if isinstance(node, Database) and args.format == 'html':
+        export_database_as_html_files(node, options=args)
     elif isinstance(node, Database) and args.format == 'yaml':
         print(node.to_yaml())
     elif isinstance(node, Database) and args.format == 'yaml-related':
@@ -167,6 +170,28 @@ def export_database_as_markdown_files(database, options):
                 seen_file_names.add(page.filename)
                 with open(os.path.join(options.output, f"{page.filename}.md"), 'w') as f:
                     f.write(page.to_markdown())
+            else:
+                logger.warning('Skipping page named "%s" since it has been used', page.filename)
+                counts['duplicate'] += 1
+        else:
+            counts['unnamed'] += 1
+    for key, count in counts.items():
+        if count > 0:
+            logger.info("%d %s page(s) skipped", count, key)
+
+
+# Note these two functions are quite similar; if a third copy is needed, find a
+# way to de-duplicate
+def export_database_as_html_files(database, options):
+    os.makedirs(options.output, exist_ok=True)
+    seen_file_names = set()
+    counts = {'unnamed': 0, 'duplicate': 0}
+    for page in database.children:
+        if page.filename:
+            if page.filename not in seen_file_names:
+                seen_file_names.add(page.filename)
+                with open(os.path.join(options.output, f"{page.filename}.html"), 'w') as f:
+                    f.write(page.to_html())
             else:
                 logger.warning('Skipping page named "%s" since it has been used', page.filename)
                 counts['duplicate'] += 1
