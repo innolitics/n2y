@@ -5,7 +5,7 @@ from pandoc.types import Header, Link
 
 class LinkedHeadingBlock(HeadingBlock):
     """
-    Replace headers with links back to the originating notion block.
+    Make headers have links back to the originating notion block.
     """
 
     def to_pandoc(self):
