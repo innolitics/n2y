@@ -1,9 +1,9 @@
-from n2y.blocks import HeadingThreeBlock, HeadingTwoBlock, HeadingOneBlock
+from n2y.blocks import HeadingBlock
 
 from pandoc.types import Header, Link
 
 
-class LinkedHeadingBlock:
+class LinkedHeadingBlock(HeadingBlock):
     """
     Replace headers with links back to the originating notion block.
     """
@@ -17,16 +17,16 @@ class LinkedHeadingBlock:
         return Header(self.level, ('', [], []), link)
 
 
-class LinkedHeadingThreeBlock(HeadingThreeBlock, LinkedHeadingBlock):
-    pass
+class LinkedHeadingThreeBlock(LinkedHeadingBlock):
+    level = 3
 
 
-class LinkedHeadingTwoBlock(HeadingTwoBlock, LinkedHeadingBlock):
-    pass
+class LinkedHeadingTwoBlock(LinkedHeadingBlock):
+    level = 2
 
 
-class LinkedHeadingOneBlock(HeadingOneBlock, LinkedHeadingBlock):
-    pass
+class LinkedHeadingOneBlock(LinkedHeadingBlock):
+    level = 1
 
 
 notion_classes = {
