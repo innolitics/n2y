@@ -122,7 +122,7 @@ class EquationBlock(Block):
 class ParagraphBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
     def to_pandoc(self):
         content = self.rich_text.to_pandoc()
@@ -142,7 +142,7 @@ class ParagraphBlock(Block):
 class BulletedListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
     def to_pandoc(self):
         content = [Plain(self.rich_text.to_pandoc())]
@@ -169,7 +169,7 @@ class ToDoListItemBlock(BulletedListItemBlock):
 class NumberedListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
     def to_pandoc(self):
         content = [Plain(self.rich_text.to_pandoc())]
@@ -186,7 +186,7 @@ class NumberedListItemBlock(ListItemBlock):
 class HeadingBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
         # The Notion UI allows one to bold the text in a header, but the bold
         # styling isn't displayed. Thus, to avoid unexpected appearances of
@@ -219,7 +219,7 @@ class BookmarkBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.url = self.notion_data["url"]
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
 
     def to_pandoc(self):
         if self.caption:
@@ -268,8 +268,8 @@ class FencedCodeBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.language = self.notion_data["language"]
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
 
     def to_pandoc(self):
         pandoc_language = self.notion_to_pandoc_highlight_languages.get(
@@ -285,20 +285,25 @@ class FencedCodeBlock(Block):
         return CodeBlock(('', language, []), self.rich_text.to_plain_text())
 
 
-class QuoteBlock(Block):
+class QuoteBlock(ParagraphBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
     def to_pandoc(self):
-        return BlockQuote([Para(self.rich_text.to_pandoc())])
+        pandoc_ast = super().to_pandoc()
+        return (
+            BlockQuote(pandoc_ast)
+            if isinstance(pandoc_ast, list)
+            else BlockQuote([pandoc_ast])
+        )
 
 
 class FileBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['file'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
 
     def to_pandoc(self):
         url = None
@@ -317,7 +322,7 @@ class ImageBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['image'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
 
     def to_pandoc(self):
         url = None
@@ -367,7 +372,10 @@ class TableBlock(Block):
 class RowBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.cells = [client.wrap_notion_rich_text_array(nc) for nc in self.notion_data["cells"]]
+        self.cells = [
+            client.wrap_notion_rich_text_array(nc, self)
+            for nc in self.notion_data["cells"]
+        ]
 
     def to_pandoc(self):
         cells = [Cell(
@@ -388,7 +396,7 @@ class ToggleBlock(Block):
 
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
     def to_pandoc(self):
         header = self.rich_text.to_pandoc()
@@ -401,7 +409,7 @@ class ToggleBlock(Block):
 class CalloutBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"])
+        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
         # the color and icon are not currently used
 
     def to_pandoc(self):

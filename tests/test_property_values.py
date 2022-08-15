@@ -1,7 +1,7 @@
 import pytest
 from n2y import notion
 
-from tests.notion_mocks import (
+from n2y.notion_mocks import (
     mock_formula_property_value, mock_person_user, mock_relation_value,
     mock_rich_text, mock_property_value, mock_rich_text_array,
     mock_rollup_property_value, mock_select_option, mock_user,

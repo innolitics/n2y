@@ -2,7 +2,7 @@ import logging
 
 import yaml
 
-from n2y.utils import pandoc_ast_to_markdown, fromisoformat, sanitize_filename
+from n2y.utils import pandoc_ast_to_html, pandoc_ast_to_markdown, fromisoformat, sanitize_filename
 from n2y.property_values import TitlePropertyValue
 
 
@@ -33,17 +33,14 @@ class Page:
         self._block = None
         self._children = None
 
+        self.plugin_data = {}
+
     @property
     def title(self):
         for property_value in self.properties.values():
             # Notion ensure's there is always exactly one title property
             if isinstance(property_value, TitlePropertyValue):
                 return property_value.rich_text
-
-    @property
-    def filename(self):
-        # TODO: switch to using the database's natural keys as the file names
-        return sanitize_filename(self.title.to_plain_text())
 
     @property
     def block(self):
@@ -71,6 +68,21 @@ class Page:
             assert parent_type == "database_id"
             return self.client.get_database(self.notion_parent["database_id"])
 
+    @property
+    def filename(self):
+        # TODO: switch to using the database's natural keys as the file names
+        filename_property = self.client.filename_property
+        if filename_property is None:
+            return sanitize_filename(self.title.to_plain_text())
+        elif filename_property in self.properties:
+            return sanitize_filename(self.properties[filename_property].to_value())
+        else:
+            logger.warning(
+                'Invalid filename property, "%s". Valid options are %s',
+                filename_property, ", ".join(self.properties.keys()),
+            )
+            return sanitize_filename(self.title.to_plain_text())
+
     def to_pandoc(self):
         return self.block.to_pandoc()
 
@@ -89,4 +101,21 @@ class Page:
             '---',
             yaml.dump(self.properties_to_values()) + '---',
             self.content_to_markdown() or '',
+        ])
+
+    def content_to_html(self):
+        pandoc_ast = self.to_pandoc()
+        if pandoc_ast is not None:
+            return pandoc_ast_to_html(pandoc_ast)
+        else:
+            return ''
+
+    def to_html(self):
+        # currently, the html output is generated for jekyll sites, hence the
+        # inclusion of the YAML front matter
+        # if someone needs just the HTML we should generalize
+        return '\n'.join([
+            '---',
+            yaml.dump(self.properties_to_values()) + '---',
+            self.content_to_html() or '',
         ])

@@ -42,6 +42,8 @@ DEFAULT_NOTION_CLASSES = {
 
 logger = logging.getLogger(__name__)
 
+# TODO: Rename this file `client.py`
+
 
 class Client:
     """
@@ -67,6 +69,7 @@ class Client:
         content_property=None,
         id_property=None,
         url_property=None,
+        filename_property=None,
         database_config=None,
     ):
         self.access_token = access_token
@@ -75,6 +78,7 @@ class Client:
         self.content_property = content_property
         self.id_property = id_property
         self.url_property = url_property
+        self.filename_property = filename_property
         self.database_config = database_config if database_config is not None else {}
 
         self.base_url = "https://api.notion.com/v1/"
@@ -204,18 +208,18 @@ class Client:
     def wrap_notion_file(self, notion_data):
         return self.instantiate_class("file", None, self, notion_data)
 
-    def wrap_notion_rich_text_array(self, notion_data):
-        return self.instantiate_class("rich_text_array", None, self, notion_data)
+    def wrap_notion_rich_text_array(self, notion_data, block=None):
+        return self.instantiate_class("rich_text_array", None, self, notion_data, block)
 
-    def wrap_notion_rich_text(self, notion_data):
-        return self.instantiate_class("rich_texts", notion_data["type"], self, notion_data)
+    def wrap_notion_rich_text(self, notion_data, block=None):
+        return self.instantiate_class("rich_texts", notion_data["type"], self, notion_data, block)
 
-    def wrap_notion_mention(self, notion_data, plain_text):
+    def wrap_notion_mention(self, notion_data, plain_text, block=None):
         # here we pass in the plain_text to avoid the need to query the page
         # just to get its title
         return self.instantiate_class(
             "mentions", notion_data["type"],
-            self, notion_data, plain_text,
+            self, notion_data, plain_text, block,
         )
 
     def wrap_notion_property(self, notion_data):

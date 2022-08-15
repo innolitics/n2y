@@ -1,5 +1,5 @@
 from n2y.config import validate_database_config
-from tests.notion_mocks import mock_id
+from n2y.notion_mocks import mock_id
 
 
 def test_validate_database_config_empty():

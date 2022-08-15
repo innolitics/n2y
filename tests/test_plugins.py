@@ -4,7 +4,7 @@ from n2y.blocks import ParagraphBlock
 from n2y.notion import Client
 from n2y.page import Page
 from n2y.errors import PluginError, UseNextClass
-from tests.notion_mocks import mock_paragraph_block
+from n2y.notion_mocks import mock_paragraph_block
 
 
 def test_load_plugin_invalid_notion_object():

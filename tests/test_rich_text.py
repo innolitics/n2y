@@ -4,7 +4,7 @@ from pandoc.types import (
 )
 
 from n2y.notion import Client
-from tests.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text
+from n2y.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text
 
 
 def process_rich_text_array(notion_data):

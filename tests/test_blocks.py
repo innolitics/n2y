@@ -15,15 +15,22 @@ from pandoc.types import (
 
 from n2y.notion import Client
 from n2y.utils import pandoc_ast_to_markdown
-from tests.notion_mocks import mock_block, mock_file, mock_paragraph_block, mock_rich_text
+from n2y.notion_mocks import (
+    mock_block, mock_file, mock_paragraph_block, mock_rich_text,
+    mock_page_mention,
+)
 
 
-def process_block(notion_block):
+def generate_block(notion_block):
     with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
         mock_get_notion_block.return_value = notion_block
         client = Client('')
         page = None
-        n2y_block = client.get_block('unusedid', page)
+        return client.get_block('unusedid', page)
+
+
+def process_block(notion_block):
+    n2y_block = generate_block(notion_block)
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     return pandoc_ast, markdown
@@ -31,12 +38,8 @@ def process_block(notion_block):
 
 def process_parent_block(notion_block, child_notion_blocks):
     with mock.patch.object(Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
-        with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
-            mock_get_child_notion_blocks.return_value = child_notion_blocks
-            mock_get_notion_block.return_value = notion_block
-            client = Client('')
-            page = None
-            n2y_block = client.get_block('unusedid', page)
+        mock_get_child_notion_blocks.return_value = child_notion_blocks
+        n2y_block = generate_block(notion_block)
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     return pandoc_ast, markdown
@@ -54,6 +57,17 @@ def test_paragraph():
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para([Str("paragraph"), Space(), Str("text")])
     assert markdown == "paragraph text\n"
+
+
+def test_paragraph_children_have_block_references():
+    notion_block = mock_block("paragraph", {
+        'color': 'default',
+        'rich_text': [mock_rich_text('m', mention=mock_page_mention())],
+    })
+    n2y_block = generate_block(notion_block)
+    assert n2y_block.rich_text.block == n2y_block
+    assert n2y_block.rich_text[0].block == n2y_block
+    assert n2y_block.rich_text[0].mention.block == n2y_block
 
 
 def test_paragraph_with_child_paragraph():
