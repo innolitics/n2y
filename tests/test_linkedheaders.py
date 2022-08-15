@@ -12,7 +12,9 @@ from tests.test_blocks import process_block
 
 
 def mock_header_ast(level, suffix, notion_block):
-    return Header(level, ("", [], []),
+    return Header(
+        level,
+        ("", [], []),
         [
             Link(
                 ("", [], []),
@@ -40,7 +42,7 @@ def test_heading_1_bolding_stripped():
 def test_heading_2():
     notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
     pandoc_ast, markdown = process_block(notion_block, ["n2y.plugins.linkedheaders"])
-    assert pandoc_ast ==mock_header_ast(2, "Two", notion_block)
+    assert pandoc_ast == mock_header_ast(2, "Two", notion_block)
     assert markdown == f'## [Heading Two](#{strip_hyphens(notion_block["id"])})\n'
 
 
