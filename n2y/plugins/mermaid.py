@@ -43,7 +43,8 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
         os.write(temp_config_fd, json.dumps(mermaid_config).encode("utf-8"))
         os.close(temp_config_fd)
         try:
-            diagram_as_bytes = self.rich_text.to_plain_text().encode()
+            diagram_as_text = self.rich_text.to_plain_text()
+            diagram_as_bytes = diagram_as_text.encode()
             subprocess.run([
                 'mmdc',
                 '--configFile', temp_config_filepath,

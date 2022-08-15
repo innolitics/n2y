@@ -21,16 +21,16 @@ from n2y.notion_mocks import (
 )
 
 
-def generate_block(notion_block):
+def generate_block(notion_block, plugins=None):
     with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
         mock_get_notion_block.return_value = notion_block
-        client = Client('')
+        client = Client('', plugins=plugins)
         page = None
         return client.get_block('unusedid', page)
 
 
-def process_block(notion_block):
-    n2y_block = generate_block(notion_block)
+def process_block(notion_block, plugins=None):
+    n2y_block = generate_block(notion_block, plugins=plugins)
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     return pandoc_ast, markdown

@@ -137,6 +137,10 @@ This plugin assumes that the `mmdc` mermaid commandline tool is available, and w
 
 If there are errors with the mermaid syntax, it is treated as a normal codeblock and the warning is logged.
 
+### Linked Header Blocks
+
+Replace headers with links back to the originating notion block.
+
 ### Footnotes
 
 Adds support for Pandoc-style footnotes. Any `text` rich texts that contain footnote references in the format `[^NUMBER]` (eg: `...some claim [^2].`) will be linked to the corresponding footnote paragraph block starting with `[NUMBER]:` (eg: `[2]: This is a footnote.`).
@@ -183,6 +187,7 @@ Here are some features we're planning to add in the future:
 
 - Add support for dumping the notion urls using `--url-property`.
 - Add support for all types of rollups (including arrays of other values)
+- Add plugin for creating headers that link back to the notion blocks
 - Add a property to rich text arrays, rich text, and mention instances back to the block they're contained in IF they happen to be contained in a block (some rich text arrays, etc. are from property values). This is useful when developing plugins.
 - Add `n2y.plugins.footnotes` plugin
 - Add support for exporting HTML files (useful for generating jekyll pages or if you need pandoc features that aren't supported in github flavored markdown).
