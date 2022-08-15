@@ -1,6 +1,8 @@
 from datetime import datetime
 import uuid
 
+from n2y.utils import strip_hyphens
+
 
 def mock_id():
     return str(uuid.uuid4())
@@ -77,8 +79,10 @@ def mock_database_mention():
 def mock_block(block_type, content, has_children=False, **kwargs):
     created_by = mock_user()
     created_time = datetime.now().isoformat()
+    notion_id = mock_id()
     return {
-        'id': mock_id(),
+        'id': notion_id,
+        'url': f'#{strip_hyphens(notion_id)}',
         'created_time': created_time,
         'created_by': created_by,
         'last_edited_time': created_time,
