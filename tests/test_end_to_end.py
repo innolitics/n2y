@@ -1,10 +1,3 @@
-"""
-These tests are run against a throw-away Notion account with a few pre-written
-pages. Since this is a throw-away account, we're fine including the auth_token
-in the codebase. The login for this throw-away account is in the Innolitics'
-1password "Everyone" vault. If new test pages are added, this will need to be
-used to create them.
-"""
 import sys
 import json
 from os import listdir

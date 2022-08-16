@@ -50,6 +50,14 @@ If the page is in a database, then it's properties will be included in the YAML 
 n2y PAGE_LINK > page.md
 ```
 
+### Audit a Page and it's Children For External Links
+
+Sometimes it is useful to ensure that a root Notion page, and it's child-pages, don't contain links to any notion pages outside the hierarchy. The `n2yaudit` tool can be used to audit a page hierarchy for any of these links.
+
+```
+n2yaudit PAGE_LINK
+```
+
 ## Plugins
 
 At the core of n2y are a set of python classes that represent the various parts of a Notion workspace:
