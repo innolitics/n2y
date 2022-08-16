@@ -409,3 +409,25 @@ def test_scyned_block_unshared():
         unshared_reference_synced_block, None)
     assert unshared_reference_pandoc_ast is None
     assert unshared_reference_markdown == ""
+
+
+def test_column_block():
+    column_block = mock_block("column", {}, has_children=True)
+    children = [mock_paragraph_block([("child", [])])]
+    pandoc_ast, markdown = process_parent_block(column_block, children)
+    assert pandoc_ast == [Para([Str('child')])]
+    assert markdown == "child\n"
+
+
+@mock.patch('n2y.notion.Client.get_child_notion_blocks')
+def test_column_list_block(mock_get_child_notion_blocks):
+    column_list_block = mock_block("column_list", {}, True)
+    column1, column2 = mock_block("column", {}, True), mock_block("column", {}, True)
+    para1, para2 = mock_paragraph_block([("child1", [])]), mock_paragraph_block([("child2", [])])
+    # Return [column1, column2] for the column list get_child_notion_blocks call
+    # and [para1] and [para2] for the get_child_notion_blocks calls of the
+    # respective column blocks
+    mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
+    pandoc_ast, markdown = process_block(column_list_block)
+    assert pandoc_ast == [Para([Str('child1')]), Para([Str('child2')])]
+    assert markdown == "child1\n\nchild2\n"

@@ -470,11 +470,20 @@ class PdfBlock(WarningBlock):
     pass
 
 
-class ColumnBlock(WarningBlock):
+class ChildrenPassThroughBlock(Block):
+    """
+    Just passes along the children of the block.
+    """
+
+    def to_pandoc(self):
+        return self.children_to_pandoc()
+
+
+class ColumnBlock(ChildrenPassThroughBlock):
     pass
 
 
-class ColumnListBlock(WarningBlock):
+class ColumnListBlock(ChildrenPassThroughBlock):
     pass
 
 
