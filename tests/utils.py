@@ -6,8 +6,11 @@ try:
 except ImportError:
     from yaml import Loader
 
-# This is not a security risk because the integration token that provides
-# read-only access to public notion pages in a throw-away notion account.
+# Some end-to-end tests are run against a throw-away Notion account with a few
+# pre-written pages. Since this is a throw-away account, we're fine including
+# the auth_token in the codebase. The login for this throw-away account is in
+# the Innolitics' 1password "Everyone" vault. If new test pages are added, this
+# will need to be used to create them.
 NOTION_ACCESS_TOKEN = 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r'
 
 

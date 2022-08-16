@@ -41,7 +41,8 @@ setup(
     data_files=[],
     entry_points={
         'console_scripts': [
-            'n2y = n2y.main:cli_main'
+            'n2y = n2y.main:cli_main',
+            'n2yaudit = n2y.audit:cli_main',
         ]
     },
 )

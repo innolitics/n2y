@@ -1,6 +1,7 @@
 import logging
 
 import yaml
+from .blocks import ChildDatabaseBlock, ChildPageBlock
 
 from n2y.utils import pandoc_ast_to_html, pandoc_ast_to_markdown, fromisoformat, sanitize_filename
 from n2y.property_values import TitlePropertyValue
@@ -51,11 +52,18 @@ class Page:
     @property
     def children(self):
         if self._children is None:
-            self._children = True  # TODO: Implement this
-            raise NotImplementedError()
-            # recursively look through blocks for child_pages and child_databases,
-            # creating them in order that they appear in the block heirarchy
+            self._children = []
+            for block in self.block.children:
+                self._append_children(block)
         return self._children
+
+    def _append_children(self, block):
+        if isinstance(block, ChildPageBlock):
+            page = self.client.get_page(block.notion_id)
+            self._children.append(page)
+        elif isinstance(block, ChildDatabaseBlock):
+            database = self.client.get_database(block.notion_id)
+            self._children.append(database)
 
     @property
     def parent(self):
