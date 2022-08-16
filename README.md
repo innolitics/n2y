@@ -199,6 +199,7 @@ Here are some features we're planning to add in the future:
 - Add a property to rich text arrays, rich text, and mention instances back to the block they're contained in IF they happen to be contained in a block (some rich text arrays, etc. are from property values). This is useful when developing plugins.
 - Add `n2y.plugins.footnotes` plugin
 - Add support for exporting HTML files (useful for generating jekyll pages or if you need pandoc features that aren't supported in github flavored markdown).
+- Added the `n2yaudit` tool.
 
 ### v0.4.2
 
