@@ -20,16 +20,6 @@ def run_n2y(arguments):
     return status, stdout, stderr
 
 
-external_link_in_top_page = \
-    'https://notion.so/Audited-cfa8ff07bba244c8b967c9b6a7a954c1#aa4fa886f8244c818de8018bb3491806'
-external_link_in_child_page = \
-    'https://notion.so/Child-f3e3628fc80c470ea68994fa7ec0ff17#d1d32ff6f0cb4c71a2f1c4ec55e00086'
-internal_link_in_child_page = \
-    'https://notion.so/Child-f3e3628fc80c470ea68994fa7ec0ff17#eab91ccc32924221ac3f0a74225a33dd'
-external_link_in_child_database = \
-    'https://notion.so/B-4412005dcec24ff2827abbc367c90b29#6373a0b5c2804fbe9dfac167ce6948a0'
-
-
 def test_audit():
     '''
     The database can be seen here:
@@ -38,6 +28,15 @@ def test_audit():
     object_id = 'cfa8ff07bba244c8b967c9b6a7a954c1'
     status, stdoutput, _ = run_n2y([object_id])
     assert status == 3
+
+    external_link_in_top_page = \
+        'https://www.notion.so/Audited-cfa8ff07bba244c8b967c9b6a7a954c1#aa4fa886f8244c818de8018bb3491806'  # noqa: E501
+    external_link_in_child_page = \
+        'https://www.notion.so/Child-f3e3628fc80c470ea68994fa7ec0ff17#d1d32ff6f0cb4c71a2f1c4ec55e00086'  # noqa: E501
+    internal_link_in_child_page = \
+        'https://www.notion.so/Child-f3e3628fc80c470ea68994fa7ec0ff17#eab91ccc32924221ac3f0a74225a33dd'  # noqa: E501
+    external_link_in_child_database = \
+        'https://www.notion.so/B-4412005dcec24ff2827abbc367c90b29#6373a0b5c2804fbe9dfac167ce6948a0'  # noqa: E501
 
     assert external_link_in_top_page in stdoutput
     assert external_link_in_child_page in stdoutput
