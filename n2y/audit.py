@@ -92,7 +92,7 @@ def main(raw_args, access_token):
         return 2
 
     references = {}
-    audit_node(node, references)
+    audit_node(node, references, 0)
     external_references = exclude_internal_references(references)
     print_references(client, external_references)
     if any(len(l) for l in external_references.values()):
@@ -119,24 +119,26 @@ def print_references(client, references):
             print("  " + link["block_url"])
 
 
-def audit_node(node, references):
+def audit_node(node, references, depth):
     if isinstance(node, Database):
-        audit_database(node, references)
+        audit_database(node, references, depth)
     elif isinstance(node, Page):
-        audit_page(node, references)
+        audit_page(node, references, depth)
 
 
-def audit_database(database, references):
+def audit_database(database, references, depth):
+    logger.info("%sDatabase %s", " " * depth, database.title.to_plain_text())
     for page in database.children:
-        audit_page(page, references)
+        audit_page(page, references, depth + 1)
 
 
-def audit_page(page, references):
+def audit_page(page, references, depth):
+    logger.info("%sAuditing %s", " " * depth, page.title.to_plain_text())
     assert page.notion_id not in references  # expect that each page is visited once
     page.block  # load all of the blocks
     references[page.notion_id] = page.plugin_data.get(plugin_key, [])
     for node in page.children:
-        audit_node(node, references)
+        audit_node(node, references, depth + 1)
 
 
 if __name__ == "__main__":
