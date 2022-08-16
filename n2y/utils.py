@@ -117,7 +117,10 @@ def id_from_share_link(share_link):
     if not hyphens_removed.startswith("https://www.notion.so/"):
         return hyphens_removed
     else:
-        return hyphens_removed.split("/")[-1].split("?")[0]
+        domain_removed = hyphens_removed.split("/")[-1]
+        query_removed = domain_removed.split("?")[0]
+        assert len(query_removed) >= 32
+        return query_removed[-32:]
 
 
 def strip_hyphens(string):
