@@ -208,6 +208,8 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "``` javascript\nCode Block\n```" in document_as_markdown
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
+    assert "Column 1" in lines and "Column 2" in lines
+    assert "Column 1.1" in lines and "Column 1.2" in lines
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
