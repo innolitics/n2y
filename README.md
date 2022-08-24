@@ -100,15 +100,15 @@ Here are the default block classes that can be extended:
 | Class Name | Noteworthy Behavior |
 | --- | --- |
 | BookmarkBlock | Converts visual bookmark into plain text link in markdown, using the caption as the link text. |
-| BreadcrumbBlock | Ignore |
+| BreadcrumbBlock | These blocks are ignored |
 | BulletedListItemBlock | |
 | CalloutBlock | The content of the callout block is extracted, but the emoji and background color are ignored. |
-| ChildDatabaseBlock | Converts database to markdown in different file in directory and writes a relative link to the markdown|
-| ChildPageBlock | Converts Child Page to markdown. |
+| ChildDatabaseBlock | These blocks are ignored |
+| ChildPageBlock | These blocks are ignored |
 | ColumnBlock | |
 | ColumnListBlock | Converts into a table where each column is such. |
 | DividerBlock | |
-| EmbedBlock | Ignore |
+| EmbedBlock | These blocks are ignored |
 | EquationBlock | Converted to "display math" using LaTeX; see the [pandoc](https://pandoc.org/MANUAL.html#math) documentation. |
 | FencedCodeBlock | |
 | FileBlock | Acts the same way as the ImageBlock, except that in the documents it only ever shows the URL. |
@@ -119,16 +119,16 @@ Here are the default block classes that can be extended:
 | LinkToPageBlock | Transcribes the block into a plain text link |
 | NumberedListItemBlock | |
 | ParagraphBlock | |
-| PdfBlock | Acts the same way ass the Image block |
+| PdfBlock | Acts the same way as the Image block |
 | QuoteBlock | |
 | RowBlock | |
 | SyncedBlock | Transcribe the contents of the synced block at the time it was constructed |
 | TableBlock | |
-| TableOfContentsBlock | transcribes the contenets of the Table of contents block into page links |
-| TemplateBlock | Ignore |
+| TableOfContentsBlock | These blocks are ignored |
+| TemplateBlock | These blocks are ignored |
 | ToDoItemBlock | |
-| ToggleBlock | Convert toggles into a details and summary tag. |
-| VideoBlock | Acts the same way ass the Image block |
+| ToggleBlock | Convert the toggles into a bulleted list. |
+| VideoBlock | Acts the same way as the Image block |
 
 
 Most of the Notion blocks can generate their pandoc AST from _only_ their own data. The one exception is the list item blocks; pandoc, unlike Notion, has an encompassing node in the AST for the entire list. The `ListItemBlock.list_to_pandoc` class method is responsible for generating this top-level node.
