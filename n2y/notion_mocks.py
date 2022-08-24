@@ -110,12 +110,33 @@ def mock_file(url):
     }
 
 
+def mock_property_item(property_item_type, property_item, result=None):
+    property_item = {
+        "object": "property_item" if result is None else "list",
+        "type": property_item_type,
+        property_item_type: property_item,
+    }
+    if result is not None:
+        property_item.update({
+            "property_item": {property_item_type: [], "type": property_item_type},
+            "results": [{"type": property_item_type, property_item_type: result}]
+        })
+    return property_item
+
+
 def mock_property_value(property_value_type, content):
     return {
         'id': mock_id(),
         'type': property_value_type,
         property_value_type: content,
     }
+
+
+def mock_formula_property_item(formula_type, content):
+    return mock_property_item("formula", {
+        "type": formula_type,
+        formula_type: content,
+    })
 
 
 def mock_formula_property_value(formula_type, content):

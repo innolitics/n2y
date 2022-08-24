@@ -24,7 +24,7 @@ class Page:
         self.cover = notion_data['cover'] and client.wrap_notion_file(notion_data['cover'])
         self.archived = notion_data['archived']
         self.properties = {
-            k: client.wrap_notion_property_value(npv)
+            k: client.get_page_property_item(self.notion_id, npv["id"])
             for k, npv in notion_data['properties'].items()
         }
         self.notion_parent = notion_data['parent']
@@ -37,10 +37,10 @@ class Page:
 
     @property
     def title(self):
-        for property_value in self.properties.values():
+        for property_item in self.properties.values():
             # Notion ensure's there is always exactly one title property
-            if isinstance(property_value, TitlePropertyValue):
-                return property_value.rich_text
+            if isinstance(property_item.property_value, TitlePropertyValue):
+                return property_item.property_value.rich_text
 
     @property
     def block(self):

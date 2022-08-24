@@ -23,7 +23,8 @@ class TitlePropertyValue(PropertyValue):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
-        self.rich_text = client.wrap_notion_rich_text_array(notion_data['title'])
+        rich_text_array = [n["title"] for n in notion_data["results"]]
+        self.rich_text = client.wrap_notion_rich_text_array(rich_text_array)
 
     def to_value(self):
         # Notion allows styling of the title, however, in their UI they display
@@ -39,7 +40,17 @@ class TextPropertyValue(PropertyValue):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
-        self.rich_text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
+        if "results" in notion_data:
+            rich_text_array = [n["rich_text"] for n in notion_data["results"]]
+        else:
+            # Handle rollup property values that still use the older
+            # 'flat' format for property values it seems
+            rich_text_array = (
+                [notion_data["rich_text"]]
+                if not isinstance(notion_data["rich_text"], list)
+                else notion_data["rich_text"]
+            )
+        self.rich_text = client.wrap_notion_rich_text_array(rich_text_array)
 
     def to_value(self):
         return self.rich_text.to_markdown()
@@ -108,7 +119,7 @@ class DatePropertyValue(PropertyValue):
 class PeoplePropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.people = [client.wrap_notion_user(nu) for nu in notion_data['people']]
+        self.people = [client.wrap_notion_user(n["people"]) for n in notion_data['results']]
 
     def to_value(self):
         return [u.to_value() for u in self.people]
@@ -177,8 +188,7 @@ class RelationPropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
         # TODO: handle the case when there are more than 25 pages in the relation
         # See https://developers.notion.com/reference/retrieve-a-page-property
-        super().__init__(client, notion_data)
-        self.ids = [related["id"] for related in notion_data["relation"]]
+        self.ids = [n["relation"]["id"] for n in notion_data["results"]]
 
     def to_value(self):
         return self.ids
@@ -189,7 +199,7 @@ class RollupPropertyValue(PropertyValue):
         # TODO: handle the case when the rollup needs to be paginated
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data)
-        notion_rollup = notion_data["rollup"]
+        notion_rollup = notion_data["property_item"]["rollup"]
         self.rollup_type = notion_rollup["type"]
         self.function = notion_rollup["function"]
         if self.rollup_type == "date":
@@ -201,7 +211,7 @@ class RollupPropertyValue(PropertyValue):
         elif self.rollup_type == "array":
             self.value = [
                 self.client.wrap_notion_property_value(pv)
-                for pv in notion_rollup['array']
+                for pv in notion_data['results']
             ]
         else:
             logger.warning("Unhandled rollup type %s", notion_rollup["type"])
@@ -260,6 +270,7 @@ class LastEditedBy(PropertyValue):
 DEFAULT_PROPERTY_VALUES = {
     'title': TitlePropertyValue,
     'rich_text': TextPropertyValue,
+    'text': TextPropertyValue,
     'number': NumberPropertyValue,
     'select': SelectPropertyValue,
     'multi_select': MultiSelectPropertyValue,

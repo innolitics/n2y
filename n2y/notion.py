@@ -20,6 +20,7 @@ from n2y.database import Database
 from n2y.blocks import DEFAULT_BLOCKS
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
+from n2y.property_item import PropertyItem
 from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
@@ -32,6 +33,7 @@ DEFAULT_NOTION_CLASSES = {
     "blocks": DEFAULT_BLOCKS,
     "properties": DEFAULT_PROPERTIES,
     "property_values": DEFAULT_PROPERTY_VALUES,
+    "property_item": PropertyItem,
     "user": User,
     "file": File,
     "rich_text_array": RichTextArray,
@@ -85,7 +87,7 @@ class Client:
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
-            "Notion-Version": "2022-02-22",
+            "Notion-Version": "2022-06-28",
         }
 
         self.databases_cache = {}
@@ -228,6 +230,9 @@ class Client:
     def wrap_notion_property_value(self, notion_data):
         return self.instantiate_class("property_values", notion_data["type"], self, notion_data)
 
+    def wrap_notion_property_item(self, notion_data):
+        return self.instantiate_class("property_item", None, self, notion_data)
+
     def get_page_or_database(self, object_id):
         """
         First attempt to get the page corresponding with the object id; if
@@ -322,6 +327,10 @@ class Client:
     def get_page_property(self, page_id, property_id):
         notion_property = self.get_notion_page_property(page_id, property_id)
         return self.wrap_notion_property(notion_property)
+
+    def get_page_property_item(self, page_id, property_id):
+        notion_property = self.get_notion_page_property(page_id, property_id)
+        return self.wrap_notion_property_item(notion_property)
 
     def get_notion_page_property(self, page_id, property_id):
         url = f"{self.base_url}pages/{page_id}/properties/{property_id}"
