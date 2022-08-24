@@ -106,7 +106,7 @@ Here are the default block classes that can be extended:
 | ChildDatabaseBlock | Converts database to markdown in different file in directory and writes a relative link to the markdown|
 | ChildPageBlock | Converts Child Page to markdown. |
 | ColumnBlock | |
-| ColumnListBlock | Columns are flattened and displayed sequentially. |
+| ColumnListBlock | Converts into a table where each column is such. |
 | DividerBlock | |
 | EmbedBlock | Ignore |
 | EquationBlock | Converted to "display math" using LaTeX; see the [pandoc](https://pandoc.org/MANUAL.html#math) documentation. |
