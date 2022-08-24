@@ -5,3 +5,5 @@ n2y.egg-info/
 build/
 dist/
 .vscode
+venv
+requirements.txt
