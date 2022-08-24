@@ -1,10 +1,3 @@
-"""
-These tests are run against a throw-away Notion account with a few pre-written
-pages. Since this is a throw-away account, we're fine including the auth_token
-in the codebase. The login for this throw-away account is in the Innolitics'
-1password "Everyone" vault. If new test pages are added, this will need to be
-used to create them.
-"""
 import sys
 import json
 from os import listdir
@@ -208,6 +201,8 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "``` javascript\nCode Block\n```" in document_as_markdown
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
+    assert "Column 1" in lines and "Column 2" in lines
+    assert "Column 1.1" in lines and "Column 1.2" in lines
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines

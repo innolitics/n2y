@@ -50,6 +50,14 @@ If the page is in a database, then it's properties will be included in the YAML 
 n2y PAGE_LINK > page.md
 ```
 
+### Audit a Page and it's Children For External Links
+
+Sometimes it is useful to ensure that a root Notion page, and it's child-pages, don't contain links to any notion pages outside the hierarchy. The `n2yaudit` tool can be used to audit a page hierarchy for any of these links.
+
+```
+n2yaudit PAGE_LINK
+```
+
 ## Plugins
 
 At the core of n2y are a set of python classes that represent the various parts of a Notion workspace:
@@ -110,6 +118,9 @@ Here are the default block classes that can be extended:
 | RowBlock | |
 | ToDoItemBlock | |
 | ToggleBlock | Convert the toggles into a bulleted list. |
+| ColumnBlock | |
+| ColumnListBlock | Columns are flattened and displayed sequentially. |
+
 
 Most of the Notion blocks can generate their pandoc AST from _only_ their own data. The one exception is the list item blocks; pandoc, unlike Notion, has an encompassing node in the AST for the entire list. The `ListItemBlock.list_to_pandoc` class method is responsible for generating this top-level node.
 
@@ -191,6 +202,7 @@ Here are some features we're planning to add in the future:
 - Add a property to rich text arrays, rich text, and mention instances back to the block they're contained in IF they happen to be contained in a block (some rich text arrays, etc. are from property values). This is useful when developing plugins.
 - Add `n2y.plugins.footnotes` plugin
 - Add support for exporting HTML files (useful for generating jekyll pages or if you need pandoc features that aren't supported in github flavored markdown).
+- Added the `n2yaudit` tool.
 
 ### v0.4.2
 
@@ -207,6 +219,7 @@ Here are some features we're planning to add in the future:
 - Add the ability to include notion ids in export YAML files using the `id_property` commandline argument
 - Add support for the SyncedBlock
 - Add support for filtering and sorting databases using the `--database-config` property
+- Add support for ColumnBlock and ColumnListBlock
 
 ### v0.4.1
 
