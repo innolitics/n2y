@@ -188,7 +188,12 @@ class RelationPropertyValue(PropertyValue):
     def __init__(self, client, notion_data):
         # TODO: handle the case when there are more than 25 pages in the relation
         # See https://developers.notion.com/reference/retrieve-a-page-property
-        self.ids = [n["relation"]["id"] for n in notion_data["results"]]
+        if "results" in notion_data:
+            self.ids = [n["relation"]["id"] for n in notion_data["results"]]
+        else:
+            # Handle rollup property values that still use the older
+            # 'flat' format for property values it seems
+            self.ids = [notion_data["relation"]["id"]]
 
     def to_value(self):
         return self.ids
@@ -214,8 +219,14 @@ class RollupPropertyValue(PropertyValue):
                 for pv in notion_data['results']
             ]
         else:
-            logger.warning("Unhandled rollup type %s", notion_rollup["type"])
-            self.value = notion_rollup[notion_rollup["type"]]
+            if "results" in notion_data:
+                self.value = [
+                    self.client.wrap_notion_property_item(pi)
+                    for pi in notion_data['results']
+                ]
+            else:
+                logger.warning("Unhandled rollup type %s", notion_rollup["type"])
+                self.value = notion_rollup[notion_rollup["type"]]
         # TODO: handle arrays of dates
 
     def to_value(self):
