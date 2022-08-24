@@ -92,6 +92,7 @@ class Client:
 
         self.databases_cache = {}
         self.pages_cache = {}
+        self.property_items_cache = {}
 
         self.notion_classes = self.get_default_classes()
         self.load_plugins(plugins)
@@ -329,8 +330,13 @@ class Client:
         return self.wrap_notion_property(notion_property)
 
     def get_page_property_item(self, page_id, property_id):
-        notion_property = self.get_notion_page_property(page_id, property_id)
-        return self.wrap_notion_property_item(notion_property)
+        cache = self.property_items_cache
+        property_item = cache.get(page_id, {}).get(property_id, None)
+        if property_item is None:
+            notion_property = self.get_notion_page_property(page_id, property_id)
+            property_item = self.wrap_notion_property_item(notion_property)
+            cache.setdefault(page_id, {})[property_id] = property_item
+        return property_item
 
     def get_notion_page_property(self, page_id, property_id):
         url = f"{self.base_url}pages/{page_id}/properties/{property_id}"
