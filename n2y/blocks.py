@@ -1,12 +1,14 @@
 from itertools import groupby
 import logging
 from urllib.parse import urljoin
+from n2y.notion_mocks import mock_rich_text_array
 
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak,
+    AlignCenter, Space
 )
 
 
@@ -462,8 +464,25 @@ class EmbedBlock(WarningBlock):
     pass
 
 
-class VideoBlock(WarningBlock):
-    pass
+class VideoBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.file = client.wrap_notion_file(notion_data['video'])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+
+    def to_pandoc(self):
+        url = None
+        if self.file.type == "external":
+            url = self.file.url
+        elif self.file.type == "file":
+            url = self.client.download_file(self.file.url, self.page)
+        link = mock_rich_text_array([(url, None)])
+        self.link = self.client.wrap_notion_rich_text_array(link, self)
+        content = [Link(('', [], []), self.link.to_pandoc(), (url, ''))]
+
+        if self.notion_data["caption"] != []:
+            return render_with_caption(content, self.caption.to_pandoc())
+        return Para(content)
 
 
 class PdfBlock(WarningBlock):
@@ -514,6 +533,27 @@ class SyncedBlock(Block):
             return None
         return self.children_to_pandoc()
 
+def render_with_caption(content_array, caption):
+    return Table(
+            ('', [], []),
+            Caption(None, []),
+            [(AlignDefault(), ColWidthDefault())],
+            TableHead(('', [], []),
+            [Row(('', [], []),
+                [Cell(('', [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain(content_array)])])]),
+            [TableBody(('', [], []),
+                RowHeadColumns(0), [],
+                [Row(('', [], []),
+                    [Cell(('', [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain(caption)])])])],
+            TableFoot(('', [], []), []))
 
 class LinkToPageBlock(WarningBlock):
     pass
