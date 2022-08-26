@@ -1,4 +1,5 @@
 from itertools import groupby
+import json
 import logging
 from urllib.parse import urljoin
 from n2y.notion_mocks import mock_rich_text_array
@@ -59,6 +60,7 @@ class Block:
         else:
             children = None
         self.children = children
+
 
     def to_pandoc(self):
         raise NotImplementedError()
@@ -390,6 +392,43 @@ class RowBlock(Block):
         return Row(('', [], []), cells)
 
 
+class ColumnListBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+
+    def to_pandoc(self):
+        cells = self.children_to_pandoc()
+        colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(len(cells))]
+        print(colspec)
+        table = Table(
+            ('', [], []),
+            Caption(None, []),
+            colspec,
+            TableHead(('', [], []), []),
+            [TableBody(
+                ('', [], []),
+                RowHeadColumns(0), [],
+                [Row(('', [], []), cells)])],
+            TableFoot(('', [], []), [])
+        )
+        return table
+
+class ColumnBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+    def to_pandoc(self):
+        string_of_children = repr(self.children_to_pandoc())
+        plain_children_string = string_of_children.replace("Para(", "Plain(")
+        plain_children = eval(plain_children_string)
+        return Cell(
+            ('', [], []),
+            AlignDefault(),
+            RowSpan(1),
+            ColSpan(1),
+            plain_children
+        )
+
+
 class ToggleBlock(Block):
     """
     Generates a bulleted list item with indented children. A plugin may be used
@@ -495,15 +534,8 @@ class ChildrenPassThroughBlock(Block):
     """
 
     def to_pandoc(self):
+        print("CHILDREN",self.children)
         return self.children_to_pandoc()
-
-
-class ColumnBlock(ChildrenPassThroughBlock):
-    pass
-
-
-class ColumnListBlock(ChildrenPassThroughBlock):
-    pass
 
 
 class LinkPreviewBlock(WarningBlock):
