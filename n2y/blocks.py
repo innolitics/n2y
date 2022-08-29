@@ -1,15 +1,12 @@
 from itertools import groupby
-import json
 import logging
 from urllib.parse import urljoin
-from n2y.notion_mocks import mock_rich_text_array
 
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak,
-    AlignCenter, Space
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, Space
 )
 
 
@@ -60,7 +57,6 @@ class Block:
         else:
             children = None
         self.children = children
-
 
     def to_pandoc(self):
         raise NotImplementedError()
@@ -317,11 +313,10 @@ class FileBlock(Block):
             url = self.client.download_file(self.file.url, self.page)
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
-            caption_ast  = self.caption.to_pandoc()
+            caption_ast = self.caption.to_pandoc()
             # content.extend([LineBreak(), *caption_ast])
             return render_with_caption(content_ast, caption_ast)
         return Para(content_ast)
-
 
 
 class ImageBlock(Block):
@@ -418,6 +413,7 @@ class ColumnListBlock(Block):
             TableFoot(('', [], []), [])
         )
         return table
+
 
 class ColumnBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
@@ -525,7 +521,7 @@ class VideoBlock(Block):
             url = self.client.download_file(self.file.url, self.page)
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
-            caption_ast  = self.caption.to_pandoc()
+            caption_ast = self.caption.to_pandoc()
             # content.extend([LineBreak(), *caption_ast])
             return render_with_caption(content_ast, caption_ast)
         return Para(content_ast)
@@ -583,30 +579,22 @@ class SyncedBlock(Block):
             return None
         return self.children_to_pandoc()
 
-def render_with_caption(content_ast, caption_ast):
-    return Table(
-            ('', [], []),
-            Caption(None, []),
-            [(AlignDefault(), ColWidthDefault())],
-            TableHead(('', [], []),
-            [Row(('', [], []),
-                [Cell(('', [], []),
-                    AlignDefault(),
-                    RowSpan(1),
-                    ColSpan(1),
-                    [Plain(content_ast)])])]),
-            [TableBody(('', [], []),
-                RowHeadColumns(0), [],
-                [Row(('', [], []),
-                    [Cell(('', [], []),
-                    AlignDefault(),
-                    RowSpan(1),
-                    ColSpan(1),
-                    [Plain(caption_ast)])])])],
-            TableFoot(('', [], []), []))
 
 class LinkToPageBlock(Block):
     pass
+
+
+def render_with_caption(content_ast, caption_ast):
+    header_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(content_ast)]]
+    body_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(caption_ast)]]
+    body_row = Row(('', [], []), [Cell(*body_cell_args)])
+    return Table(
+        ('', [], []),
+        Caption(None, []),
+        [(AlignDefault(), ColWidthDefault())],
+        TableHead(('', [], []), [Row(('', [], []), [Cell(*header_cell_args)])]),
+        [TableBody(('', [], []), RowHeadColumns(0), [], [body_row])],
+        TableFoot(('', [], []), []))
 
 
 DEFAULT_BLOCKS = {
