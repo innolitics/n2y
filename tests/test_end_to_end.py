@@ -181,13 +181,15 @@ def test_all_blocks_page_to_markdown(tmp_path):
     lines = document_as_markdown.split('\n')
     metadata = parse_yaml_front_matter(document_as_markdown)
     assert metadata['title'] == 'All Blocks Test Page'
-    column_string = '<table><tbody><tr class="odd"><td>Column 1<table>'
+    column_string = ('<table><tbody><tr class="odd"><td>Column 1<table>'
     '<tbody><tr class="odd"><td>Column 1.1</td><td>Column 1.2</td></tr>'
-    '</tbody></table></td><td>Column 2</td></tr></tbody></table>'
-    col_1 = "<td>Column 1" in lines
-    col_11 = "<td>Column 1.1</td>" in lines
-    col_12 = "<td>Column 1.2</td>" in lines
-    col_2 = "<td>Column 2</td>" in lines
+    '</tbody></table></td><td>Column 2</td></tr></tbody></table>')
+    column_strings_in_lines = [
+        "<td>Column 1" in lines,
+        "<td>Column 1.1</td>" in lines,
+        "<td>Column 1.2</td>" in lines,
+        "<td>Column 2</td>" not in lines,
+    ]
 
     # TODO: look into why there's extra space in between the list entries
     assert status == 0
@@ -208,16 +210,15 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "``` javascript\nCode Block\n```" in document_as_markdown
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
-    assert (
-        col_1 and col_2 and col_11 and col_12) \
-        or column_string in lines
+    assert all(column_strings_in_lines) or (column_string in lines)
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "| ![](All_Blocks_Test_Page-5c264631.jpeg) |" in lines
+    print(lines)
+    assert "![Image **caption**](All_Blocks_Test_Page-5c264631.jpeg)" in lines
 
     # from a file block in the Notion page
     assert os.path.exists(tmp_path / "All_Blocks_Test_Page-5c264631.jpeg")

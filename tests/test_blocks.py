@@ -210,26 +210,9 @@ def test_image_internal_with_caption(mock_download):
     })
     mock_download.return_value = 'image.png'
     pandoc_ast, markdown = process_block(notion_block)
-    table_head_cell = Cell(
-        ('', [], []),
-        AlignDefault(),
-        RowSpan(1),
-        ColSpan(1),
-        [Plain([Image(('', [], []), [Str('image.png')], ('image.png', ''))])])
-    body_cell = Cell(
-        ('', [], []),
-        AlignDefault(),
-        RowSpan(1),
-        ColSpan(1),
-        [Plain([Str('test'), Space(), Str('image')])])
-    assert pandoc_ast == Table(
-        ('', [], []),
-        Caption(None, []),
-        [(AlignDefault(), ColWidthDefault())],
-        TableHead(('', [], []), [Row(('', [], []), [table_head_cell])]),
-        [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [body_cell])])],
-        TableFoot(('', [], []), []))
-    assert markdown == "| ![](image.png) |\n|----------------|\n| test image     |\n"
+    assert pandoc_ast == Para([
+        Image(('', [], []), [Str('test'), Space(), Str('image')], ('image.png', ''))])
+    assert markdown == "![test image](image.png)\n"
 
 
 def test_image_external_without_caption():
