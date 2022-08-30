@@ -210,7 +210,25 @@ def test_image_internal_with_caption(mock_download):
     })
     mock_download.return_value = 'image.png'
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Table(('', [], []), Caption(None, []), [(AlignDefault(), ColWidthDefault())], TableHead(('', [], []), [Row(('', [], []), [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Image(('', [], []), [Str('image.png')], ('image.png', ''))])])])]), [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('test'), Space(), Str('image')])])])])], TableFoot(('', [], []), []))
+    table_head_cell = Cell(
+        ('', [], []),
+        AlignDefault(),
+        RowSpan(1),
+        ColSpan(1),
+        [Plain([Image(('', [], []), [Str('image.png')], ('image.png', ''))])])
+    body_cell = Cell(
+        ('', [], []),
+        AlignDefault(),
+        RowSpan(1),
+        ColSpan(1),
+        [Plain([Str('test'), Space(), Str('image')])])
+    assert pandoc_ast == Table(
+        ('', [], []),
+        Caption(None, []),
+        [(AlignDefault(), ColWidthDefault())],
+        TableHead(('', [], []), [Row(('', [], []), [table_head_cell])]),
+        [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [body_cell])])],
+        TableFoot(('', [], []), []))
     assert markdown == "| ![](image.png) |\n|----------------|\n| test image     |\n"
 
 
@@ -221,9 +239,11 @@ def test_image_external_without_caption():
         "external": {"url": "https://example.com/image.png"},
     })
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Para([
-        Image(('', [], []), [Str('https://example.com/image.png')], ('https://example.com/image.png', ''))
-        ])
+    assert pandoc_ast == Para([Image(
+        ('', [], []),
+        [Str('https://example.com/image.png')],
+        ('https://example.com/image.png', '')
+    )])
     assert markdown == "![](https://example.com/image.png)\n"
 
 
@@ -427,5 +447,13 @@ def test_column_list_block(mock_get_child_notion_blocks):
     # respective column blocks
     mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
     pandoc_ast, markdown = process_block(column_list_block)
-    assert pandoc_ast == Table(('', [], []), Caption(None, []), [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())], TableHead(('', [], []), []), [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child1')])]), Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child2')])])])])], TableFoot(('', [], []), []))
+    cell1 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child1')])])
+    cell2 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child2')])])
+    assert pandoc_ast == Table(
+        ('', [], []),
+        Caption(None, []),
+        [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
+        TableHead(('', [], []), []),
+        [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [cell1, cell2])])],
+        TableFoot(('', [], []), []))
     assert markdown == "|        |        |\n|--------|--------|\n| child1 | child2 |\n"
