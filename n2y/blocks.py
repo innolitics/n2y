@@ -331,12 +331,10 @@ class ImageBlock(Block):
             url = self.file.url
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page)
-        content_ast = [Image(('', [], []), [Str(url)], (url, ''))]
+        img_alt = [Str(url)]
         if self.caption:
-            caption_ast = self.caption.to_pandoc()
-            # content.extend([LineBreak(), *caption])
-            return render_with_caption(content_ast, caption_ast)
-        return Para(content_ast)
+            img_alt = self.caption.to_pandoc()
+        return Para([Image(('', [], []), img_alt, (url, ''))])
 
 
 class TableBlock(Block):
