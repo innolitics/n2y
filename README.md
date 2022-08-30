@@ -188,6 +188,21 @@ Any git commit tagged with a string starting with "v" will automatically be push
 
 Before pushing such commits, be sure to update the change log below.
 
+## Contributing
+
+To work on the repository, clone the git repo. From within the repo (and ideally within a python virtual environment), install `n2y` from the local copy, including the dev dependencies:
+
+```
+pip install -e '.[dev]'
+```
+
+You can then run the tests and the linter as follows:
+
+```
+flake8 .
+pytest tests
+```
+
 ## Roadmap
 
 Here are some features we're planning to add in the future:
