@@ -181,9 +181,10 @@ def test_all_blocks_page_to_markdown(tmp_path):
     lines = document_as_markdown.split('\n')
     metadata = parse_yaml_front_matter(document_as_markdown)
     assert metadata['title'] == 'All Blocks Test Page'
-    column_string = ('<table><tbody><tr class="odd"><td>Column 1<table>'
-    '<tbody><tr class="odd"><td>Column 1.1</td><td>Column 1.2</td></tr>'
-    '</tbody></table></td><td>Column 2</td></tr></tbody></table>')
+    column_string = (
+        '<table><tbody><tr class="odd"><td>Column 1<table>'
+        '<tbody><tr class="odd"><td>Column 1.1</td><td>Column 1.2</td></tr>'
+        '</tbody></table></td><td>Column 2</td></tr></tbody></table>')
     column_strings_in_lines = [
         "<td>Column 1" in lines,
         "<td>Column 1.1</td>" in lines,
