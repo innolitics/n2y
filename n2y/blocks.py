@@ -485,8 +485,7 @@ class BreadcrumbBlock(NoopBlock):
 
 
 class UnsupportedBlock(NoopBlock):
-    def to_pandoc(self):
-        return Para([Str("Block"), Space(), Str("Type"), Space(), Str("Unsupported")])
+    pass
 
 
 class TemplateBlock(NoopBlock):
