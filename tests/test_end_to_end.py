@@ -201,15 +201,15 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "``` javascript\nCode Block\n```" in document_as_markdown
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
-    assert "Column 1" in lines and "Column 2" in lines
-    assert "Column 1.1" in lines and "Column 1.2" in lines
+    assert "<td>Column 1" in lines and "<td>Column 2</td>" in lines
+    assert "<td>Column 1.1</td>" in lines and "<td>Column 1.2</td>" in lines
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "![Image **caption**](All_Blocks_Test_Page-5c264631.jpeg)" in lines
+    assert "| ![](All_Blocks_Test_Page-5c264631.jpeg) |" in lines
 
     # from a file block in the Notion page
     assert os.path.exists(tmp_path / "All_Blocks_Test_Page-5c264631.jpeg")

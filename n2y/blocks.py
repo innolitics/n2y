@@ -580,7 +580,7 @@ class SyncedBlock(Block):
         return self.children_to_pandoc()
 
 
-class LinkToPageBlock(Block):
+class LinkToPageBlock(WarningBlock):
     pass
 
 

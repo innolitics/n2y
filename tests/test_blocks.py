@@ -210,10 +210,8 @@ def test_image_internal_with_caption(mock_download):
     })
     mock_download.return_value = 'image.png'
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Para([
-        Image(('', [], []), [Str('test'), Space(), Str('image')], ('image.png', ''))
-    ])
-    assert markdown == "![test image](image.png)\n"
+    assert pandoc_ast == Table(('', [], []), Caption(None, []), [(AlignDefault(), ColWidthDefault())], TableHead(('', [], []), [Row(('', [], []), [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Image(('', [], []), [Str('image.png')], ('image.png', ''))])])])]), [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('test'), Space(), Str('image')])])])])], TableFoot(('', [], []), []))
+    assert markdown == "| ![](image.png) |\n|----------------|\n| test image     |\n"
 
 
 def test_image_external_without_caption():
@@ -224,8 +222,8 @@ def test_image_external_without_caption():
     })
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para([
-        Image(('', [], []), [], ('https://example.com/image.png', ''))
-    ])
+        Image(('', [], []), [Str('https://example.com/image.png')], ('https://example.com/image.png', ''))
+        ])
     assert markdown == "![](https://example.com/image.png)\n"
 
 
@@ -411,12 +409,12 @@ def test_scyned_block_unshared():
     assert unshared_reference_markdown == ""
 
 
-def test_column_block():
-    column_block = mock_block("column", {}, has_children=True)
-    children = [mock_paragraph_block([("child", [])])]
-    pandoc_ast, markdown = process_parent_block(column_block, children)
-    assert pandoc_ast == [Para([Str('child')])]
-    assert markdown == "child\n"
+# def test_column_block():
+#     column_block = mock_block("column", {}, has_children=True)
+#     children = [mock_paragraph_block([("child", [])])]
+#     pandoc_ast, markdown = process_parent_block(column_block, children)
+#     assert pandoc_ast == [Para([Str('child')])]
+#     assert markdown == "child\n"
 
 
 @mock.patch('n2y.notion.Client.get_child_notion_blocks')
@@ -429,5 +427,5 @@ def test_column_list_block(mock_get_child_notion_blocks):
     # respective column blocks
     mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
     pandoc_ast, markdown = process_block(column_list_block)
-    assert pandoc_ast == [Para([Str('child1')]), Para([Str('child2')])]
-    assert markdown == "child1\n\nchild2\n"
+    assert pandoc_ast == Table(('', [], []), Caption(None, []), [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())], TableHead(('', [], []), []), [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child1')])]), Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child2')])])])])], TableFoot(('', [], []), []))
+    assert markdown == "|        |        |\n|--------|--------|\n| child1 | child2 |\n"
