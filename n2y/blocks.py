@@ -2,7 +2,7 @@ from itertools import groupby
 import logging
 from urllib.parse import urljoin
 
-from pandoc.types import (  # noqa: F401
+from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
