@@ -396,7 +396,9 @@ class ColumnListBlock(Block):
         super().__init__(client, notion_data, page, get_children)
 
     def to_pandoc(self):
-        cells = self.children_to_pandoc()
+        cells = []
+        if self.children:
+            cells = self.children_to_pandoc()
         colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(len(cells))]
         table = Table(
             ('', [], []),
