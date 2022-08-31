@@ -223,9 +223,11 @@ def test_image_external_without_caption():
         "external": {"url": "https://example.com/image.png"},
     })
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Para([
-        Image(('', [], []), [], ('https://example.com/image.png', ''))
-    ])
+    assert pandoc_ast == Para([Image(
+        ('', [], []),
+        [Str('https://example.com/image.png')],
+        ('https://example.com/image.png', '')
+    )])
     assert markdown == "![](https://example.com/image.png)\n"
 
 
@@ -414,9 +416,17 @@ def test_scyned_block_unshared():
 def test_column_block():
     column_block = mock_block("column", {}, has_children=True)
     children = [mock_paragraph_block([("child", [])])]
-    pandoc_ast, markdown = process_parent_block(column_block, children)
-    assert pandoc_ast == [Para([Str('child')])]
-    assert markdown == "child\n"
+    with mock.patch.object(Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
+        mock_get_child_notion_blocks.return_value = children
+        n2y_block = generate_block(column_block)
+    pandoc_ast = n2y_block.to_pandoc()
+    assert pandoc_ast == Cell(
+        ('', [], []),
+        AlignDefault(),
+        RowSpan(1),
+        ColSpan(1),
+        [Para([Str('child')])]
+    )
 
 
 @mock.patch('n2y.notion.Client.get_child_notion_blocks')
@@ -429,5 +439,14 @@ def test_column_list_block(mock_get_child_notion_blocks):
     # respective column blocks
     mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
     pandoc_ast, markdown = process_block(column_list_block)
-    assert pandoc_ast == [Para([Str('child1')]), Para([Str('child2')])]
-    assert markdown == "child1\n\nchild2\n"
+    cell1 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str('child1')])])
+    cell2 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str('child2')])])
+    assert pandoc_ast == Table(
+        ('', [], []),
+        Caption(None, []),
+        [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
+        TableHead(('', [], []), []),
+        [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [cell1, cell2])])],
+        TableFoot(('', [], []), [])
+    )
+    assert markdown == "|        |        |\n|--------|--------|\n| child1 | child2 |\n"

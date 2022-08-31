@@ -311,11 +311,11 @@ class FileBlock(Block):
             url = self.file.url
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page)
+        content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
-        else:
-            caption_ast = [Str(url)]
-        return Para([Link(('', [], []), caption_ast, (url, ''))])
+            return render_with_caption(content_ast, caption_ast)
+        return Para(content_ast)
 
 
 class ImageBlock(Block):
@@ -330,7 +330,10 @@ class ImageBlock(Block):
             url = self.file.url
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page)
-        return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
+        img_alt = [Str(url)]
+        if self.caption:
+            img_alt = self.caption.to_pandoc()
+        return Para([Image(('', [], []), img_alt, (url, ''))])
 
 
 class TableBlock(Block):
@@ -386,6 +389,40 @@ class RowBlock(Block):
             [Plain(cell.to_pandoc())]
         ) for cell in self.cells]
         return Row(('', [], []), cells)
+
+
+class ColumnListBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+
+    def to_pandoc(self):
+        cells = []
+        if self.children:
+            cells = self.children_to_pandoc()
+        colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(len(cells))]
+        table = Table(
+            ('', [], []),
+            Caption(None, []),
+            colspec,
+            TableHead(('', [], []), []),
+            [TableBody(
+                ('', [], []),
+                RowHeadColumns(0), [],
+                [Row(('', [], []), cells)])],
+            TableFoot(('', [], []), [])
+        )
+        return table
+
+
+class ColumnBlock(Block):
+    def to_pandoc(self):
+        return Cell(
+            ('', [], []),
+            AlignDefault(),
+            RowSpan(1),
+            ColSpan(1),
+            self.children_to_pandoc()
+        )
 
 
 class ToggleBlock(Block):
@@ -462,12 +499,38 @@ class EmbedBlock(WarningBlock):
     pass
 
 
-class VideoBlock(WarningBlock):
-    pass
+class VideoBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.file = client.wrap_notion_file(notion_data['video'])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+
+    def to_pandoc(self):
+        url = None
+        if self.file.type == "external":
+            url = self.file.url
+        elif self.file.type == "file":
+            url = self.client.download_file(self.file.url, self.page)
+        content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
+        if self.caption:
+            caption_ast = self.caption.to_pandoc()
+            return render_with_caption(content_ast, caption_ast)
+        return Para(content_ast)
 
 
 class PdfBlock(WarningBlock):
-    pass
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.pdf = client.wrap_notion_file(notion_data['pdf'])
+        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+
+    def to_pandoc(self):
+        url = self.client.download_file(self.pdf.url, self.page)
+        content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
+        if self.caption:
+            caption_ast = self.caption.to_pandoc()
+            return render_with_caption(content_ast, caption_ast)
+        return Para(content_ast)
 
 
 class ChildrenPassThroughBlock(Block):
@@ -477,14 +540,6 @@ class ChildrenPassThroughBlock(Block):
 
     def to_pandoc(self):
         return self.children_to_pandoc()
-
-
-class ColumnBlock(ChildrenPassThroughBlock):
-    pass
-
-
-class ColumnListBlock(ChildrenPassThroughBlock):
-    pass
 
 
 class LinkPreviewBlock(WarningBlock):
@@ -517,6 +572,20 @@ class SyncedBlock(Block):
 
 class LinkToPageBlock(WarningBlock):
     pass
+
+
+def render_with_caption(content_ast, caption_ast):
+    header_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(content_ast)]]
+    body_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(caption_ast)]]
+    body_row = Row(('', [], []), [Cell(*body_cell_args)])
+    return Table(
+        ('', [], []),
+        Caption(None, []),
+        [(AlignDefault(), ColWidthDefault())],
+        TableHead(('', [], []), [Row(('', [], []), [Cell(*header_cell_args)])]),
+        [TableBody(('', [], []), RowHeadColumns(0), [], [body_row])],
+        TableFoot(('', [], []), [])
+    )
 
 
 DEFAULT_BLOCKS = {
