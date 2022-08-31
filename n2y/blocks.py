@@ -584,7 +584,8 @@ def render_with_caption(content_ast, caption_ast):
         [(AlignDefault(), ColWidthDefault())],
         TableHead(('', [], []), [Row(('', [], []), [Cell(*header_cell_args)])]),
         [TableBody(('', [], []), RowHeadColumns(0), [], [body_row])],
-        TableFoot(('', [], []), []))
+        TableFoot(('', [], []), [])
+    )
 
 
 DEFAULT_BLOCKS = {
