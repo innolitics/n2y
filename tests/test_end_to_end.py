@@ -184,12 +184,13 @@ def test_all_blocks_page_to_markdown(tmp_path):
     column_string = (
         '<table><tbody><tr class="odd"><td>Column 1<table>'
         '<tbody><tr class="odd"><td>Column 1.1</td><td>Column 1.2</td></tr>'
-        '</tbody></table></td><td>Column 2</td></tr></tbody></table>')
+        '</tbody></table></td><td>Column 2</td></tr></tbody></table>'
+    )
     column_strings_in_lines = [
-        "<td>Column 1" in lines,
-        "<td>Column 1.1</td>" in lines,
-        "<td>Column 1.2</td>" in lines,
-        "<td>Column 2</td>" not in lines,
+        "<td><p>Column 1</p>" in lines,
+        "<td><p>Column 1.1</p></td>" in lines,
+        "<td><p>Column 1.2</p></td>" in lines,
+        "<td><p>Column 2</p></td>" in lines,
     ]
 
     # TODO: look into why there's extra space in between the list entries
@@ -218,7 +219,6 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    print(lines)
     assert "![Image **caption**](All_Blocks_Test_Page-5c264631.jpeg)" in lines
 
     # from a file block in the Notion page

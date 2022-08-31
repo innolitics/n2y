@@ -211,7 +211,8 @@ def test_image_internal_with_caption(mock_download):
     mock_download.return_value = 'image.png'
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para([
-        Image(('', [], []), [Str('test'), Space(), Str('image')], ('image.png', ''))])
+        Image(('', [], []), [Str('test'), Space(), Str('image')], ('image.png', ''))
+    ])
     assert markdown == "![test image](image.png)\n"
 
 
@@ -412,12 +413,20 @@ def test_scyned_block_unshared():
     assert unshared_reference_markdown == ""
 
 
-# def test_column_block():
-#     column_block = mock_block("column", {}, has_children=True)
-#     children = [mock_paragraph_block([("child", [])])]
-#     pandoc_ast, markdown = process_parent_block(column_block, children)
-#     assert pandoc_ast == [Para([Str('child')])]
-#     assert markdown == "child\n"
+def test_column_block():
+    column_block = mock_block("column", {}, has_children=True)
+    children = [mock_paragraph_block([("child", [])])]
+    with mock.patch.object(Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
+        mock_get_child_notion_blocks.return_value = children
+        n2y_block = generate_block(column_block)
+    pandoc_ast = n2y_block.to_pandoc()
+    assert pandoc_ast == Cell(
+        ('', [], []),
+        AlignDefault(),
+        RowSpan(1),
+        ColSpan(1),
+        [Para([Str('child')])]
+    )
 
 
 @mock.patch('n2y.notion.Client.get_child_notion_blocks')
@@ -430,8 +439,8 @@ def test_column_list_block(mock_get_child_notion_blocks):
     # respective column blocks
     mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
     pandoc_ast, markdown = process_block(column_list_block)
-    cell1 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child1')])])
-    cell2 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain([Str('child2')])])
+    cell1 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str('child1')])])
+    cell2 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str('child2')])])
     assert pandoc_ast == Table(
         ('', [], []),
         Caption(None, []),

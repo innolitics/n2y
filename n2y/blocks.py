@@ -6,7 +6,7 @@ from pandoc.types import (  # noqa: F401
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, Space
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath
 )
 
 
@@ -314,7 +314,6 @@ class FileBlock(Block):
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
-            # content.extend([LineBreak(), *caption_ast])
             return render_with_caption(content_ast, caption_ast)
         return Para(content_ast)
 
@@ -414,19 +413,13 @@ class ColumnListBlock(Block):
 
 
 class ColumnBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
-        super().__init__(client, notion_data, page, get_children)
-
     def to_pandoc(self):
-        string_of_children = repr(self.children_to_pandoc())
-        plain_children_string = string_of_children.replace("Para(", "Plain(")
-        plain_children = eval(plain_children_string)
         return Cell(
             ('', [], []),
             AlignDefault(),
             RowSpan(1),
             ColSpan(1),
-            plain_children
+            self.children_to_pandoc()
         )
 
 
@@ -519,7 +512,6 @@ class VideoBlock(Block):
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
-            # content.extend([LineBreak(), *caption_ast])
             return render_with_caption(content_ast, caption_ast)
         return Para(content_ast)
 
@@ -535,7 +527,6 @@ class PdfBlock(WarningBlock):
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
-            # content.extend([LineBreak(), *caption_ast])
             return render_with_caption(content_ast, caption_ast)
         return Para(content_ast)
 
