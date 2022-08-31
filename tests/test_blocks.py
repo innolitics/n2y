@@ -447,5 +447,6 @@ def test_column_list_block(mock_get_child_notion_blocks):
         [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
         TableHead(('', [], []), []),
         [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [cell1, cell2])])],
-        TableFoot(('', [], []), []))
+        TableFoot(('', [], []), [])
+    )
     assert markdown == "|        |        |\n|--------|--------|\n| child1 | child2 |\n"
