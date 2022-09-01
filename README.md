@@ -16,6 +16,8 @@ pip install n2y
 
 You'll also need to install [pandoc](https://github.com/jgm/pandoc/releases/). We've tested against version 2.16.2, but any newer versions should work too.
 
+Note: n2y has only been tested with `pandoc 2.18` and `mermaid-cli 8.11`.
+
 ## Authorization
 
 Before you'll be able to export any content from your Notion account you'll first need to give n2y permission to access the pages. You'll need to be an admin.
