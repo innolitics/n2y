@@ -10,7 +10,7 @@ from pandoc.types import (
     CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link,
     HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody,
     TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault,
-    Caption, Math, DisplayMath
+    Caption, Math, DisplayMath, 
 )
 
 from n2y.notion import Client
@@ -253,6 +253,62 @@ def test_code_block():
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == CodeBlock(('', ['javascript'], []), 'const a = 3')
     assert markdown == "``` javascript\nconst a = 3\n```\n"
+
+
+def test_link_to_page_block():
+
+# As I've been asked to update the end-to-end tests, but not specifically the unit tests
+# changes to this file are out of scope.  Right? 
+
+
+    mock_page_id = "23143143243241423"
+    
+    # This test is not about representing the block itself, which is only a page link.
+    # It's about testing that a mock page, linked to by a mock block, is processed as expected.
+
+    # Elaboration: As the link_to_page block is trivial, containing only the value of the link itself.
+    # And since representation of the page link in the pandoc output is not necessary --
+    # It is the contents of the linked page that is potentially
+    # represented, not the link to the page -- testing here would logically be limited to checking
+    # for proper conversion of the linked page.  However, such a test would be redundant, 
+    # as already handled in test-end-to-end.py
+
+    # Create the mock block of the linking page.
+    notion_block = mock_block("link_to_page", { 
+        "type": "link_to_page", 
+        "link_to_page": { "type": "page_id", "page_id": "{mock_page_id}" } 
+        })
+    
+ 
+    # TODO: QUESTION What type of Notion block is a page?  Below, I use a
+    # paragraph block.  Is that correct? 
+
+    # Create a mock of the page to which the link points.
+    notion_page =  mock_block("paragraph", {
+        "rich_text": [{
+        "type": "text",
+        "text": {
+        "content": "Test content",
+        "link": null
+        }
+        }],
+        })
+
+    # Test the block itself.
+    pandoc_ast, markdown = process_block(notion_block)
+    # TODO: fill in for None, if I am wrong and unit tests are required. 
+    assert pandoc_ast == None
+    assert markdown == None
+
+    # Test the mock page to which the mock link_to_page links.
+    # We will be testing 
+    pandoc_ast, markdown = process_block(notion_page)
+    # TODO: fill in for None, if I am wrong and unit tests are required.
+    assert pandoc_ast == None
+    assert markdown == None
+
+
+
 
 
 def test_table_block():

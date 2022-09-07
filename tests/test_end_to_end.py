@@ -172,6 +172,7 @@ def test_all_properties_database():
 
 
 def test_all_blocks_page_to_markdown(tmp_path):
+
     '''
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Test-Page-5f18c7d7eda44986ae7d938a12817cc0
@@ -211,8 +212,25 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "$e^{-i \\pi} = -1$" in lines
     assert "``` javascript\nCode Block\n```" in document_as_markdown
     assert lines.count("This is a synced block.") == 2
+
+    
+    # TODO: Observation: as the test block page already contains links to pages, 
+    # databases, as well as a link to an unauthorized page, there is no need
+    # to modify the test database. 
+
+    # TODO: Currently, the following assert should fail, because the content of the linked
+    # page is being ignored. QUESTION Correct? 
     assert "This is a synced block from another page." in lines
+
+    ## TODO: The following should fail, as the page is not shared and 
+    ## would therefore be unable to be probed.  However, I am unsure
+    ## at this time how to test for a "page unauthorized" condition.
+    ## QUESTION What is the best way to test for a "page unauthorized" condition? 
+    assert "This page is not shared with the integration." in lines
+
     assert all(column_strings_in_lines) or (column_string in lines)
+
+
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
@@ -254,6 +272,8 @@ def test_simple_page_to_markdown():
     status, document_as_markdown, _ = run_n2y([object_id])
     assert status == 0
     assert "Page content" in document_as_markdown
+
+
 
 
 def test_builtin_plugins(tmp_path):
