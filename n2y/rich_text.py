@@ -111,7 +111,8 @@ class MentionRichText(RichText):
     def __init__(self, client, notion_data, block=None):
         super().__init__(client, notion_data, block)
         self.mention = client.wrap_notion_mention(
-            notion_data['mention'], notion_data["plain_text"], block)
+            notion_data['mention'], notion_data["plain_text"], block,
+        )
 
     def to_pandoc(self):
         if self.code:
