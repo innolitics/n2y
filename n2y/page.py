@@ -51,6 +51,9 @@ class Page:
 
     @property
     def children(self):
+        """
+        Get a list of child pages and databases.
+        """
         if self._children is None:
             self._children = []
             for block in self.block.children:
@@ -64,6 +67,10 @@ class Page:
         elif isinstance(block, ChildDatabaseBlock):
             database = self.client.get_database(block.notion_id)
             self._children.append(database)
+        elif block.children is not None:
+            # Recursively look for child pages and databases in the hierarchy
+            for child_block in block.children:
+                self._append_children(child_block)
 
     @property
     def parent(self):
