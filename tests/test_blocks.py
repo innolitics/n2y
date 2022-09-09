@@ -6,27 +6,56 @@ from unittest import mock
 
 import pytest
 from pandoc.types import (
-    Str, Para, Plain, Space, Header,
-    CodeBlock, BulletList, OrderedList, Decimal, Period, Meta, Pandoc, Link,
-    HorizontalRule, BlockQuote, Image, MetaString, Table, TableHead, TableBody,
-    TableFoot, RowHeadColumns, Row, Cell, RowSpan, ColSpan, ColWidthDefault, AlignDefault,
-    Caption, Math, DisplayMath, 
+    Str,
+    Para,
+    Plain,
+    Space,
+    Header,
+    CodeBlock,
+    BulletList,
+    OrderedList,
+    Decimal,
+    Period,
+    Meta,
+    Pandoc,
+    Link,
+    HorizontalRule,
+    BlockQuote,
+    Image,
+    MetaString,
+    Table,
+    TableHead,
+    TableBody,
+    TableFoot,
+    RowHeadColumns,
+    Row,
+    Cell,
+    RowSpan,
+    ColSpan,
+    ColWidthDefault,
+    AlignDefault,
+    Caption,
+    Math,
+    DisplayMath,
 )
 
 from n2y.notion import Client
 from n2y.utils import pandoc_ast_to_markdown
 from n2y.notion_mocks import (
-    mock_block, mock_file, mock_paragraph_block, mock_rich_text,
+    mock_block,
+    mock_file,
+    mock_paragraph_block,
+    mock_rich_text,
     mock_page_mention,
 )
 
 
 def generate_block(notion_block, plugins=None):
-    with mock.patch.object(Client, 'get_notion_block') as mock_get_notion_block:
+    with mock.patch.object(Client, "get_notion_block") as mock_get_notion_block:
         mock_get_notion_block.return_value = notion_block
-        client = Client('', plugins=plugins)
+        client = Client("", plugins=plugins)
         page = None
-        return client.get_block('unusedid', page)
+        return client.get_block("unusedid", page)
 
 
 def process_block(notion_block, plugins=None):
@@ -37,7 +66,9 @@ def process_block(notion_block, plugins=None):
 
 
 def process_parent_block(notion_block, child_notion_blocks):
-    with mock.patch.object(Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
+    with mock.patch.object(
+        Client, "get_child_notion_blocks"
+    ) as mock_get_child_notion_blocks:
         mock_get_child_notion_blocks.return_value = child_notion_blocks
         n2y_block = generate_block(notion_block)
     pandoc_ast = n2y_block.to_pandoc()
@@ -60,10 +91,13 @@ def test_paragraph():
 
 
 def test_paragraph_children_have_block_references():
-    notion_block = mock_block("paragraph", {
-        'color': 'default',
-        'rich_text': [mock_rich_text('m', mention=mock_page_mention())],
-    })
+    notion_block = mock_block(
+        "paragraph",
+        {
+            "color": "default",
+            "rich_text": [mock_rich_text("m", mention=mock_page_mention())],
+        },
+    )
     n2y_block = generate_block(notion_block)
     assert n2y_block.rich_text.block == n2y_block
     assert n2y_block.rich_text[0].block == n2y_block
@@ -79,30 +113,40 @@ def test_paragraph_with_child_paragraph():
 
 
 def test_heading_1():
-    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One")]})
+    notion_block = mock_block(
+        "heading_1", {"rich_text": [mock_rich_text("Heading One")]}
+    )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])
     assert markdown == "# Heading One\n"
 
 
 def test_heading_1_bolding_stripped():
-    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One", ["bold"])]})
+    notion_block = mock_block(
+        "heading_1", {"rich_text": [mock_rich_text("Heading One", ["bold"])]}
+    )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])
     assert markdown == "# Heading One\n"
 
 
 def test_heading_2():
-    notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
+    notion_block = mock_block(
+        "heading_2", {"rich_text": [mock_rich_text("Heading Two")]}
+    )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(2, ("", [], []), [Str("Heading"), Space(), Str("Two")])
     assert markdown == "## Heading Two\n"
 
 
 def test_heading_3():
-    notion_block = mock_block("heading_3", {"rich_text": [mock_rich_text("Heading Three")]})
+    notion_block = mock_block(
+        "heading_3", {"rich_text": [mock_rich_text("Heading Three")]}
+    )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Header(3, ("", [], []), [Str("Heading"), Space(), Str("Three")])
+    assert pandoc_ast == Header(
+        3, ("", [], []), [Str("Heading"), Space(), Str("Three")]
+    )
     assert markdown == "### Heading Three\n"
 
 
@@ -115,10 +159,12 @@ def test_bulleted_list():
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [
         Para([Str("Bulleted"), Space(), Str("List")]),
-        BulletList([
-            [Plain([Str("Item"), Space(), Str("One")])],
-            [Plain([Str("Item"), Space(), Str("Two")])],
-        ])
+        BulletList(
+            [
+                [Plain([Str("Item"), Space(), Str("One")])],
+                [Plain([Str("Item"), Space(), Str("Two")])],
+            ]
+        ),
     ]
     assert markdown == "Bulleted List\n\n-   Item One\n-   Item Two\n"
 
@@ -137,8 +183,8 @@ def test_numbered_list():
             [
                 [Plain([Str("Item"), Space(), Str("One")])],
                 [Plain([Str("Item"), Space(), Str("Two")])],
-            ]
-        )
+            ],
+        ),
     ]
     assert markdown == "Numbered List\n\n1.  Item One\n2.  Item Two\n"
 
@@ -148,32 +194,44 @@ def test_page():
     children = [mock_paragraph_block([("Simple page", [])])]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == Pandoc(
-        Meta({'title': MetaString('Simple Page')}),
-        [Para([Str("Simple"), Space(), Str("page")])]
+        Meta({"title": MetaString("Simple Page")}),
+        [Para([Str("Simple"), Space(), Str("page")])],
     )
     assert markdown == "Simple page\n"
 
 
 def test_bookmark_with_caption():
-    notion_block = mock_block("bookmark", {
-        "caption": [mock_rich_text("Innolitics")],
-        "url": "https://innolitics.com",
-    })
+    notion_block = mock_block(
+        "bookmark",
+        {
+            "caption": [mock_rich_text("Innolitics")],
+            "url": "https://innolitics.com",
+        },
+    )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para(
-        [Link(('', [], []), [Str('Innolitics')], ('https://innolitics.com', ''))]
+        [Link(("", [], []), [Str("Innolitics")], ("https://innolitics.com", ""))]
     )
     assert markdown == "[Innolitics](https://innolitics.com)\n"
 
 
 def test_bookmark_without_caption():
-    notion_block = mock_block("bookmark", {
-        "caption": [],
-        "url": "https://innolitics.com",
-    })
+    notion_block = mock_block(
+        "bookmark",
+        {
+            "caption": [],
+            "url": "https://innolitics.com",
+        },
+    )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para(
-        [Link(('', [], []), [Str('https://innolitics.com')], ('https://innolitics.com', ''))]
+        [
+            Link(
+                ("", [], []),
+                [Str("https://innolitics.com")],
+                ("https://innolitics.com", ""),
+            )
+        ]
     )
     assert markdown == "<https://innolitics.com>\n"
 
@@ -182,52 +240,98 @@ def test_divider():
     notion_block = mock_block("divider", {"divider": []})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == HorizontalRule()
-    expected_markdown = "------------------------------------------------------------------------\n"
+    expected_markdown = (
+        "------------------------------------------------------------------------\n"
+    )
     assert markdown == expected_markdown
 
 
 def test_block_quote():
-    notion_block = mock_block("quote", {"rich_text": [
-        mock_rich_text("In a time of deceit telling the truth is a revolutionary act."),
-    ]})
+    notion_block = mock_block(
+        "quote",
+        {
+            "rich_text": [
+                mock_rich_text(
+                    "In a time of deceit telling the truth is a revolutionary act."
+                ),
+            ]
+        },
+    )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == BlockQuote([Para([
-        Str('In'), Space(), Str('a'), Space(), Str('time'), Space(), Str('of'),
-        Space(), Str('deceit'), Space(), Str('telling'), Space(), Str('the'),
-        Space(), Str('truth'), Space(), Str('is'), Space(), Str('a'), Space(),
-        Str('revolutionary'), Space(), Str('act.'),
-    ])])
-    expected_markdown = "> In a time of deceit telling the truth is a revolutionary act.\n"
+    assert pandoc_ast == BlockQuote(
+        [
+            Para(
+                [
+                    Str("In"),
+                    Space(),
+                    Str("a"),
+                    Space(),
+                    Str("time"),
+                    Space(),
+                    Str("of"),
+                    Space(),
+                    Str("deceit"),
+                    Space(),
+                    Str("telling"),
+                    Space(),
+                    Str("the"),
+                    Space(),
+                    Str("truth"),
+                    Space(),
+                    Str("is"),
+                    Space(),
+                    Str("a"),
+                    Space(),
+                    Str("revolutionary"),
+                    Space(),
+                    Str("act."),
+                ]
+            )
+        ]
+    )
+    expected_markdown = (
+        "> In a time of deceit telling the truth is a revolutionary act.\n"
+    )
     assert markdown == expected_markdown
 
 
-@mock.patch.object(Client, 'download_file')
+@mock.patch.object(Client, "download_file")
 def test_image_internal_with_caption(mock_download):
-    notion_block = mock_block("image", {
-        'type': 'file',
-        "caption": [mock_rich_text("test image")],
-        "file": mock_file("https://example.com/image.png"),
-    })
-    mock_download.return_value = 'image.png'
+    notion_block = mock_block(
+        "image",
+        {
+            "type": "file",
+            "caption": [mock_rich_text("test image")],
+            "file": mock_file("https://example.com/image.png"),
+        },
+    )
+    mock_download.return_value = "image.png"
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Para([
-        Image(('', [], []), [Str('test'), Space(), Str('image')], ('image.png', ''))
-    ])
+    assert pandoc_ast == Para(
+        [Image(("", [], []), [Str("test"), Space(), Str("image")], ("image.png", ""))]
+    )
     assert markdown == "![test image](image.png)\n"
 
 
 def test_image_external_without_caption():
-    notion_block = mock_block("image", {
-        'type': 'external',
-        "caption": [],
-        "external": {"url": "https://example.com/image.png"},
-    })
+    notion_block = mock_block(
+        "image",
+        {
+            "type": "external",
+            "caption": [],
+            "external": {"url": "https://example.com/image.png"},
+        },
+    )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Para([Image(
-        ('', [], []),
-        [Str('https://example.com/image.png')],
-        ('https://example.com/image.png', '')
-    )])
+    assert pandoc_ast == Para(
+        [
+            Image(
+                ("", [], []),
+                [Str("https://example.com/image.png")],
+                ("https://example.com/image.png", ""),
+            )
+        ]
+    )
     assert markdown == "![](https://example.com/image.png)\n"
 
 
@@ -235,7 +339,7 @@ def test_equation_block():
     lhs = "{\\displaystyle i\\hbar {\\frac {d}{dt}}\\vert "
     rhs = "\\Psi (t)\\rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}"
     example_equation = f"{lhs}{rhs}"
-    notion_block = mock_block("equation", {'expression': example_equation})
+    notion_block = mock_block("equation", {"expression": example_equation})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para([Math(DisplayMath(), example_equation)])
     expected_lhs = "$${\\displaystyle i\\hbar {\\frac {d}{dt}}\\vert "
@@ -245,180 +349,250 @@ def test_equation_block():
 
 
 def test_code_block():
-    notion_block = mock_block("code", {
-        "rich_text": [mock_rich_text("const a = 3")],
-        "caption": [],
-        "language": "javascript",
-    })
+    notion_block = mock_block(
+        "code",
+        {
+            "rich_text": [mock_rich_text("const a = 3")],
+            "caption": [],
+            "language": "javascript",
+        },
+    )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == CodeBlock(('', ['javascript'], []), 'const a = 3')
+    assert pandoc_ast == CodeBlock(("", ["javascript"], []), "const a = 3")
     assert markdown == "``` javascript\nconst a = 3\n```\n"
 
 
 def test_link_to_page_block():
 
-# As I've been asked to update the end-to-end tests, but not specifically the unit tests
-# changes to this file are out of scope.  Right? 
+    # As I've been asked to update the end-to-end tests, but not specifically the unit tests
+    # changes to this file are out of scope.  Right?
 
+    # mock_page_id = "23143143243241423"
 
-    mock_page_id = "23143143243241423"
-    
     # This test is not about representing the block itself, which is only a page link.
     # It's about testing that a mock page, linked to by a mock block, is processed as expected.
 
-    # Elaboration: As the link_to_page block is trivial, containing only the value of the link itself.
+    # Elaboration: As the link_to_page block is trivial, containing
+    # only the value of the link itself.
     # And since representation of the page link in the pandoc output is not necessary --
     # It is the contents of the linked page that is potentially
     # represented, not the link to the page -- testing here would logically be limited to checking
-    # for proper conversion of the linked page.  However, such a test would be redundant, 
+    # for proper conversion of the linked page.  However, such a test would be redundant,
     # as already handled in test-end-to-end.py
 
     # Create the mock block of the linking page.
-    notion_block = mock_block("link_to_page", { 
-        "type": "link_to_page", 
-        "link_to_page": { "type": "page_id", "page_id": "{mock_page_id}" } 
-        })
-    
- 
+    notion_block = mock_block(
+        "link_to_page",
+        {
+            "type": "link_to_page",
+            "link_to_page": {"type": "page_id", "page_id": "{mock_page_id}"},
+        },
+    )
+
     # TODO: QUESTION What type of Notion block is a page?  Below, I use a
-    # paragraph block.  Is that correct? 
+    # paragraph block.  Is that correct?
 
     # Create a mock of the page to which the link points.
-    notion_page =  mock_block("paragraph", {
-        "rich_text": [{
-        "type": "text",
-        "text": {
-        "content": "Test content",
-        "link": null
-        }
-        }],
-        })
+    notion_page = mock_block(
+        "paragraph",
+        {
+            "rich_text": [
+                {"type": "text", "text": {"content": "Test content", "link": None}}
+            ],
+        },
+    )
 
     # Test the block itself.
     pandoc_ast, markdown = process_block(notion_block)
-    # TODO: fill in for None, if I am wrong and unit tests are required. 
-    assert pandoc_ast == None
-    assert markdown == None
+    # TODO: fill in for None, if I am wrong and unit tests are required.
+    assert pandoc_ast is None
+    assert markdown is None
 
     # Test the mock page to which the mock link_to_page links.
-    # We will be testing 
+    # We will be testing
     pandoc_ast, markdown = process_block(notion_page)
     # TODO: fill in for None, if I am wrong and unit tests are required.
-    assert pandoc_ast == None
-    assert markdown == None
-
-
-
+    assert pandoc_ast is None
+    assert markdown is None
 
 
 def test_table_block():
-    parent = mock_block("table", {
-        "table_width": 2,
-        "has_column_header": True,
-        "has_row_header": False,
-    }, has_children=True)
+    parent = mock_block(
+        "table",
+        {
+            "table_width": 2,
+            "has_column_header": True,
+            "has_row_header": False,
+        },
+        has_children=True,
+    )
     children = [
-        mock_block("table_row", {"cells": [
-            [mock_rich_text("header1")],
-            [mock_rich_text("header2")],
-        ]}),
-        mock_block("table_row", {"cells": [
-            [mock_rich_text("one")],
-            [mock_rich_text("two")],
-        ]}),
-        mock_block("table_row", {"cells": [
-            [mock_rich_text("three")],
-            [mock_rich_text("four")],
-        ]}),
+        mock_block(
+            "table_row",
+            {
+                "cells": [
+                    [mock_rich_text("header1")],
+                    [mock_rich_text("header2")],
+                ]
+            },
+        ),
+        mock_block(
+            "table_row",
+            {
+                "cells": [
+                    [mock_rich_text("one")],
+                    [mock_rich_text("two")],
+                ]
+            },
+        ),
+        mock_block(
+            "table_row",
+            {
+                "cells": [
+                    [mock_rich_text("three")],
+                    [mock_rich_text("four")],
+                ]
+            },
+        ),
     ]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == Table(
-        ('', [], []),
+        ("", [], []),
         Caption(None, []),
         [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
         TableHead(
-            ('', [], []),
-            [Row(('', [], []), [
-                Cell(
-                    ('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('header1')])]
-                ),
-                Cell(
-                    ('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('header2')])]
-                ),
-            ])]
+            ("", [], []),
+            [
+                Row(
+                    ("", [], []),
+                    [
+                        Cell(
+                            ("", [], []),
+                            AlignDefault(),
+                            RowSpan(1),
+                            ColSpan(1),
+                            [Plain([Str("header1")])],
+                        ),
+                        Cell(
+                            ("", [], []),
+                            AlignDefault(),
+                            RowSpan(1),
+                            ColSpan(1),
+                            [Plain([Str("header2")])],
+                        ),
+                    ],
+                )
+            ],
         ),
-        [TableBody(('', [], []), RowHeadColumns(0), [], [
-            Row(('', [], []), [
-                Cell(
-                    ('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('one')])]
-                ),
-                Cell(
-                    ('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('two')])]
-                ),
-            ]),
-            Row(('', [], []), [
-                Cell(
-                    ('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('three')])]
-                ),
-                Cell(
-                    ('', [], []), AlignDefault(), RowSpan(1),
-                    ColSpan(1), [Plain([Str('four')])]
-                ),
-            ])
-        ])],
-        TableFoot(('', [], []), []))
+        [
+            TableBody(
+                ("", [], []),
+                RowHeadColumns(0),
+                [],
+                [
+                    Row(
+                        ("", [], []),
+                        [
+                            Cell(
+                                ("", [], []),
+                                AlignDefault(),
+                                RowSpan(1),
+                                ColSpan(1),
+                                [Plain([Str("one")])],
+                            ),
+                            Cell(
+                                ("", [], []),
+                                AlignDefault(),
+                                RowSpan(1),
+                                ColSpan(1),
+                                [Plain([Str("two")])],
+                            ),
+                        ],
+                    ),
+                    Row(
+                        ("", [], []),
+                        [
+                            Cell(
+                                ("", [], []),
+                                AlignDefault(),
+                                RowSpan(1),
+                                ColSpan(1),
+                                [Plain([Str("three")])],
+                            ),
+                            Cell(
+                                ("", [], []),
+                                AlignDefault(),
+                                RowSpan(1),
+                                ColSpan(1),
+                                [Plain([Str("four")])],
+                            ),
+                        ],
+                    ),
+                ],
+            )
+        ],
+        TableFoot(("", [], []), []),
+    )
     assert markdown == (
-        '| header1 | header2 |\n'
-        '|---------|---------|\n'
-        '| one     | two     |\n'
-        '| three   | four    |\n'
+        "| header1 | header2 |\n"
+        "|---------|---------|\n"
+        "| one     | two     |\n"
+        "| three   | four    |\n"
     )
 
 
 def test_toggle():
-    parent = mock_block("toggle", {"rich_text": [
-        mock_rich_text("Toggle Header"),
-    ]}, has_children=True)
+    parent = mock_block(
+        "toggle",
+        {
+            "rich_text": [
+                mock_rich_text("Toggle Header"),
+            ]
+        },
+        has_children=True,
+    )
     children = [mock_paragraph_block([("Toggle Content", [])])]
     pandoc_ast, markdown = process_parent_block(parent, children)
-    assert pandoc_ast == BulletList([[
-        Para([Str('Toggle'), Space(), Str('Header')]),
-        Para([Str('Toggle'), Space(), Str('Content')]),
-    ]])
-    assert markdown == (
-        '-   Toggle Header\n'
-        '\n'
-        '    Toggle Content\n'
+    assert pandoc_ast == BulletList(
+        [
+            [
+                Para([Str("Toggle"), Space(), Str("Header")]),
+                Para([Str("Toggle"), Space(), Str("Content")]),
+            ]
+        ]
     )
+    assert markdown == ("-   Toggle Header\n" "\n" "    Toggle Content\n")
 
 
 def test_todo_in_paragraph():
-    parent = mock_block("paragraph", {"rich_text": [
-        mock_rich_text("Task List"),
-    ]}, has_children=True)
+    parent = mock_block(
+        "paragraph",
+        {
+            "rich_text": [
+                mock_rich_text("Task List"),
+            ]
+        },
+        has_children=True,
+    )
     children = [
-        mock_block("to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}),
-        mock_block("to_do", {"rich_text": [mock_rich_text("Task Two")], "checked": False}),
+        mock_block(
+            "to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}
+        ),
+        mock_block(
+            "to_do", {"rich_text": [mock_rich_text("Task Two")], "checked": False}
+        ),
     ]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [
-        Para([Str('Task'), Space(), Str('List')]),
-        BulletList([
-            [Plain([Str('☒'), Space(), Str('Task'), Space(), Str('One')])],
-            [Plain([Str('☐'), Space(), Str('Task'), Space(), Str('Two')])],
-        ]),
+        Para([Str("Task"), Space(), Str("List")]),
+        BulletList(
+            [
+                [Plain([Str("☒"), Space(), Str("Task"), Space(), Str("One")])],
+                [Plain([Str("☐"), Space(), Str("Task"), Space(), Str("Two")])],
+            ]
+        ),
     ]
-    assert markdown == (
-        'Task List\n'
-        '\n'
-        '-   [x] Task One\n'
-        '-   [ ] Task Two\n'
-    )
+    assert markdown == ("Task List\n" "\n" "-   [x] Task One\n" "-   [ ] Task Two\n")
 
 
 @pytest.mark.xfail(reason="Its unclear how to represent empty todos in pandoc")
@@ -429,31 +603,31 @@ def test_todo_empty():
 
 
 def test_callout():
-    parent = mock_block("callout", {"rich_text": [mock_rich_text("Callout")]}, has_children=True)
+    parent = mock_block(
+        "callout", {"rich_text": [mock_rich_text("Callout")]}, has_children=True
+    )
     children = [mock_paragraph_block([("Children", [])])]
     pandoc_ast, markdown = process_parent_block(parent, children)
-    assert pandoc_ast == [Para([Str('Callout')]), Para([Str('Children')])]
-    assert markdown == (
-        'Callout\n'
-        '\n'
-        'Children\n'
-    )
+    assert pandoc_ast == [Para([Str("Callout")]), Para([Str("Children")])]
+    assert markdown == ("Callout\n" "\n" "Children\n")
 
 
 def test_scyned_block_shared():
     original_synced_block = mock_block(
-        "synced_block",
-        {"synced_from": None},
-        has_children=True)
+        "synced_block", {"synced_from": None}, has_children=True
+    )
     reference_synced_block = mock_block(
         "synced_block",
-        {"synced_from": {'type': 'block_id', 'block_id': 'some-block-id'}},
-        has_children=True)
+        {"synced_from": {"type": "block_id", "block_id": "some-block-id"}},
+        has_children=True,
+    )
     children = [mock_paragraph_block([("synced", [])])]
     original_pandoc_ast, original_markdown = process_parent_block(
-        original_synced_block, children)
+        original_synced_block, children
+    )
     reference_pandoc_ast, reference_markdown = process_parent_block(
-        reference_synced_block, children)
+        reference_synced_block, children
+    )
     assert original_pandoc_ast == reference_pandoc_ast == [Para([Str("synced")])]
     assert original_markdown == reference_markdown == "synced\n"
 
@@ -461,10 +635,12 @@ def test_scyned_block_shared():
 def test_scyned_block_unshared():
     unshared_reference_synced_block = mock_block(
         "synced_block",
-        {"synced_from": {'type': 'block_id', 'block_id': 'some-block-id'}},
-        has_children=False)
+        {"synced_from": {"type": "block_id", "block_id": "some-block-id"}},
+        has_children=False,
+    )
     unshared_reference_pandoc_ast, unshared_reference_markdown = process_parent_block(
-        unshared_reference_synced_block, None)
+        unshared_reference_synced_block, None
+    )
     assert unshared_reference_pandoc_ast is None
     assert unshared_reference_markdown == ""
 
@@ -472,37 +648,45 @@ def test_scyned_block_unshared():
 def test_column_block():
     column_block = mock_block("column", {}, has_children=True)
     children = [mock_paragraph_block([("child", [])])]
-    with mock.patch.object(Client, 'get_child_notion_blocks') as mock_get_child_notion_blocks:
+    with mock.patch.object(
+        Client, "get_child_notion_blocks"
+    ) as mock_get_child_notion_blocks:
         mock_get_child_notion_blocks.return_value = children
         n2y_block = generate_block(column_block)
     pandoc_ast = n2y_block.to_pandoc()
     assert pandoc_ast == Cell(
-        ('', [], []),
-        AlignDefault(),
-        RowSpan(1),
-        ColSpan(1),
-        [Para([Str('child')])]
+        ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str("child")])]
     )
 
 
-@mock.patch('n2y.notion.Client.get_child_notion_blocks')
+@mock.patch("n2y.notion.Client.get_child_notion_blocks")
 def test_column_list_block(mock_get_child_notion_blocks):
     column_list_block = mock_block("column_list", {}, True)
     column1, column2 = mock_block("column", {}, True), mock_block("column", {}, True)
-    para1, para2 = mock_paragraph_block([("child1", [])]), mock_paragraph_block([("child2", [])])
+    para1, para2 = mock_paragraph_block([("child1", [])]), mock_paragraph_block(
+        [("child2", [])]
+    )
     # Return [column1, column2] for the column list get_child_notion_blocks call
     # and [para1] and [para2] for the get_child_notion_blocks calls of the
     # respective column blocks
     mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
     pandoc_ast, markdown = process_block(column_list_block)
-    cell1 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str('child1')])])
-    cell2 = Cell(('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str('child2')])])
+    cell1 = Cell(
+        ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str("child1")])]
+    )
+    cell2 = Cell(
+        ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str("child2")])]
+    )
     assert pandoc_ast == Table(
-        ('', [], []),
+        ("", [], []),
         Caption(None, []),
         [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
-        TableHead(('', [], []), []),
-        [TableBody(('', [], []), RowHeadColumns(0), [], [Row(('', [], []), [cell1, cell2])])],
-        TableFoot(('', [], []), [])
+        TableHead(("", [], []), []),
+        [
+            TableBody(
+                ("", [], []), RowHeadColumns(0), [], [Row(("", [], []), [cell1, cell2])]
+            )
+        ],
+        TableFoot(("", [], []), []),
     )
     assert markdown == "|        |        |\n|--------|--------|\n| child1 | child2 |\n"
