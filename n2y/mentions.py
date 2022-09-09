@@ -27,7 +27,8 @@ class PageMention(Mention):
         # untitled inside simple tables
         if plain_text == "Untitled" and isinstance(block, RowBlock):
             page = client.get_page(notion_data["page"]["id"])
-            plain_text = page.title.to_plain_text()
+            if page is not None:
+                plain_text = page.title.to_plain_text()
 
         super().__init__(client, notion_data, plain_text, block)
         self.notion_page_id = notion_data["page"]["id"]
