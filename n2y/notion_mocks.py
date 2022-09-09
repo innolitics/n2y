@@ -110,15 +110,6 @@ def mock_file(url):
     }
 
 
-def mock_link_to_page_block(linked_page_id):
-    # TODO: This function is trivial and I believe unnecessary, as 
-    # the representation of the block itself, in this case, is trivial.  QUESTION Right?
-    return {
-        'id': linked_page_id,
-        'type': "page_id",
-    }
-
-
 def mock_property_value(property_value_type, content):
     return {
         'id': mock_id(),

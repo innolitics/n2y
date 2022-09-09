@@ -571,16 +571,7 @@ class SyncedBlock(Block):
 
 
 class LinkToPageBlock(Block):
-    # Invoking warning, for backward compatibility with existing 
-    # installations, which will lack the plugin. 
-    # TODO: right? 
-
-    WarningBlock()
-
-    # It is expected that the functionality will be overwritten by an internal plugin, if 
-    # such plugin is included in the client's specific distribution
-
- 
+    pass
 
 
 def render_with_caption(content_ast, caption_ast):
