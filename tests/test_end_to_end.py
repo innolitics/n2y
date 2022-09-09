@@ -212,20 +212,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "$e^{-i \\pi} = -1$" in lines
     assert "``` javascript\nCode Block\n```" in document_as_markdown
     assert lines.count("This is a synced block.") == 2
-
-    
-    # TODO: Observation: as the test block page already contains links to pages, 
-    # databases, as well as a link to an unauthorized page, there is no need
-    # to modify the test database. 
-
-    # TODO: Currently, the following assert should fail, because the content of the linked
-    # page is being ignored. QUESTION Correct? 
     assert "This is a synced block from another page." in lines
-
-    ## TODO: The following should fail, as the page is not shared and 
-    ## would therefore be unable to be probed.  However, I am unsure
-    ## at this time how to test for a "page unauthorized" condition.
-    ## QUESTION What is the best way to test for a "page unauthorized" condition? 
     assert "This page is not shared with the integration." in lines
 
     assert all(column_strings_in_lines) or (column_string in lines)
@@ -316,3 +303,15 @@ def test_builtin_plugins(tmp_path):
 def test_missing_object_exception():
     invalid_page_id = "11111111111111111111111111111111"
     assert run_n2y([invalid_page_id]) != 0
+
+
+def test_links_to_pages():
+
+    # This is exctly what test_all_blocks_page_to_markdown() does, so it
+    # doesn't make sense to do it again, but what else can we do to test 
+    # this capability?
+    # Unless we come up with a real purpose for this test, it probably doesn't make sense.
+    object_id = '6670dc17a7bc4426b91bca4cf3ac5623'
+    status, document_as_markdown, _ = run_n2y([object_id])
+    assert status == 0
+    assert "Page content" in document_as_markdown
