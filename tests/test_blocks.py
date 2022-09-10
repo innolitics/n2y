@@ -413,6 +413,16 @@ def test_scyned_block_unshared():
     assert unshared_reference_markdown == ""
 
 
+def test_link_to_page_page():
+    # TODO: add a unit test for a LinkToPageBlock pointing to a page
+    pass
+
+
+def test_link_to_page_database():
+    # TODO: add a unit test for a LinkToPageBlock pointing to a database
+    pass
+
+
 def test_column_block():
     column_block = mock_block("column", {}, has_children=True)
     children = [mock_paragraph_block([("child", [])])]
