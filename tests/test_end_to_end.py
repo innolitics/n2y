@@ -224,6 +224,10 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
     assert all(column_strings_in_lines) or (column_string in lines)
+    assert "Mention: Simple Test Page" in lines
+    assert "Simple Test Page" in lines  # from the LinkToPageBlock
+    assert "Mention: Simple Test Database" in lines
+    assert "Simple Test Database" in lines  # from the LinkToPageBlock
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
