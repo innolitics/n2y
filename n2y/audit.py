@@ -5,6 +5,7 @@ import argparse
 
 from n2y import notion
 from n2y.database import Database
+from n2y.blocks import LinkToPageBlock
 from n2y.errors import UseNextClass
 from n2y.page import Page
 from n2y.utils import id_from_share_link
@@ -25,8 +26,20 @@ class ReportingPageMention(PageMention):
             block.page.plugin_data[plugin_key] = []
         block.page.plugin_data[plugin_key].append({
             "block_url": block.notion_url,
-            "link_url": self.notion_page_id,
+            "linked_page_id": self.notion_page_id,
             "type": "page mention",
+        })
+
+
+class ReportingLinkToPageBlock(LinkToPageBlock):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        if plugin_key not in page.plugin_data:
+            page.plugin_data[plugin_key] = []
+        page.plugin_data[plugin_key].append({
+            "block_url": self.notion_url,
+            "linked_page_id": self.link_notion_id,
+            "type": "link to page",
         })
 
 
@@ -70,11 +83,13 @@ def main(raw_args, access_token):
     # 2022-02-22 API version)
 
     # TODO: handle plain old links to other pages
-    # TODO: handle link blocks
     # TODO: handle at-mentions outside of blocks
     plugins = {
         "mentions": {
             "page": ReportingPageMention,
+        },
+        "blocks": {
+            "link_to_page": ReportingLinkToPageBlock,
         },
     }
 
@@ -104,7 +119,7 @@ def main(raw_args, access_token):
 def exclude_internal_references(references):
     external_references = {}
     for page_id, links in references.items():
-        external_links = [l for l in links if l['link_url'] not in references]
+        external_links = [l for l in links if l['linked_page_id'] not in references]
         external_references[page_id] = external_links
     return external_references
 
