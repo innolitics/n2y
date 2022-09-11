@@ -109,7 +109,27 @@ class Page:
             return None
 
     def properties_to_values(self):
-        return {k: v.to_value() for k, v in self.properties.items()}
+        properties = {k: v.to_value() for k, v in self.properties.items()}
+
+        id_property = self.client.id_property
+        if id_property in properties:
+            logger.warning(
+                'The id property "%s" is shadowing an existing '
+                'property with the same name', id_property,
+            )
+        if id_property:
+            notion_id = self.notion_id
+            properties[id_property] = notion_id
+
+        url_property = self.client.url_property
+        if url_property in properties:
+            logger.warning(
+                'The url property "%s" is shadowing an existing '
+                'property with the same name', url_property,
+            )
+        if url_property:
+            properties[url_property] = self.notion_url
+        return properties
 
     def to_markdown(self):
         return '\n'.join([
