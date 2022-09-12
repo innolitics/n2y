@@ -571,7 +571,23 @@ class SyncedBlock(Block):
 
 
 class LinkToPageBlock(Block):
-    pass
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.link_type = self.notion_data["type"]
+        self.link_notion_id = self.notion_data[self.link_type]
+
+    def to_pandoc(self):
+        # TODO: in the future, if we are exporting the linked page too, then add
+        # a link to the page. For now, we just display the text of the page.
+        if self.link_type == "page_id":
+            page = self.client.get_page(self.link_notion_id)
+            title = page.title.to_pandoc()
+        elif self.link_type == "database_id":
+            database = self.client.get_database(self.link_notion_id)
+            title = database.title.to_pandoc()
+        else:
+            raise Exception(f"Unknown link type '{self.link_type}'")
+        return Para(title)
 
 
 def render_with_caption(content_ast, caption_ast):

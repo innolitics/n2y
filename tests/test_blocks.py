@@ -612,37 +612,47 @@ def test_callout():
     assert markdown == ("Callout\n" "\n" "Children\n")
 
 
-def test_scyned_block_shared():
+def test_synced_block_shared():
     original_synced_block = mock_block(
         "synced_block", {"synced_from": None}, has_children=True
     )
     reference_synced_block = mock_block(
         "synced_block",
-        {"synced_from": {"type": "block_id", "block_id": "some-block-id"}},
+        {"synced_from": {'type': 'block_id', 'block_id': 'some-block-id'}},
         has_children=True,
     )
     children = [mock_paragraph_block([("synced", [])])]
     original_pandoc_ast, original_markdown = process_parent_block(
-        original_synced_block, children
+        original_synced_block, children,
     )
     reference_pandoc_ast, reference_markdown = process_parent_block(
-        reference_synced_block, children
+        reference_synced_block, children,
     )
     assert original_pandoc_ast == reference_pandoc_ast == [Para([Str("synced")])]
     assert original_markdown == reference_markdown == "synced\n"
 
 
-def test_scyned_block_unshared():
+def test_synced_block_unshared():
     unshared_reference_synced_block = mock_block(
         "synced_block",
-        {"synced_from": {"type": "block_id", "block_id": "some-block-id"}},
+        {"synced_from": {'type': 'block_id', 'block_id': 'some-block-id'}},
         has_children=False,
     )
     unshared_reference_pandoc_ast, unshared_reference_markdown = process_parent_block(
-        unshared_reference_synced_block, None
+        unshared_reference_synced_block, None,
     )
     assert unshared_reference_pandoc_ast is None
     assert unshared_reference_markdown == ""
+
+
+def test_link_to_page_page():
+    # TODO: add a unit test for a LinkToPageBlock pointing to a page
+    pass
+
+
+def test_link_to_page_database():
+    # TODO: add a unit test for a LinkToPageBlock pointing to a database
+    pass
 
 
 def test_column_block():
@@ -655,7 +665,11 @@ def test_column_block():
         n2y_block = generate_block(column_block)
     pandoc_ast = n2y_block.to_pandoc()
     assert pandoc_ast == Cell(
-        ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str("child")])]
+        ('', [], []),
+        AlignDefault(),
+        RowSpan(1),
+        ColSpan(1),
+        [Para([Str('child')])],
     )
 
 

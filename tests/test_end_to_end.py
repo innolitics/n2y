@@ -185,6 +185,17 @@ def test_all_properties_database():
     assert len(unsorted_database) == 4
 
 
+def test_mention_in_simple_table(tmp_path):
+    '''
+    The page can be seen here:
+    https://fresh-pencil-9f3.notion.site/Simple-Table-with-Mention-Test-e12497428b0e43c3b14e016de6c5a2cf
+    '''
+    object_id = 'e12497428b0e43c3b14e016de6c5a2cf'
+    _, document_as_markdown, _ = run_n2y([object_id, '--media-root', str(tmp_path)])
+    assert "In Table: Simple Test Page" in document_as_markdown
+    assert "Out of Table: Simple Test Page" in document_as_markdown
+
+
 def test_all_blocks_page_to_markdown(tmp_path):
 
     """
@@ -232,6 +243,10 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "This page is not shared with the integration." in lines
 
     assert all(column_strings_in_lines) or (column_string in lines)
+    assert "Mention: Simple Test Page" in lines
+    assert "Simple Test Page" in lines  # from the LinkToPageBlock
+    assert "Mention: Simple Test Database" in lines
+    assert "Simple Test Database" in lines  # from the LinkToPageBlock
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
