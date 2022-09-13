@@ -167,6 +167,12 @@ Replace headers with links back to the originating notion block.
 
 Adds support for Pandoc-style footnotes. Any `text` rich texts that contain footnote references in the format `[^NUMBER]` (eg: `...some claim [^2].`) will be linked to the corresponding footnote paragraph block starting with `[NUMBER]:` (eg: `[2]: This is a footnote.`).
 
+### Expand Link To Page Blocks
+
+When this plugin is enabled, any "link to page" block (which can be created using the `/link` command in the Notion UI), will be replaced with the content of the page that is linked to. This makes it possible to use the "link to page" block to include repeated content in multiple locations. It is like a "synced content block" in this way, but unlike "synced content blocks" which don't play well when duplicating child pages, the "link to page" blocks can be duplicated more easily.
+
+Note that any link to a page that the integration doesn't have access to will be skipped entirely (Notion returns an "Unsupported Block" in this case).
+
 ## Architecture
 
 N2y's architecture is divided into four main steps:
@@ -229,6 +235,7 @@ Here are some features we're planning to add in the future:
 - Add `n2y.plugins.footnotes` plugin
 - Add support for exporting HTML files (useful for generating jekyll pages or if you need pandoc features that aren't supported in github flavored markdown).
 - Added the `n2yaudit` tool.
+- Add the "link to page block"
 
 ### v0.4.2
 
