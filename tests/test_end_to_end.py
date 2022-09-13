@@ -308,7 +308,7 @@ def test_builtin_plugins(tmp_path):
             "--plugin",
             "n2y.plugins.footnotes",
             "--plugin",
-            "n2y.plugins.linktopage",
+            "n2y.plugins.expandlinktopages",
             "--media-root",
             str(tmp_path),
         ]

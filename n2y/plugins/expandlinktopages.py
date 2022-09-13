@@ -5,7 +5,7 @@ from n2y.blocks import LinkToPageBlock
 logger = logging.getLogger(__name__)
 
 
-class LinkToPage(LinkToPageBlock):
+class ExpandingLinkToPageBlock(LinkToPageBlock):
     """
     Replace page link with the content of the linked-to page.
 
@@ -32,6 +32,6 @@ class LinkToPage(LinkToPageBlock):
 
 notion_classes = {
     "blocks": {
-        "link_to_page": LinkToPage,
+        "link_to_page": ExpandingLinkToPageBlock,
     }
 }
