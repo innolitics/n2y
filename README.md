@@ -87,7 +87,7 @@ The default implementation of these classes can be modified using a plugin syste
 2. Subclass the various notion classes, modifying their constructor or `to_pandoc` method as desired
 3. Run n2y with the `--plugin` argument pointing to your python module
 
-See the [builtin plugins](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for examples.
+See the [builtin plugins](https://github.com/innolitics/n2y/tree/main/n2y/plugins) for examples.
 
 ### Using Multiple Plugins
 
@@ -215,7 +215,6 @@ pytest tests
 
 Here are some features we're planning to add in the future:
 
-- Add support for all block types
 - Make the plugin system more fully featured and easier to use
 - Add support for recursively dumping sets of pages and preserving links between them
 - Add some sort of Notion API caching mechanism
@@ -236,6 +235,8 @@ Here are some features we're planning to add in the future:
 - Add support for exporting HTML files (useful for generating jekyll pages or if you need pandoc features that aren't supported in github flavored markdown).
 - Added the `n2yaudit` tool.
 - Add the "link to page block"
+- Added support for the column block types.
+- Added basic support the link to page block type.
 
 ### v0.4.2
 

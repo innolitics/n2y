@@ -46,9 +46,10 @@ class RichText:
     def to_markdown(self):
         return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
 
-    def plain_text_to_pandoc(self):
+    @classmethod
+    def plain_text_to_pandoc(klass, plain_text):
         ast = []
-        match = re.findall(r"( +)|(\xa0+)|(\S+)|(\n+)|(\t+)", self.plain_text)
+        match = re.findall(r"( +)|(\xa0+)|(\S+)|(\n+)|(\t+)", plain_text)
 
         for m in match:
             space, non_breaking_space, word, newline, tab = m
@@ -144,7 +145,7 @@ class TextRichText(RichText):
 
     def to_pandoc(self):
         if not self.code:
-            plain_text_ast = self.plain_text_to_pandoc()
+            plain_text_ast = self.plain_text_to_pandoc(self.plain_text)
             annotated_ast = self.annotate_pandoc_ast(plain_text_ast)
         else:
             code_ast = [Code(("", [], []), self.plain_text)]
