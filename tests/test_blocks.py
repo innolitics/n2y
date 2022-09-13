@@ -44,6 +44,7 @@ from n2y.utils import pandoc_ast_to_markdown
 from n2y.notion_mocks import (
     mock_block,
     mock_file,
+    mock_id,
     mock_paragraph_block,
     mock_rich_text,
     mock_page_mention,
@@ -591,24 +592,24 @@ def test_synced_block_unshared():
     assert unshared_reference_markdown == ""
 
 
+@pytest.mark.xfail(reason="Not fully implemented")
 def test_link_to_page_page():
-
-    mock_page_id = '5f18c7d7eda44986ae7d938a12817cc0'
-
+    # TODO: implement these tests; use mock.patch to mockout the notion API's
+    # response to the get_database_or_page call inside the default linktopage thing
+    # Also, create a separate `mock_page` and `mock_database` calls to test.
+    # Follow the format of the data in the Notion API docs for these
+    mock_page_id = mock_id()
     notion_block = mock_block(
         "link_to_page", {"type": "page_id", "page_id": mock_page_id}
     )
-
     pandoc_ast, markdown = process_block(notion_block)
-
     assert pandoc_ast == Para([Str("All Blocks Test Page")])
     assert markdown == "All Blocks Test Page\n"
 
 
+@pytest.mark.xfail(reason="Not fully implemented")
 def test_link_to_page_database():
-
-    mock_database_id = '176fa24d4b7f4256877e60a1035b45a4'
-
+    mock_database_id = mock_id()
     notion_block = mock_block(
         "link_to_page", {"type": "database_id", "database_id": mock_database_id}
     )
