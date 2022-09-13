@@ -38,7 +38,7 @@ class ReportingLinkToPageBlock(LinkToPageBlock):
             page.plugin_data[plugin_key] = []
         page.plugin_data[plugin_key].append({
             "block_url": self.notion_url,
-            "linked_page_id": self.link_notion_id,
+            "linked_page_id": self.linked_page_id,
             "type": "link to page",
         })
 
