@@ -11,43 +11,22 @@ class LinkToPage(LinkToPageBlock):
 
     """
 
-    def __init__(self, client, notion_data, page, get_children=True):
-
-        super().__init__(client, page, notion_data, get_children)
-
-        # The type of object link can be either "page_id" or "database_id"
-        self.link_type = self.notion_data["type"]
-        self.linked_page_id = self.notion_data[self.link_type]
-        self.linking_page_id = self.page.notion_id
-
     def to_pandoc(self):
         assert self.linked_page_id is not None
 
-        # TODO: Might be expanded to handle links to databases as well.
         if self.link_type == "page_id":
-
-            try:
-                page = self.client.get_page_or_database(self.linked_page_id)
-
-                rich_text = self.client.wrap_notion_rich_text_array(
-                    page.notion_data["rich_text"], self)
-
-            except PermissionError:
-                msg = (
-                    "Permission denied when attempting to access linked page having id [%s]"
-                )
-                logger.warning(msg, self.linked_page_id)
-                return None
-
-            return rich_text.to_pandoc()
-
+            page = self.client.get_page(self.linked_page_id)
+            # The `page.block` refers to the ChildPageBlock in the page; we don't
+            # want to call `to_pandoc` on it directly, since we don't want a
+            # full pandoc document, but just the content that would have been in
+            # that document.
+            return page.block.children_to_pandoc()
         else:
-
+            # TODO: Might be expanded to handle links to databases as well.
             logger.warning(
                 'Links to databases (to:%s from:%s) not supported at this time.',
-                self.linked_page_id, self.linking_page_id
+                self.linked_page_id, self.page.notion_id
             )
-
             return None
 
 

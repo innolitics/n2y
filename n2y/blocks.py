@@ -583,17 +583,14 @@ class LinkToPageBlock(Block):
         # TODO: in the future, if we are exporting the linked page too, then add
         # a link to the page. For now, we just display the text of the page.
 
-        # The linked page may be outside the scope of what is accessible to n2y.
-        try:
-            page = self.client.get_page_or_database(self.linked_page_id)
+        page = self.client.get_page_or_database(self.linked_page_id)
+        if page is None:
+            msg = "Permission denied when attempting to access linked page [%s]"
+            logger.warning(msg, self.notion_url)
+            return None
+        else:
             title = page.title.to_pandoc()
-        except PermissionError:
-            msg = (
-                "Permission denied when attempting to access linked page having id [%s]"
-            )
-            logger.warning(msg, self.linked_page_id)
-
-        return Para(title)
+            return Para(title)
 
 
 def render_with_caption(content_ast, caption_ast):
