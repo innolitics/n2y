@@ -362,60 +362,6 @@ def test_code_block():
     assert markdown == "``` javascript\nconst a = 3\n```\n"
 
 
-def test_link_to_page_block():
-
-    # As I've been asked to update the end-to-end tests, but not specifically the unit tests
-    # changes to this file are out of scope.  Right?
-
-    # mock_page_id = "23143143243241423"
-
-    # This test is not about representing the block itself, which is only a page link.
-    # It's about testing that a mock page, linked to by a mock block, is processed as expected.
-
-    # Elaboration: As the link_to_page block is trivial, containing
-    # only the value of the link itself.
-    # And since representation of the page link in the pandoc output is not necessary --
-    # It is the contents of the linked page that is potentially
-    # represented, not the link to the page -- testing here would logically be limited to checking
-    # for proper conversion of the linked page.  However, such a test would be redundant,
-    # as already handled in test-end-to-end.py
-
-    # Create the mock block of the linking page.
-    notion_block = mock_block(
-        "link_to_page",
-        {
-            "type": "link_to_page",
-            "link_to_page": {"type": "page_id", "page_id": "{mock_page_id}"},
-        },
-    )
-
-    # TODO: QUESTION What type of Notion block is a page?  Below, I use a
-    # paragraph block.  Is that correct?
-
-    # Create a mock of the page to which the link points.
-    notion_page = mock_block(
-        "paragraph",
-        {
-            "rich_text": [
-                {"type": "text", "text": {"content": "Test content", "link": None}}
-            ],
-        },
-    )
-
-    # Test the block itself.
-    pandoc_ast, markdown = process_block(notion_block)
-    # TODO: fill in for None, if I am wrong and unit tests are required.
-    assert pandoc_ast is None
-    assert markdown is None
-
-    # Test the mock page to which the mock link_to_page links.
-    # We will be testing
-    pandoc_ast, markdown = process_block(notion_page)
-    # TODO: fill in for None, if I am wrong and unit tests are required.
-    assert pandoc_ast is None
-    assert markdown is None
-
-
 def test_table_block():
     parent = mock_block(
         "table",
@@ -646,13 +592,31 @@ def test_synced_block_unshared():
 
 
 def test_link_to_page_page():
-    # TODO: add a unit test for a LinkToPageBlock pointing to a page
-    pass
+
+    mock_page_id = '5f18c7d7eda44986ae7d938a12817cc0'
+
+    notion_block = mock_block(
+        "link_to_page", {"type": "page_id", "page_id": mock_page_id}
+    )
+
+    pandoc_ast, markdown = process_block(notion_block)
+
+    assert pandoc_ast == Para([Str("All Blocks Test Page")])
+    assert markdown == "All Blocks Test Page\n"
 
 
 def test_link_to_page_database():
-    # TODO: add a unit test for a LinkToPageBlock pointing to a database
-    pass
+
+    mock_database_id = '176fa24d4b7f4256877e60a1035b45a4'
+
+    notion_block = mock_block(
+        "link_to_page", {"type": "database_id", "database_id": mock_database_id}
+    )
+
+    pandoc_ast, markdown = process_block(notion_block)
+
+    assert pandoc_ast == Para([Str("Simple Test Database")])
+    assert markdown == "Simple Test Database\n"
 
 
 def test_column_block():
