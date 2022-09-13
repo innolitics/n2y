@@ -1,3 +1,6 @@
+"""
+Unit tests of the builtin plugins.
+"""
 import pytest
 
 from n2y.blocks import ParagraphBlock

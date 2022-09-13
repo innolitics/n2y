@@ -137,7 +137,7 @@ Most of the Notion blocks can generate their pandoc AST from _only_ their own da
 
 ## Built-in Plugins
 
-N2y provides a few builtin plugins. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
+N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
 
 ### Deep Headers
 

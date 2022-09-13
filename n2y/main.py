@@ -69,7 +69,10 @@ def main(raw_args, access_token):
         "--media-root", help="Filesystem path to directory where images and media are saved"
     )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
-    parser.add_argument("--plugin", '-p', action='append', help="Plugin module")
+    parser.add_argument(
+        "--plugin", '-p', action='append',
+        help="Plugin module location, e.g. ('n2y.plugins.deepheaders')",
+    )
     parser.add_argument(
         "--output", '-o', default='./',
         help="Relative path to output directory",
