@@ -583,13 +583,13 @@ class LinkToPageBlock(Block):
         # TODO: in the future, if we are exporting the linked page too, then add
         # a link to the page. For now, we just display the text of the page.
 
-        page = self.client.get_page_or_database(self.linked_page_id)
-        if page is None:
-            msg = "Permission denied when attempting to access linked page [%s]"
+        node = self.client.get_page_or_database(self.linked_page_id)
+        if node is None:
+            msg = "Permission denied when attempting to access linked node [%s]"
             logger.warning(msg, self.notion_url)
             return None
         else:
-            title = page.title.to_pandoc()
+            title = node.title.to_pandoc()
             return Para(title)
 
 
