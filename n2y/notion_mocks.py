@@ -144,3 +144,48 @@ def mock_select_option(name, **kwargs):
 
 def mock_relation_value():
     return {"id": mock_id()}
+
+
+def mock_page(title = "Mock Title"):
+
+    # Returns the data that would have been returned by the Notion API 
+    # on a client.get_page() request.
+
+    user = mock_user()
+    created_time = datetime.now().isoformat()
+    notion_id = mock_id()
+    hyphenated_title = title.replace(" ", "-")
+
+    page_object = {
+    'object':'page',
+    'id':notion_id,
+    'created_time':created_time,
+    'last_edited_time':created_time,
+    'created_by':user,
+    'last_edited_by':user,
+    'cover': None,
+    'icon': None,
+    'parent':{'type':'page_id','page_id':mock_id()},
+    'archived': False,
+    'properties':{
+        'title':{
+            'id':'title',
+            'type':'title',
+            'title':[{
+                'type':'text','text':{'content':title,'link':None},
+                'annotations':{
+                    'bold':False,
+                    'italic':False,
+                    'strikethrough':False,
+                    'underline':False,
+                    'code':False,
+                    'color':'default'},
+                'plain_text':title,'href':None
+                }]
+                }
+                },
+    'url':f'https://www.notion.so/{hyphenated_title}-{notion_id}',
+    }
+
+    return page_object
+
