@@ -594,19 +594,13 @@ def test_synced_block_unshared():
 
 
 def test_link_to_page_page():
-    # TODO: implement these tests; use mock.patch to mockout the notion API's
-    # response to the get_database_or_page call inside the default linktopage thing
-    # Also, create a separate `mock_page` and `mock_database` calls to test.
-    # Follow the format of the data in the Notion API docs for these
 
-    notion_id = mock_id()
- 
     mock_link_to_page_block = mock_block(
-        "link_to_page", {"type": "page_id", "page_id": mock_id()} )
-    
+        "link_to_page", {"type": "page_id", "page_id": mock_id()})
+
     page = mock_page("Linked Page")
 
-    with mock.patch("n2y.notion.Client._get_url", return_value = page):
+    with mock.patch("n2y.notion.Client._get_url", return_value=page):
         pandoc_ast, markdown = process_block(mock_link_to_page_block)
 
     assert pandoc_ast == Para([Str("Linked"), Space(), Str("Page")])
