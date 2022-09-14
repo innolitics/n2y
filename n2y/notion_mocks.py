@@ -148,7 +148,7 @@ def mock_relation_value():
 
 def mock_page(title="Mock Title"):
 
-    # Returns a mock version the data that would be returned by 
+    # Returns a mock version the data that would be returned by
     # the Notion API on a client.get_page() request.
 
     user = mock_user()
