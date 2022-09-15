@@ -48,6 +48,7 @@ from n2y.notion_mocks import (
     mock_paragraph_block,
     mock_rich_text,
     mock_page_mention,
+    mock_page,
 )
 
 
@@ -592,32 +593,15 @@ def test_synced_block_unshared():
     assert unshared_reference_markdown == ""
 
 
-@pytest.mark.xfail(reason="Not fully implemented")
 def test_link_to_page_page():
-    # TODO: implement these tests; use mock.patch to mockout the notion API's
-    # response to the get_database_or_page call inside the default linktopage thing
-    # Also, create a separate `mock_page` and `mock_database` calls to test.
-    # Follow the format of the data in the Notion API docs for these
-    mock_page_id = mock_id()
-    notion_block = mock_block(
-        "link_to_page", {"type": "page_id", "page_id": mock_page_id}
+    mock_link_to_page_block = mock_block(
+        "link_to_page", {"type": "page_id", "page_id": mock_id()},
     )
-    pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Para([Str("All Blocks Test Page")])
-    assert markdown == "All Blocks Test Page\n"
-
-
-@pytest.mark.xfail(reason="Not fully implemented")
-def test_link_to_page_database():
-    mock_database_id = mock_id()
-    notion_block = mock_block(
-        "link_to_page", {"type": "database_id", "database_id": mock_database_id}
-    )
-
-    pandoc_ast, markdown = process_block(notion_block)
-
-    assert pandoc_ast == Para([Str("Simple Test Database")])
-    assert markdown == "Simple Test Database\n"
+    page = mock_page("Linked Page")
+    with mock.patch("n2y.notion.Client._get_url", return_value=page):
+        pandoc_ast, markdown = process_block(mock_link_to_page_block)
+    assert pandoc_ast == Para([Str("Linked"), Space(), Str("Page")])
+    assert markdown == "Linked Page\n"
 
 
 def test_column_block():
