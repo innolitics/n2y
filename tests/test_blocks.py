@@ -594,30 +594,14 @@ def test_synced_block_unshared():
 
 
 def test_link_to_page_page():
-
     mock_link_to_page_block = mock_block(
-        "link_to_page", {"type": "page_id", "page_id": mock_id()})
-
+        "link_to_page", {"type": "page_id", "page_id": mock_id()},
+    )
     page = mock_page("Linked Page")
-
     with mock.patch("n2y.notion.Client._get_url", return_value=page):
         pandoc_ast, markdown = process_block(mock_link_to_page_block)
-
     assert pandoc_ast == Para([Str("Linked"), Space(), Str("Page")])
     assert markdown == "Linked Page\n"
-
-
-@pytest.mark.xfail(reason="Not fully implemented")
-def test_link_to_page_database():
-    mock_database_id = mock_id()
-    notion_block = mock_block(
-        "link_to_page", {"type": "database_id", "database_id": mock_database_id}
-    )
-
-    pandoc_ast, markdown = process_block(notion_block)
-
-    assert pandoc_ast == Para([Str("Simple Test Database")])
-    assert markdown == "Simple Test Database\n"
 
 
 def test_column_block():

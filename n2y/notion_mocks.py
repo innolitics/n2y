@@ -147,16 +147,11 @@ def mock_relation_value():
 
 
 def mock_page(title="Mock Title"):
-
-    # Returns a mock version the data that would be returned by
-    # the Notion API on a client.get_page() request.
-
     user = mock_user()
     created_time = datetime.now().isoformat()
     notion_id = mock_id()
     hyphenated_title = title.replace(" ", "-")
-
-    page_object = {
+    return {
         'object': 'page',
         'id': notion_id,
         'created_time': created_time,
@@ -171,20 +166,10 @@ def mock_page(title="Mock Title"):
             'title': {
                 'id': 'title',
                 'type': 'title',
-                'title': [{
-                    'type': 'text', 'text': {'content': title, 'link': None},
-                    'annotations': {
-                        'bold': False,
-                        'italic': False,
-                        'strikethrough': False,
-                        'underline': False,
-                        'code': False,
-                        'color': 'default'},
-                    'plain_text': title, 'href': None
-                }]
+                'title': mock_rich_text_array([
+                    (title, []),
+                ]),
             }
         },
         'url': f'https://www.notion.so/{hyphenated_title}-{notion_id}',
     }
-
-    return page_object
