@@ -72,7 +72,7 @@ class Client:
         url_property=None,
         filename_property=None,
         database_config=None,
-        cache_file='.n2ycache',
+        no_cache_property=False,
     ):
         self.access_token = access_token
         self.media_root = media_root
@@ -96,6 +96,8 @@ class Client:
         self.notion_classes = self.get_default_classes()
         self.load_plugins(plugins)
         self.plugin_data = {}
+
+        self.no_cache = no_cache_property
 
     def get_default_classes(self):
         notion_classes = {}

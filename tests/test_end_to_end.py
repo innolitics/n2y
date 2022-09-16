@@ -395,3 +395,8 @@ def test_cache_effect(tmp_path):
     # Stop timer
 
     # Assert time with cache < time without
+
+    # Delete 1/2 of the entries in the cache for this
+    # entity and run n2y again. 
+
+    # assert page = cached page
