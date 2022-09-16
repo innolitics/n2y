@@ -87,7 +87,7 @@ The default implementation of these classes can be modified using a plugin syste
 2. Subclass the various notion classes, modifying their constructor or `to_pandoc` method as desired
 3. Run n2y with the `--plugin` argument pointing to your python module
 
-See the [builtin plugins](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for examples.
+See the [builtin plugins](https://github.com/innolitics/n2y/tree/main/n2y/plugins) for examples.
 
 ### Using Multiple Plugins
 
