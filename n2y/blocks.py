@@ -570,8 +570,27 @@ class SyncedBlock(Block):
         return self.children_to_pandoc()
 
 
-class LinkToPageBlock(WarningBlock):
-    pass
+class LinkToPageBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+
+        self.link_type = self.notion_data["type"]
+        # The key for the object id may be either "page_id"
+        # or "database_id".
+        self.linked_page_id = self.notion_data[self.link_type]
+
+    def to_pandoc(self):
+        # TODO: in the future, if we are exporting the linked page too, then add
+        # a link to the page. For now, we just display the text of the page.
+
+        node = self.client.get_page_or_database(self.linked_page_id)
+        if node is None:
+            msg = "Permission denied when attempting to access linked node [%s]"
+            logger.warning(msg, self.notion_url)
+            return None
+        else:
+            title = node.title.to_pandoc()
+            return Para(title)
 
 
 def render_with_caption(content_ast, caption_ast):

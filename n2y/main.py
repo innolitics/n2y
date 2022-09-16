@@ -44,15 +44,11 @@ def main(raw_args, access_token):
             "Only applies when dumping a database to YAML."
         )
     )
-    # TODO: Consider making id-property and url-property available when dumping
-    # to markdown files, and not just when dumping to YAML; if we do this, we
-    # should probably move some code out of Database.to_yaml into the Page
     parser.add_argument(
         "--id-property", default='id',
         help=(
             "Store each database page's id in this property. "
             "The page's id isn't exported if it's set to a blank string. "
-            "Only applies when dumping a database to YAML."
         )
     )
     parser.add_argument(
@@ -60,7 +56,6 @@ def main(raw_args, access_token):
         help=(
             "Store each database page's url in this property. "
             "The page's id isn't exported if it's set to a blank string. "
-            "Only applies when dumping a database to YAML."
         )
     )
     parser.add_argument(
@@ -74,7 +69,10 @@ def main(raw_args, access_token):
         "--media-root", help="Filesystem path to directory where images and media are saved"
     )
     parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
-    parser.add_argument("--plugin", '-p', action='append', help="Plugin module")
+    parser.add_argument(
+        "--plugin", '-p', action='append',
+        help="Plugin module location, e.g. ('n2y.plugins.deepheaders')",
+    )
     parser.add_argument(
         "--output", '-o', default='./',
         help="Relative path to output directory",

@@ -137,7 +137,7 @@ Most of the Notion blocks can generate their pandoc AST from _only_ their own da
 
 ## Built-in Plugins
 
-N2y provides a few builtin plugins. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
+N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
 
 ### Deep Headers
 
@@ -166,6 +166,12 @@ Replace headers with links back to the originating notion block.
 ### Footnotes
 
 Adds support for Pandoc-style footnotes. Any `text` rich texts that contain footnote references in the format `[^NUMBER]` (eg: `...some claim [^2].`) will be linked to the corresponding footnote paragraph block starting with `[NUMBER]:` (eg: `[2]: This is a footnote.`).
+
+### Expand Link To Page Blocks
+
+When this plugin is enabled, any "link to page" block (which can be created using the `/link` command in the Notion UI), will be replaced with the content of the page that is linked to. This makes it possible to use the "link to page" block to include repeated content in multiple locations. It is like a "synced content block" in this way, but unlike "synced content blocks" which don't play well when duplicating child pages, the "link to page" blocks can be duplicated more easily.
+
+Note that any link to a page that the integration doesn't have access to will be skipped entirely (Notion returns an "Unsupported Block" in this case).
 
 ## Architecture
 
@@ -209,7 +215,6 @@ pytest tests
 
 Here are some features we're planning to add in the future:
 
-- Add support for all block types
 - Make the plugin system more fully featured and easier to use
 - Add support for recursively dumping sets of pages and preserving links between them
 - Add some sort of Notion API caching mechanism
@@ -229,6 +234,9 @@ Here are some features we're planning to add in the future:
 - Add `n2y.plugins.footnotes` plugin
 - Add support for exporting HTML files (useful for generating jekyll pages or if you need pandoc features that aren't supported in github flavored markdown).
 - Added the `n2yaudit` tool.
+- Add the "link to page block"
+- Added support for the column block types.
+- Added basic support the link to page block type.
 
 ### v0.4.2
 

@@ -85,7 +85,7 @@ class Client:
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
-            "Notion-Version": "2022-02-22",
+            "Notion-Version": "2022-06-28",
         }
 
         self.databases_cache = {}
