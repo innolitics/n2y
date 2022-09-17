@@ -45,6 +45,7 @@ class Cache:
 
         connection.close()
 
+
     def get_from_cache(entity_id):
         None
 
@@ -72,3 +73,4 @@ class Cache:
         cursor.execute(create_table_query)
 
         connection.close()
+        
