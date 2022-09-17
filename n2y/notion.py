@@ -24,6 +24,7 @@ from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
 from n2y.utils import strip_hyphens
+from n2y.cache import Cache
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -71,6 +72,7 @@ class Client:
         url_property=None,
         filename_property=None,
         database_config=None,
+        no_cache_property=False,
     ):
         self.access_token = access_token
         self.media_root = media_root
@@ -94,6 +96,8 @@ class Client:
         self.notion_classes = self.get_default_classes()
         self.load_plugins(plugins)
         self.plugin_data = {}
+
+        self.no_cache = no_cache_property
 
     def get_default_classes(self):
         notion_classes = {}
@@ -295,7 +299,12 @@ class Client:
         return page
 
     def get_block(self, block_id, page, get_children=True):
-        notion_block = self.get_notion_block(block_id)
+        cache_entry = self.cache.get_notion_block(block_id)
+        if cache_entry.timestamp > page.last_edited_time:
+            notion_block = cache_entry.data
+        else:
+            notion_block = self.get_notion_block(block_id)
+            self.cache.cache_notion_block(block_id, notion_block, page.last_edited_time)
         return self.wrap_notion_block(notion_block, page, get_children)
 
     def get_notion_block(self, block_id):
@@ -304,7 +313,12 @@ class Client:
         return self._parse_response(response)
 
     def get_child_blocks(self, block_id, page, get_children):
-        child_notion_blocks = self.get_child_notion_blocks(block_id)
+        cache_entry = self.cache.get_child_notion_blocks(block_id)
+        if cache_entry.timestamp > page.last_edited_time:
+            child_notion_blocks = cache_entry.data
+        else:
+            child_notion_blocks = self.get_child_notion_blocks(block_id)
+            self.cache.cache_child_notion_blocks(block_id, child_notion_blocks, page.last_edited_time)
         return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
     def get_child_notion_blocks(self, block_id):

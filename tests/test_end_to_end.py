@@ -350,3 +350,53 @@ def test_builtin_plugins(tmp_path):
 def test_missing_object_exception():
     invalid_page_id = "11111111111111111111111111111111"
     assert run_n2y([invalid_page_id]) != 0
+
+
+def test_cache_effect(tmp_path):
+    """Test that n2y is faster with cache enabled than without."""
+    
+    # Run against All Blocks page
+    object_id = "5f18c7d7eda44986ae7d938a12817cc0"
+
+    # Start timer
+  
+    # Process page without drawing from cache.
+    # Cache will nevertheless be updated, even though off.
+    status, document_as_markdown, stderr = run_n2y(
+        [
+            object_id, 
+            "--media-root", 
+            str(tmp_path),
+            "--no-cache",
+            True
+            ]
+    )
+
+    assert status == 0
+
+    # Stop timer
+
+    # Register time
+
+
+    # Run again, drawing from the cache this time.
+
+    # Start timer
+    status, document_as_markdown, stderr = run_n2y(
+        [
+            object_id, 
+            "--media-root", 
+            str(tmp_path),
+            "--no-cache",
+            False
+            ]
+    )
+
+    # Stop timer
+
+    # Assert time with cache < time without
+
+    # Delete 1/2 of the entries in the cache for this
+    # entity and run n2y again. 
+
+    # assert page = cached page

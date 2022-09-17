@@ -133,6 +133,7 @@ def main(raw_args, access_token):
         url_property=args.url_property,
         filename_property=args.filename_property,
         database_config=database_config,
+        no_cache_property=args.no_cache,
     )
 
     node = client.get_page_or_database(object_id)
