@@ -9,6 +9,7 @@ from n2y.page import Page
 from n2y.errors import APIErrorCode, APIResponseError
 from n2y.utils import id_from_share_link
 from n2y.config import database_config_json_to_dict
+from n2y.cache import Cache
 
 logger = None
 
@@ -94,6 +95,12 @@ def main(raw_args, access_token):
             "https://developers.notion.com/reference/post-database-query-sort"
         )
     )
+    parser.add_argument(
+        "--no-cache", default=False,
+        help=(
+            "Turn off entity retrieval from n2y's internal caching system."
+        )
+    )
 
     # TODO: Add the ability to dump out a "schema" file that contains the schema
     # for a set of databases
@@ -137,6 +144,10 @@ def main(raw_args, access_token):
     )
 
     node = client.get_page_or_database(object_id)
+
+    # Initialize cache.
+    client.cache = Cache(client)
+
 
     if isinstance(node, Database) and args.format == 'markdown':
         export_database_as_markdown_files(node, options=args)

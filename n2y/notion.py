@@ -98,6 +98,8 @@ class Client:
         self.plugin_data = {}
 
         self.no_cache = no_cache_property
+        self.cache = Cache(self)
+
 
     def get_default_classes(self):
         notion_classes = {}
@@ -299,6 +301,7 @@ class Client:
         return page
 
     def get_block(self, block_id, page, get_children=True):
+        # cache_entry will be drawn from notion data if cache is off.
         cache_entry = self.cache.get_notion_block(block_id)
         if cache_entry.timestamp > page.last_edited_time:
             notion_block = cache_entry.data
