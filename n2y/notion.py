@@ -366,30 +366,11 @@ class Client:
         """
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
-        with requests.get(url, stream=True) as request_stream:
-            content_iterator = request_stream.iter_content(4096)
-            return self.save_file(content_iterator, page, extension)
-
-    def save_file(self, content_iterator, page, extension):
-        """
-        Save the content in the provided iterator into a file in MEDIA_ROOT. The
-        file name is determined from the page name, file extension, and an md5
-        hash of the content. The md5 hash is calculated as the data is streamed
-        to a temporary file, which is then moved to the final location once the
-        md5 hash can be calculated.
-        """
-        temp_fd, temp_filepath = tempfile.mkstemp()
-        hash_md5 = hashlib.md5()
-        with os.fdopen(temp_fd, 'wb') as temp_file:
-            for chunk in content_iterator:
-                hash_md5.update(chunk)
-                temp_file.write(chunk)
-
-        num_hash_characters = 8  # just long enough to avoid collisions
-        hash = hash_md5.hexdigest()[:num_hash_characters]
-        relative_filepath = "".join([page.filename, "-", hash, extension])
+        page_id_chars = page.notion_id.replace('-', '')
+        relative_filepath = "".join([page.filename, "-", page_id_chars[:11], extension])
         full_filepath = path.join(self.media_root, relative_filepath)
-
-        makedirs(path.dirname(full_filepath), exist_ok=True)
-        shutil.move(temp_filepath, full_filepath)
+        makedirs(self.media_root, exist_ok=True)
+        with open(full_filepath, 'wb') as temp_file:
+            request_stream = requests.get(url, stream=True)
+            temp_file.write(request_stream.content)
         return urljoin(self.media_url, relative_filepath)
