@@ -1,6 +1,7 @@
 import logging
 import json
 from os import path, makedirs
+import re
 from urllib.parse import urljoin, urlparse
 import importlib.util
 
@@ -362,11 +363,15 @@ class Client:
         """
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
+        request_stream = requests.get(url, stream=True)
+        return self.save_file(request_stream.content, page, extension)
+
+    def save_file(self, content, page, extension):
         page_id_chars = page.notion_id.replace('-', '')
         relative_filepath = "".join([page.filename, "-", page_id_chars[:11], extension])
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
         with open(full_filepath, 'wb') as temp_file:
-            request_stream = requests.get(url, stream=True)
-            temp_file.write(request_stream.content)
+            temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
+

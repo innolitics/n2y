@@ -251,10 +251,10 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "![Image **caption**](All_Blocks_Test_Page-5c264631.jpeg)" in lines
+    assert "![Image **caption**](All_Blocks_Test_Page-5f18c7d7eda.jpeg)" in lines
 
     # from a file block in the Notion page
-    assert os.path.exists(tmp_path / "All_Blocks_Test_Page-5c264631.jpeg")
+    assert os.path.exists(tmp_path / "All_Blocks_Test_Page-5f18c7d7eda.jpeg")
 
 
 def test_page_in_database_to_markdown():
