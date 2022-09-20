@@ -1,9 +1,11 @@
 import sys
 import json
+import time
 from os import listdir
 import os.path
 from os.path import isfile, join
 from io import StringIO
+
 
 import yaml
 
@@ -358,11 +360,18 @@ def test_cache_effect(tmp_path):
     # Run against All Blocks page
     object_id = "5f18c7d7eda44986ae7d938a12817cc0"
 
+    # Get page.  Save so that can compare it to the cached version.
+
+
+    # Now second run, compare to non-cached version.
+
     # Start timer
-  
+
+    start = time.time()
+    
     # Process page without drawing from cache.
     # Cache will nevertheless be updated, even though off.
-    status, document_as_markdown, stderr = run_n2y(
+    status, from_source_document_as_markdown, stderr = run_n2y(
         [
             object_id, 
             "--media-root", 
@@ -374,27 +383,30 @@ def test_cache_effect(tmp_path):
 
     assert status == 0
 
-    # Stop timer
-
-    # Register time
-
-
+    time_elapsed_from_source = time.time() - start
+  
     # Run again, drawing from the cache this time.
 
     # Start timer
-    status, document_as_markdown, stderr = run_n2y(
+
+    start = time.time()
+
+    status, from_cache_document_as_markdown, stderr = run_n2y(
         [
             object_id, 
             "--media-root", 
             str(tmp_path),
-            "--no-cache",
-            False
             ]
     )
 
-    # Stop timer
+    assert status == 0
+    assert from_source_document_as_markdown == from_cache_document_as_markdown
 
-    # Assert time with cache < time without
+    time_elapsed_from_cache = time.time() - start
+
+    # Expecting a 30% time savings at least. 
+    success_threshold = 0.7
+    assert (time_elapsed_from_source - time_elapsed_from_cache) / time_elapsed_from_source <= success_threshold
 
     # Delete 1/2 of the entries in the cache for this
     # entity and run n2y again. 

@@ -302,8 +302,8 @@ class Client:
 
     def get_block(self, block_id, page, get_children=True):
         # cache_entry will be drawn from notion data if cache is off.
-        cache_entry = self.cache.get_notion_block(block_id)
-        if cache_entry.timestamp > page.last_edited_time:
+        cache_entry, timestamp = self.cache.get_notion_block(block_id)
+        if timestamp > page.last_edited_time:
             notion_block = cache_entry.data
         else:
             notion_block = self.get_notion_block(block_id)
