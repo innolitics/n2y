@@ -45,6 +45,7 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
             raise UseNextClass()
 
     def to_pandoc(self):
+        # TODO: Clean up by extracting all this temp code out
         temp_fd, temp_filepath = tempfile.mkstemp(suffix=".png")
         os.close(temp_fd)
         temp_config_mermaid_fd, temp_config_mermaid_filepath = tempfile.mkstemp(suffix=".json")
