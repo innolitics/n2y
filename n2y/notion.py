@@ -1,10 +1,6 @@
-import hashlib
 import logging
 import json
 from os import path, makedirs
-import os
-import shutil
-import tempfile
 from urllib.parse import urljoin, urlparse
 import importlib.util
 
