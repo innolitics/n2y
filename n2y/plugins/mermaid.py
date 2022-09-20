@@ -18,6 +18,14 @@ mermaid_config = {
     }
 }
 
+puppeteer_config = {
+    "headless": True,
+    "args": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+    ]
+}
+
 
 class MermaidFencedCodeBlock(FencedCodeBlock):
     """
@@ -37,17 +45,22 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
             raise UseNextClass()
 
     def to_pandoc(self):
+        # TODO: Clean up by extracting all this temp code out
         temp_fd, temp_filepath = tempfile.mkstemp(suffix=".png")
         os.close(temp_fd)
-        temp_config_fd, temp_config_filepath = tempfile.mkstemp(suffix=".json")
-        os.write(temp_config_fd, json.dumps(mermaid_config).encode("utf-8"))
-        os.close(temp_config_fd)
+        temp_config_mermaid_fd, temp_config_mermaid_filepath = tempfile.mkstemp(suffix=".json")
+        os.write(temp_config_mermaid_fd, json.dumps(mermaid_config).encode("utf-8"))
+        os.close(temp_config_mermaid_fd)
+        temp_config_puppeteer_fd, temp_config_puppeteer_filepath = tempfile.mkstemp(suffix=".json")
+        os.write(temp_config_puppeteer_fd, json.dumps(puppeteer_config).encode("utf-8"))
+        os.close(temp_config_puppeteer_fd)
         try:
             diagram_as_text = self.rich_text.to_plain_text()
             diagram_as_bytes = diagram_as_text.encode()
             subprocess.run([
                 'mmdc',
-                '--configFile', temp_config_filepath,
+                '--configFile', temp_config_mermaid_filepath,
+                '--puppeteerConfigFile', temp_config_puppeteer_filepath,
                 '-o', temp_filepath,
             ], capture_output=True, input=diagram_as_bytes, check=True)
             with open(temp_filepath, 'rb') as temp_file:
