@@ -1,7 +1,6 @@
 import logging
 import json
 from os import path, makedirs
-import re
 from urllib.parse import urljoin, urlparse
 import importlib.util
 
@@ -374,4 +373,3 @@ class Client:
         with open(full_filepath, 'wb') as temp_file:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
-
