@@ -17,6 +17,7 @@ from n2y.errors import (
 from n2y.file import File
 from n2y.page import Page
 from n2y.database import Database
+from n2y.comment import Comment
 from n2y.blocks import DEFAULT_BLOCKS
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
@@ -37,6 +38,7 @@ DEFAULT_NOTION_CLASSES = {
     "rich_text_array": RichTextArray,
     "rich_texts": DEFAULT_RICH_TEXTS,
     "mentions": DEFAULT_MENTIONS,
+    "comment": Comment,
 }
 
 
@@ -318,6 +320,14 @@ class Client:
                 return results
             else:
                 params["start_cursor"] = data["next_cursor"]
+
+    def get_comments(self, block_id):
+        # TODO: Make pagination work. Currently only pulls first 100 comments.
+        data = self._get_url(f"{self.base_url}comments", {"block_id": block_id})
+        return [self.wrap_notion_comment(nd) for nd in data["results"]]
+
+    def wrap_notion_comment(self, notion_data):
+        return self.instantiate_class("comment", None, self, notion_data)
 
     def get_page_property(self, page_id, property_id):
         notion_property = self.get_notion_page_property(page_id, property_id)
