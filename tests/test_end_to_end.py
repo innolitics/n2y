@@ -14,6 +14,7 @@ except ImportError:
 
 from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 from n2y.main import main
+from n2y.notion import Client
 
 
 def run_n2y(arguments):
@@ -350,3 +351,10 @@ def test_builtin_plugins(tmp_path):
 def test_missing_object_exception():
     invalid_page_id = "11111111111111111111111111111111"
     assert run_n2y([invalid_page_id]) != 0
+
+
+def test_comment():
+    block_with_comments_id = "ac496c7db16743488495976f7433dbfb"
+    comments = Client(NOTION_ACCESS_TOKEN).get_comments(block_with_comments_id)
+    assert comments[0].rich_text.to_plain_text() == "Test Comment"
+    assert comments[1].rich_text.to_plain_text() == "Test Comment 2"
