@@ -367,7 +367,7 @@ class Client:
 
     def save_file(self, content, page, extension):
         page_id_chars = strip_hyphens(page.notion_id)
-        relative_filepath = f"{page.filemame}-{page_id_chars[:11]}{extension}"
+        relative_filepath = f"{page.filename}-{page_id_chars[:11]}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
         with open(full_filepath, 'wb') as temp_file:
