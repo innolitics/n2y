@@ -376,7 +376,8 @@ class Client:
 
     def append_block_children(self, block_id, children):
         response = requests.patch(
-            f"{self.base_url}blocks/{block_id}/children", json={"children": children}, headers=self.headers
+            f"{self.base_url}blocks/{block_id}/children",
+            json={"children": children}, headers=self.headers
         )
         return self._parse_response(response)
 
