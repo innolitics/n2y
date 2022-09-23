@@ -265,16 +265,9 @@ class Client:
         return [self._wrap_notion_page(np) for np in notion_pages]
 
     def get_database_notion_pages(self, database_id):
-        results = []
         url = f"{self.base_url}databases/{database_id}/query"
         request_data = self._create_database_request_data(database_id)
-        while True:
-            data = self._post_url(url, request_data)
-            results.extend(data["results"])
-            if not data["has_more"]:
-                return results
-            else:
-                request_data["start_cursor"] = data["next_cursor"]
+        return self._paginated_request(self._post_url, url, request_data)
 
     def _create_database_request_data(self, database_id):
         stripped_database_id = strip_hyphens(database_id)
@@ -311,20 +304,12 @@ class Client:
 
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"
-        params = {}
-        results = []
-        while True:
-            data = self._get_url(url, params)
-            results.extend(data["results"])
-            if not data["has_more"]:
-                return results
-            else:
-                params["start_cursor"] = data["next_cursor"]
+        return self._paginated_request(self._get_url, url, {})
 
     def get_comments(self, block_id):
-        # TODO: Make pagination work. Currently only pulls first 100 comments.
-        data = self._get_url(f"{self.base_url}comments", {"block_id": block_id})
-        return [self.wrap_notion_comment(nd) for nd in data["results"]]
+        url = f"{self.base_url}comments"
+        comments = self._paginated_request(self._get_url, url, {"block_id": block_id})
+        return [self.wrap_notion_comment(nd) for nd in comments]
 
     def wrap_notion_comment(self, notion_data):
         return self.instantiate_class("comment", None, self, notion_data)
@@ -349,6 +334,17 @@ class Client:
             data = {}
         response = requests.post(url, headers=self.headers, json=data)
         return self._parse_response(response)
+
+    def _paginated_request(self, request_method, url, initial_params):
+        params = initial_params
+        results = []
+        while True:
+            data = request_method(url, params)
+            results.extend(data["results"])
+            if not data["has_more"]:
+                return results
+            else:
+                params["start_cursor"] = data["next_cursor"]
 
     def _parse_response(self, response):
         """Taken from https://github.com/ramnes/notion-sdk-py"""
