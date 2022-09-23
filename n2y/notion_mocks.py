@@ -25,7 +25,7 @@ def mock_rich_text(text, annotations=None, href=None, mention=None):
         annotations = []
     if mention is None:
         rich_text_type = 'text'
-        content = {'content': text, 'link': None},
+        content = {'content': text, 'link': None}
     else:
         rich_text_type = 'mention'
         content = mention
