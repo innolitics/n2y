@@ -373,3 +373,9 @@ class Client:
         with open(full_filepath, 'wb') as temp_file:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
+
+    def append_block_children(self, children):
+        print(self.id_property)
+
+    def delete_block(self, block_id):
+        pass
