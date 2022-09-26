@@ -61,6 +61,9 @@ class Block:
     def to_pandoc(self):
         raise NotImplementedError()
 
+    def from_pandoc(self):
+        raise NotImplementedError(f'{self.notion_type} does not have this functionality yet')
+
     def children_to_pandoc(self):
         assert self.has_children
         pandoc_ast = []

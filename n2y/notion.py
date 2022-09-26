@@ -14,8 +14,7 @@ from n2y.file import File
 from n2y.emoji import Emoji
 from n2y.page import Page
 from n2y.database import Database
-from n2y.comment import Comment
-from n2y.blocks import DEFAULT_BLOCKS
+from n2y.blocks import DEFAULT_BLOCKS, ChildPageBlock
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
@@ -389,3 +388,8 @@ class Client:
             f"{self.base_url}blocks/{block_id}", headers=headers
         )
         return self._parse_response(response)
+
+    def parse_pandoc(self, pandoc_ast):
+        pandoc_string = f"{pandoc_ast}"
+        if pandoc_string[:7] == "Pandoc(":
+            newBlock = ChildPageBlock().from_pandoc()
