@@ -1,12 +1,12 @@
 from n2y.notion import Client
 from n2y.notion_mocks import mock_block, mock_rich_text
 from n2y.utils import id_from_share_link
+from tests.utils import NOTION_ACCESS_TOKEN
 
 
 def test_create_and_delete_blocks():
-    url = "https://www.notion.so/innolitics/Test-Page-46bc615bed5a479e8390d9373279426f"
-    access_token = "secret_aBbNlu5xsTtBNarAmuPYliS6pSCMpNaIJkcsz5eFuZn"
-    client = Client(access_token, plugins=None)
+    url = "cfa8ff07bba244c8b967c9b6a7a954c1"
+    client = Client(NOTION_ACCESS_TOKEN, plugins=None)
     object_id = id_from_share_link(url)
     page = client.get_page_or_database(object_id)
     notion_block = mock_block(

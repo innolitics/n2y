@@ -382,7 +382,7 @@ class Client:
         return self._parse_response(response)
 
     def delete_block(self, block_id):
-        headers = self.headers
+        headers = {**self.headers}
         del headers['Content-Type']
         response = requests.delete(
             f"{self.base_url}blocks/{block_id}", headers=self.headers
