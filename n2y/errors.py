@@ -25,6 +25,12 @@ class UseNextClass(Exception):
     """
     pass
 
+class UseNextType(Exception):
+    """
+    Used by pandoc typing system to indicate that the next type should be used instead of current one.
+    """
+    pass
+
 
 class RequestTimeoutError(N2YError):
     """

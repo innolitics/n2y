@@ -3,24 +3,26 @@ import json
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
 import importlib.util
+from webbrowser import get
 
 import requests
 
+from n2y.user import User
+from n2y.file import File
+from n2y.page import Page
+from n2y.emoji import Emoji
+from n2y.comment import Comment
+from n2y.database import Database
+from n2y.mentions import DEFAULT_MENTIONS
+from n2y.properties import DEFAULT_PROPERTIES
+from n2y.blocks import DEFAULT_BLOCKS, PANDOC_TYPES
+from n2y.utils import sanitize_filename, strip_hyphens
+from n2y.property_values import DEFAULT_PROPERTY_VALUES
+from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
-    UseNextClass, is_api_error_code, APIErrorCode
+    UseNextClass, UseNextType, is_api_error_code, APIErrorCode
 )
-from n2y.file import File
-from n2y.emoji import Emoji
-from n2y.page import Page
-from n2y.database import Database
-from n2y.blocks import DEFAULT_BLOCKS, ChildPageBlock
-from n2y.properties import DEFAULT_PROPERTIES
-from n2y.property_values import DEFAULT_PROPERTY_VALUES
-from n2y.user import User
-from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.mentions import DEFAULT_MENTIONS
-from n2y.utils import sanitize_filename, strip_hyphens
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -389,7 +391,28 @@ class Client:
         )
         return self._parse_response(response)
 
-    def parse_pandoc(self, pandoc_ast):
-        pandoc_string = f"{pandoc_ast}"
-        if pandoc_string[:7] == "Pandoc(":
-            newBlock = ChildPageBlock().from_pandoc()
+    def parse_pandoc(self, page, pandoc_ast):
+        new_block = self.instantiate_class_from_type(pandoc_ast, self, page)
+        self.store_unsaved_block(page, new_block)
+
+    def store_unsaved_block(self, page, block):
+        if 'unsaved_blocks' in self.__dict__:
+            if page in self.unsaved_blocks:
+                self.unsaved_blocks[page].append(block)
+            else:
+                self.unsaved_blocks[page] = [block]
+        else:
+            self.unsaved_blocks = {page: [block]}
+
+    def instantiate_class_from_type(self, pandoc_ast, *args, **kwargs):
+        for type in PANDOC_TYPES:
+            try:
+                if isinstance(pandoc_ast, type["type"]):
+                    mock_data = type["notion_data"](pandoc_ast)
+                    notion_data = mock_block("child_page", mock_data)
+                    return type["class"](*[args[0], notion_data, args[1]], **kwargs)
+                else:
+                    raise UseNextType()
+            except UseNextType:
+                logger.debug("Skipping %s due to UseNextEs exception", type["type"].__name__)
+

@@ -48,15 +48,8 @@ class Block:
         self.archived = notion_data['archived']
         self.notion_type = notion_data['type']
         self.notion_data = notion_data[notion_data['type']]
-
-        if get_children:
-            if self.has_children:
-                children = self.client.get_child_blocks(self.notion_id, page, get_children)
-            else:
-                children = []
-        else:
-            children = None
-        self.children = children
+        self.get_children = get_children
+        self._children = []
 
     def to_pandoc(self):
         raise NotImplementedError()
@@ -82,6 +75,15 @@ class Block:
                         # would handle this, but it doesn't appear to work
                         pandoc_ast.append(result)
         return pandoc_ast
+    
+    @property
+    def children(self):
+        if self.get_children and self.has_children and not self._children:
+            children = self.client.get_child_blocks(
+                self.notion_id, self.page, self.get_children
+            )
+            self._children = children
+        return self._children
 
     @property
     def notion_url(self):
@@ -655,3 +657,54 @@ DEFAULT_BLOCKS = {
     "table_row": RowBlock,
     "unsupported": UnsupportedBlock,
 }
+
+def generate_notion_data(pandoc_ast):
+    arguments = pandoc_ast.__dict__['_args']
+    notion_data = {}
+    if len(arguments) == 2:
+        title = arguments[0].__dict__["_args"][0]["title"].__dict__["_args"][0]
+        notion_data["title"] = title
+    return notion_data
+
+PANDOC_TYPES = [
+    {
+        "type": Para,
+        "class": ParagraphBlock,
+        "notion_data": generate_notion_data,
+    },
+    {
+        "type": Pandoc,
+        "class": ChildPageBlock,
+        "notion_data": generate_notion_data,
+    },
+    # ("heading_1", HeadingOneBlock),
+    # ("heading_2", HeadingTwoBlock),
+    # ("heading_3", HeadingThreeBlock),
+    # ("bulleted_list_item", BulletedListItemBlock),
+    # ("numbered_list_item", NumberedListItemBlock),
+    # ("to_do", ToDoListItemBlock),
+    # ("toggle", ToggleBlock),
+    # ("child_database", ChildDatabaseBlock),
+    # ("embed", EmbedBlock),
+    # ("image", ImageBlock),
+    # ("video", VideoBlock),
+    # ("file", FileBlock),
+    # ("pdf", PdfBlock),
+    # ("bookmark", BookmarkBlock),
+    # ("callout", CalloutBlock),
+    # ("quote", QuoteBlock),
+    # ("equation", EquationBlock),
+    # ("divider", DividerBlock),
+    # ("table_of_contents", TableOfContentsBlock),
+    # ("breadcrumb", TableOfContentsBlock),
+    # ("column", ColumnBlock),
+    # ("column_list", ColumnListBlock),
+    # ("link_preview", LinkPreviewBlock),
+    # ("synced_block", SyncedBlock),
+    # ("template", TemplateBlock),
+    # ("link_to_page", LinkToPageBlock),
+    # ("code", FencedCodeBlock),
+    # ("table", TableBlock),
+    # ("table_row", RowBlock),
+    # ("unsupported", UnsupportedBlock),
+]
