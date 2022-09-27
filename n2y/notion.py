@@ -392,7 +392,7 @@ class Client:
         return self._parse_response(response)
 
     def parse_pandoc(self, page, pandoc_ast):
-        new_block = self.instantiate_class_from_type(pandoc_ast, self, page)
+        new_block = self.instantiate_class_from_pandoc(pandoc_ast, self, page)
         self.store_unsaved_block(page, new_block)
 
     def store_unsaved_block(self, page, block):
@@ -404,15 +404,17 @@ class Client:
         else:
             self.unsaved_blocks = {page: [block]}
 
-    def instantiate_class_from_type(self, pandoc_ast, *args, **kwargs):
+    def instantiate_class_from_pandoc(self, pandoc_ast, *args, **kwargs):
         for type in PANDOC_TYPES:
             try:
                 if isinstance(pandoc_ast, type["type"]):
-                    mock_data = type["notion_data"](pandoc_ast)
+                    mock_data, children = type["notion_data"](pandoc_ast)
                     notion_data = mock_block("child_page", mock_data)
-                    return type["class"](*[args[0], notion_data, args[1]], **kwargs)
+                    args.insert(1, notion_data)
+                    new_block = type["class"](*args, **kwargs)
+                    new_block._pandoc_children = children
+                    return 
                 else:
                     raise UseNextType()
             except UseNextType:
                 logger.debug("Skipping %s due to UseNextEs exception", type["type"].__name__)
-

@@ -664,7 +664,15 @@ def generate_notion_data(pandoc_ast):
     if len(arguments) == 2:
         title = arguments[0].__dict__["_args"][0]["title"].__dict__["_args"][0]
         notion_data["title"] = title
-    return notion_data
+    children = arguments[-1]
+    if type(children) != list:
+        raise NotImplementedError(
+            (
+                f"Children are not the last arument for the "
+                "{type(pandoc_ast)} type: arguments - {arguments}"
+            )
+        )
+    return notion_data, children
 
 PANDOC_TYPES = [
     {
