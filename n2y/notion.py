@@ -379,3 +379,18 @@ class Client:
         with open(full_filepath, 'wb') as temp_file:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
+
+    def append_block_children(self, block_id, children):
+        response = requests.patch(
+            f"{self.base_url}blocks/{block_id}/children",
+            json={"children": children}, headers=self.headers
+        )
+        return self._parse_response(response)
+
+    def delete_block(self, block_id):
+        headers = {**self.headers}
+        del headers['Content-Type']
+        response = requests.delete(
+            f"{self.base_url}blocks/{block_id}", headers=headers
+        )
+        return self._parse_response(response)
