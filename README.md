@@ -26,6 +26,32 @@ To do this, go to the "Settings and Members" page in Notion. You should see an "
 
 Finally, in Notion you'll need to share the relevant pages with your internal integration---just like you'd share a page with another person.
 
+## Configuration
+
+N2y is configured using a single YAML file. This file contains a few top-level keys:
+
+The `exports` key contains a list of pages or databases to be exported. Each export config item is an object with the following keys:
+
+| Export key | Description |
+| --- | --- |
+| id | The notion database or page id, taken from the "share URL". |
+| node_type | Either "database_as_yaml", "database_as_files", or "page". |
+| pandoc_format | The [pandoc format](https://pandoc.org/MANUAL.html#general-options) that we're generating. |
+| pandoc_options | A list of strings that are [writer options](https://pandoc.org/MANUAL.html#general-writer-options) for pandoc. |
+| content_property | When set, it indicates the property name that will contain the content of the notion pages in that databse. If set to `None`, then only the page's properties will be included in the export. (Only applies to the `database_as_files` node type.) |
+| id_property | When set, this indicates the property name in which to place the page's underlying notion ID. |
+| url_property | When set, this indicates the property name in which to place the page's underlying notion url. |
+| filename_property | This key is required for the "database_as_files" node type; when set, it indicates which property to use when generating the file name. |
+| plugins | A list of python modules to use as plugins. |
+| notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
+| notion_sort | A [notion sort object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
+
+Each export entry can set these arguments differently. Default values for all of these keys, except for `id` and `node_type`, can be set using the `export_defaults` key.
+
+The `media_url` key sets the base URL for all downloaded media files (e.g., images, videos, PDFs, etc.).
+
+The `media_path` key sets the directory where media files should be downloaded to.
+
 ## Example Usage
 
 ### Convert a Database to YAML

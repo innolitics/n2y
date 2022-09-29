@@ -1,7 +1,18 @@
+import copy
 import yaml
 
-from n2y.config import validate_database_config, merge_config, load_config
+from n2y.config import (
+    _valid_id, validate_config, merge_config, load_config, _valid_notion_filter,
+    _validate_config_item, MASTER_DEFAULTS
+)
 from n2y.notion_mocks import mock_id
+
+
+def mock_config_item(node_type):
+    config_item = copy.deepcopy(MASTER_DEFAULTS)
+    config_item["id"] = mock_id()
+    config_item["node_type"] = node_type
+    return config_item
 
 
 def test_load_config_basic(tmp_path):
@@ -10,6 +21,8 @@ def test_load_config_basic(tmp_path):
     export_id = mock_id()
     with open(config_path, "w") as f:
         f.write(yaml.dump({
+            "media_root": "media",
+            "media_url": "https://example.com/media",
             "export_defaults": {
                 "id_property": "id",
                 "url_property": "url",
@@ -17,6 +30,7 @@ def test_load_config_basic(tmp_path):
             "exports": [
                 {
                     "id": export_id,
+                    "node_type": "page",
                     "pandoc_format": "gfm",
                 }
             ]
@@ -24,6 +38,7 @@ def test_load_config_basic(tmp_path):
     config = load_config(config_path)
     merged_export = config["exports"][0]
     assert merged_export["id"] == export_id
+    assert merged_export["node_type"] == "page"
     assert merged_export["id_property"] == "id"
     assert merged_export["url_property"] == "url"
     assert merged_export["pandoc_format"] == "gfm"
@@ -57,42 +72,46 @@ def test_merge_config_defaults():
     ]
 
 
-def test_validate_database_config_empty():
-    assert validate_database_config({})
+def test_valid_id_valid():
+    assert _valid_id(mock_id())
 
 
-def test_validate_database_config_no_props():
-    assert validate_database_config({
-        mock_id(): {},
+def test_valid_id_invalid():
+    assert not _valid_id(mock_id() + 'a')
+
+
+def test_valid_notion_filter_simple():
+    assert _valid_notion_filter({
+        "property": "title",
+        "direction": "ascending",
     })
 
 
-def test_validate_database_config_invalid_id():
-    invalid_id = mock_id() + 'a'
-    assert not validate_database_config({
-        invalid_id: {},
-    })
+def test_valid_notion_filter_complex():
+    assert _valid_notion_filter([{
+        "property": "title",
+        "direction": "ascending",
+    }])
 
 
-def test_validate_database_config_invalid_props():
-    assert not validate_database_config({
-        mock_id(): {'invalid': 'thing'},
-    })
+def test_valid_config_item_missing_id():
+    config_item = mock_config_item("page")
+    del config_item["id"]
+    assert not _validate_config_item(config_item)
 
 
-def test_validate_database_config_invalid_value():
-    assert not validate_database_config({
-        mock_id(): {'filter': 'invalid'},
-    })
+def test_valid_config_item_missing_node_type():
+    config_item = mock_config_item("page")
+    del config_item["node_type"]
+    assert not _validate_config_item(config_item)
 
 
-def test_validate_database_config_valid_dict():
-    assert validate_database_config({
-        mock_id(): {'filter': {}},
-    })
+def test_valid_config_item_invalid_node_type():
+    config_item = mock_config_item("page")
+    config_item["node_type"] = "invalid"
+    assert not _validate_config_item(config_item)
 
 
-def test_validate_database_config_valid_list():
-    assert validate_database_config({
-        mock_id(): {'filter': []},
-    })
+def test_valid_config_item_missing_filename_property():
+    config_item = mock_config_item("database_as_files")
+    assert not _validate_config_item(config_item)
