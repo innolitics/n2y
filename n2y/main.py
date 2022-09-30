@@ -47,15 +47,10 @@ def main(raw_args, access_token):
     if config is None:
         return 2
 
-    client = notion.Client(
-        access_token,
-        config["media_root"],
-        config["media_url"],
-        config["plugins"],
-    )
+    client = notion.Client(access_token, config["media_root"], config["media_url"])
 
     for export in config['exports']:
-        # TODO: swap out plugins
+        client.load_plugins(export["plugins"])
         node_type = export["node_type"]
         if node_type == "page":
             page = client.get_page(export['id'])

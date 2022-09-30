@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 DEFAULTS = {
     "media_root": "media",
     "media_url": "./media/",
-    "plugins": [],
 }
 
 
@@ -27,6 +26,7 @@ EXPORT_DEFAULTS = {
         '--wrap', 'none',  # don't hard line-wrap
         '--eol', 'lf',  # use linux-style line endings
     ],
+    "plugins": [],
 }
 
 

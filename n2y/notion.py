@@ -79,7 +79,6 @@ class Client:
         self.databases_cache = {}
         self.pages_cache = {}
 
-        self.notion_classes = self.get_default_classes()
         self.load_plugins(plugins)
         self.plugin_data = {}
 
@@ -93,6 +92,7 @@ class Client:
         return notion_classes
 
     def load_plugins(self, plugins):
+        self.notion_classes = self.get_default_classes()
         if plugins is not None:
             for plugin in plugins:
                 plugin_module = importlib.import_module(plugin)
@@ -276,7 +276,7 @@ class Client:
             try:
                 notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
             except ObjectNotFound:
-                self.pages_cache[page_id] = None
+                self.pages_cache[(page_id, self.active_plugins)] = None
                 return
             # _wrap_notion_page will add the page to the cache
             page = self._wrap_notion_page(notion_page)

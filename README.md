@@ -127,7 +127,7 @@ The default implementation of these classes can be modified using a plugin syste
 
 1. Create a new Python module
 2. Subclass the various notion classes, modifying their constructor or `to_pandoc` method as desired
-3. Run n2y with the `--plugin` argument pointing to your python module
+3. Set the `plugins` property in your export config to the module name (e.g., `n2y.plugins.deepheaders`)
 
 See the [builtin plugins](https://github.com/innolitics/n2y/tree/main/n2y/plugins) for examples.
 
@@ -136,6 +136,10 @@ See the [builtin plugins](https://github.com/innolitics/n2y/tree/main/n2y/plugin
 You can use multiple plugins. If two plugins provide classes for the same notion object, then the last one that was loaded will be instantiated first.
 
 Often you'll want to use a different class only in certain situations. For example, you may want to use a different Page class with its own unique behavior only for pages in a particular database. To accomplish this you can use the `n2y.errors.UseNextClass` exception. If your plugin class raise the `n2y.errors.UseNextClass` exception in its constructor, then n2y will move on to the next class (which may be the builtin class if only one plugin was used).
+
+### Different Plugins for Different Exports
+
+You may use different plugins for different export items, but keep in mind that the plugin module is imported only once. Also, if you export the same `Page` or `Database` multiple times with different plugins, due to an internal cache, the plugins that were enabled during the first run will be used.
 
 ### Default Block Class's
 
@@ -173,7 +177,6 @@ Here are the default block classes that can be extended:
 | ToDoItemBlock | |
 | ToggleBlock | Convert the toggles into a bulleted list. |
 | VideoBlock | Acts the same way as the Image block |
-
 
 Most of the Notion blocks can generate their pandoc AST from _only_ their own data. The one exception is the list item blocks; pandoc, unlike Notion, has an encompassing node in the AST for the entire list. The `ListItemBlock.list_to_pandoc` class method is responsible for generating this top-level node.
 

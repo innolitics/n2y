@@ -3,7 +3,6 @@ import os.path
 from os.path import isfile, join
 
 import yaml
-import pytest
 
 try:
     from yaml import CLoader as Loader
@@ -254,7 +253,6 @@ def test_simple_page_to_markdown(tmpdir):
     assert "Page content" in document
 
 
-@pytest.mark.xfail(reason="Need to make it possible to enable/disable plugins")
 def test_builtin_plugins(tmpdir):
     """
     The page can be seen here:
