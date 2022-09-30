@@ -2,14 +2,14 @@ import copy
 import yaml
 
 from n2y.config import (
-    _valid_id, validate_config, merge_config, load_config, _valid_notion_filter,
-    _validate_config_item, MASTER_DEFAULTS
+    _valid_id, merge_config, load_config, _valid_notion_filter,
+    _validate_config_item, EXPORT_DEFAULTS
 )
 from n2y.notion_mocks import mock_id
 
 
 def mock_config_item(node_type):
-    config_item = copy.deepcopy(MASTER_DEFAULTS)
+    config_item = copy.deepcopy(EXPORT_DEFAULTS)
     config_item["id"] = mock_id()
     config_item["node_type"] = node_type
     return config_item
@@ -31,11 +31,13 @@ def test_load_config_basic(tmp_path):
                 {
                     "id": export_id,
                     "node_type": "page",
+                    "output": "output.md",
                     "pandoc_format": "gfm",
                 }
             ]
         }))
     config = load_config(config_path)
+    assert config is not None, "The config is invalid"
     merged_export = config["exports"][0]
     assert merged_export["id"] == export_id
     assert merged_export["node_type"] == "page"

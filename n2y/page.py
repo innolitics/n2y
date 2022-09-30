@@ -1,9 +1,8 @@
 import logging
 
-import yaml
 from .blocks import ChildDatabaseBlock, ChildPageBlock
 
-from n2y.utils import pandoc_ast_to_html, pandoc_ast_to_markdown, fromisoformat, sanitize_filename
+from n2y.utils import fromisoformat
 from n2y.property_values import TitlePropertyValue
 
 
@@ -83,74 +82,8 @@ class Page:
             assert parent_type == "database_id"
             return self.client.get_database(self.notion_parent["database_id"])
 
-    @property
-    def filename(self):
-        # TODO: switch to using the database's natural keys as the file names
-        filename_property = self.client.filename_property
-        if filename_property is None:
-            return sanitize_filename(self.title.to_plain_text())
-        elif filename_property in self.properties:
-            return sanitize_filename(self.properties[filename_property].to_value())
-        else:
-            logger.warning(
-                'Invalid filename property, "%s". Valid options are %s',
-                filename_property, ", ".join(self.properties.keys()),
-            )
-            return sanitize_filename(self.title.to_plain_text())
-
     def to_pandoc(self):
         return self.block.to_pandoc()
 
-    def content_to_markdown(self):
-        pandoc_ast = self.to_pandoc()
-        if pandoc_ast is not None:
-            return pandoc_ast_to_markdown(pandoc_ast)
-        else:
-            return None
-
     def properties_to_values(self):
-        properties = {k: v.to_value() for k, v in self.properties.items()}
-
-        id_property = self.client.id_property
-        if id_property in properties:
-            logger.warning(
-                'The id property "%s" is shadowing an existing '
-                'property with the same name', id_property,
-            )
-        if id_property:
-            notion_id = self.notion_id
-            properties[id_property] = notion_id
-
-        url_property = self.client.url_property
-        if url_property in properties:
-            logger.warning(
-                'The url property "%s" is shadowing an existing '
-                'property with the same name', url_property,
-            )
-        if url_property:
-            properties[url_property] = self.notion_url
-        return properties
-
-    def to_markdown(self):
-        return '\n'.join([
-            '---',
-            yaml.dump(self.properties_to_values()) + '---',
-            self.content_to_markdown() or '',
-        ])
-
-    def content_to_html(self):
-        pandoc_ast = self.to_pandoc()
-        if pandoc_ast is not None:
-            return pandoc_ast_to_html(pandoc_ast)
-        else:
-            return ''
-
-    def to_html(self):
-        # currently, the html output is generated for jekyll sites, hence the
-        # inclusion of the YAML front matter
-        # if someone needs just the HTML we should generalize
-        return '\n'.join([
-            '---',
-            yaml.dump(self.properties_to_values()) + '---',
-            self.content_to_html() or '',
-        ])
+        return {k: v.to_value() for k, v in self.properties.items()}

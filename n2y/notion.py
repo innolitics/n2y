@@ -23,7 +23,6 @@ from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
-from n2y.utils import strip_hyphens
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -49,10 +48,9 @@ class Client:
     """
     An instance of the client class has a few purposes:
 
-    1. To store configuration
-    2. To retrieve data from Notion
-    3. To determine what classes to use to wrap this notion data, based on the configuration
-    4. To act as a shared global store for all of the objects that are pulled
+    1. To retrieve data from Notion
+    2. To determine what classes to use to wrap this notion data
+    3. To act as a shared global store for all of the objects that are pulled
        from Notion.
 
     In particular there is a cache of all pages and databases which ensure that
@@ -66,20 +64,10 @@ class Client:
         media_root='.',
         media_url='',
         plugins=None,
-        content_property=None,
-        id_property=None,
-        url_property=None,
-        filename_property=None,
-        database_config=None,
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
-        self.content_property = content_property
-        self.id_property = id_property
-        self.url_property = url_property
-        self.filename_property = filename_property
-        self.database_config = database_config if database_config is not None else {}
 
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
@@ -258,14 +246,18 @@ class Client:
             self.databases_cache[database_id] = database
         return database
 
-    def get_database_pages(self, database_id):
-        notion_pages = self.get_database_notion_pages(database_id)
+    def get_database_pages(self, database_id, filter=None, sorts=None):
+        notion_pages = self.get_database_notion_pages(database_id, filter, sorts)
         return [self._wrap_notion_page(np) for np in notion_pages]
 
-    def get_database_notion_pages(self, database_id):
+    def get_database_notion_pages(self, database_id, filter, sorts):
         results = []
         url = f"{self.base_url}databases/{database_id}/query"
-        request_data = self._create_database_request_data(database_id)
+        request_data = {}
+        if filter:
+            request_data["filter"] = filter
+        if sorts:
+            request_data["sorts"] = sorts
         while True:
             data = self._post_url(url, request_data)
             results.extend(data["results"])
@@ -273,10 +265,6 @@ class Client:
                 return results
             else:
                 request_data["start_cursor"] = data["next_cursor"]
-
-    def _create_database_request_data(self, database_id):
-        stripped_database_id = strip_hyphens(database_id)
-        return self.database_config.get(stripped_database_id, {})
 
     def get_page(self, page_id):
         """
@@ -387,7 +375,7 @@ class Client:
 
         num_hash_characters = 8  # just long enough to avoid collisions
         hash = hash_md5.hexdigest()[:num_hash_characters]
-        relative_filepath = "".join([page.filename, "-", hash, extension])
+        relative_filepath = "".join([hash, extension])
         full_filepath = path.join(self.media_root, relative_filepath)
 
         makedirs(path.dirname(full_filepath), exist_ok=True)

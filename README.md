@@ -30,12 +30,20 @@ Finally, in Notion you'll need to share the relevant pages with your internal in
 
 N2y is configured using a single YAML file. This file contains a few top-level keys:
 
-The `exports` key contains a list of pages or databases to be exported. Each export config item is an object with the following keys:
+| Top-level key | Description |
+| --- | --- |
+| media_url | Sets the base URL for all downloaded media files (e.g., images, videos, PDFs, etc.) |
+| media_root | The directory where media files should be downloaded to |
+| exports | A list of export configuration items, indicating how a notion page or database is to be exported. See below for the keys.  |
+| export_defaults | Default values for the export configuration items. |
+
+The export configuration items may contain the following keys:
 
 | Export key | Description |
 | --- | --- |
 | id | The notion database or page id, taken from the "share URL". |
 | node_type | Either "database_as_yaml", "database_as_files", or "page". |
+| output | The path the output file, or directory, where the data will be written. |
 | pandoc_format | The [pandoc format](https://pandoc.org/MANUAL.html#general-options) that we're generating. |
 | pandoc_options | A list of strings that are [writer options](https://pandoc.org/MANUAL.html#general-writer-options) for pandoc. |
 | content_property | When set, it indicates the property name that will contain the content of the notion pages in that databse. If set to `None`, then only the page's properties will be included in the export. (Only applies to the `database_as_files` node type.) |
@@ -44,38 +52,46 @@ The `exports` key contains a list of pages or databases to be exported. Each exp
 | filename_property | This key is required for the "database_as_files" node type; when set, it indicates which property to use when generating the file name. |
 | plugins | A list of python modules to use as plugins. |
 | notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
-| notion_sort | A [notion sort object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
+| notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
 
-Each export entry can set these arguments differently. Default values for all of these keys, except for `id` and `node_type`, can be set using the `export_defaults` key.
+## Example Configuration Files
 
-The `media_url` key sets the base URL for all downloaded media files (e.g., images, videos, PDFs, etc.).
-
-The `media_path` key sets the directory where media files should be downloaded to.
-
-## Example Usage
+The command is run using `n2y configuration.yaml`.
 
 ### Convert a Database to YAML
 
-Copy the link for the database you'd like to export to YAML. Note that linked databases aren't supported. Then run:
+A notion database (e.g., with a share URL like this https://www.notion.so/176fa24d4b7f4256877e60a1035b45a4?v=130ffd3224fd4512871bb45dbceaa7b2) could be exported into a YAML file using this minimal configuration file:
 
 ```
-n2y DATABASE_LINK > database.yml
+exports:
+- id: 176fa24d4b7f4256877e60a1035b45a4
+  node_type: database_as_yaml
+  output: database.yml
 ```
 
 ### Convert a Database to a set of Markdown Files
 
+The same database could be exported into a set of markdown files as follows:
+
 ```
-n2y -f markdown DATABASE_LINK
+exports:
+- id: 176fa24d4b7f4256877e60a1035b45a4
+  node_type: database_as_files
+  output: directory
+  filename_property: "Name"
 ```
 
-This process will automatically skip untitled pages or pages with duplicate names.
+Each page in the database will generate a single markdown file, named according to the `filename_property`. This process will automatically skip pages whose "Name" property is empty.
 
 ### Convert a Page to a Markdown File
 
-If the page is in a database, then it's properties will be included in the YAML front matter. If the page is not in a database, then the title of the page will be included in the YAML front matter.
+An individual notion page (e.g., with a share URL like this https://www.notion.so/All-Blocks-Test-Page-5f18c7d7eda44986ae7d938a12817cc0) could be exported to markdown with this minimal configuration file:
 
 ```
-n2y PAGE_LINK > page.md
+exports:
+- id: 5f18c7d7eda44986ae7d938a12817cc0
+  node_type: page
+  output: page.md
 ```
 
 ### Audit a Page and it's Children For External Links
@@ -201,12 +217,12 @@ Note that any link to a page that the integration doesn't have access to will be
 
 ## Architecture
 
-N2y's architecture is divided into four main steps:
+An n2y run is divided into four stages:
 
-1. Configuration
+1. Loading the configuration (mostly in `config.py`)
 2. Retrieve data from Notion (by instantiating various Notion object instances, e.g., `Page`, `Block`, `RichText`, etc.)
 3. Convert to the pandoc AST (by calling `block.to_pandoc()`)
-4. Writing the pandoc AST into markdown or YAML
+4. Writing the pandoc AST into one of the various output formats (mostly in `export.py`)
 
 Every page object has a `parent` property, which may be a page, a database, or a workspace.
 
@@ -245,11 +261,14 @@ Here are some features we're planning to add in the future:
 - Add support for recursively dumping sets of pages and preserving links between them
 - Add some sort of Notion API caching mechanism
 - Add more examples to the documentation
-- Make it so that plugins and other configuration can be set for only a sub-set
-  of the exported pages, that way multiple configurations can be applied in a
-  single export
 
 ## Changelog
+
+### v0.6.0
+
+- The export is now configured using a single YAML file instead of the growing list of commandline arguments. Using a configuration file allows multiple page and database exports to be made in a single run, which in turn improves caching and will enable future improvements, like preserving links between generated HTML or markdown pages.
+- Added the `pandoc_format` and `pandoc_options` fields, making it possible to output to any format that pandoc supports.
+- Removed the ability to export a set of related databases (this is less useful now that we have a configuration file).
 
 ### v0.5.0
 

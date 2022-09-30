@@ -582,8 +582,13 @@ class LinkToPageBlock(Block):
     def to_pandoc(self):
         # TODO: in the future, if we are exporting the linked page too, then add
         # a link to the page. For now, we just display the text of the page.
+        if self.link_type == "page_id":
+            node = self.client.get_page(self.linked_page_id)
+        elif self.link_type == "database_id":
+            node = self.client.get_database(self.linked_page_id)
+        else:
+            raise NotImplementedError(f"Unknown link type: {self.link_type}")
 
-        node = self.client.get_page_or_database(self.linked_page_id)
         if node is None:
             msg = "Permission denied when attempting to access linked node [%s]"
             logger.warning(msg, self.notion_url)
