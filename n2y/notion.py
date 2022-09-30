@@ -26,18 +26,25 @@ from n2y.errors import (
 
 
 DEFAULT_NOTION_CLASSES = {
-    "page": Page,
-    "database": Database,
-    "blocks": DEFAULT_BLOCKS,
-    "properties": DEFAULT_PROPERTIES,
     "property_values": DEFAULT_PROPERTY_VALUES,
+    "rich_texts": DEFAULT_RICH_TEXTS,
+    "properties": DEFAULT_PROPERTIES,
+    "rich_text_array": RichTextArray,
+    "mentions": DEFAULT_MENTIONS,
+    "blocks": DEFAULT_BLOCKS,
+    "database": Database,
+    "comment": Comment,
     "user": User,
     "file": File,
+<<<<<<< HEAD
     "emoji": Emoji,
     "rich_text_array": RichTextArray,
     "rich_texts": DEFAULT_RICH_TEXTS,
     "mentions": DEFAULT_MENTIONS,
     "comment": Comment,
+=======
+    "page": Page,
+>>>>>>> 5509c4b (parse pandoc Para class successfully into notion data)
 }
 
 
@@ -152,13 +159,44 @@ class Client:
         except KeyError:
             raise NotImplementedError(f'Unknown "{notion_object}" class of type "{object_type}"')
 
-    def instantiate_class(self, notion_object, object_type, *args, **kwargs):
+    def instantiate_class(self, *args, **kwargs):
+        first_arg = args[0]
+        if type(first_arg) == str:
+            return self._instantiate_class_from_notion(first_arg, args[1], *args[2:])
+        else:
+            return self._instantiate_class_from_pandoc(first_arg, args[1], **kwargs)
+
+    def _instantiate_class_from_notion(self, notion_object, object_type, *args, **kwargs):
         class_list = self.get_class_list(notion_object, object_type)
         for klass in reversed(class_list):
             try:
                 return klass(*args, **kwargs)
             except UseNextClass:
                 logger.debug("Skipping %s due to UseNextClass exception", klass.__name__)
+
+    def _instantiate_class_from_pandoc(self, pandoc_ast, page, **kwargs):
+        for pandoc_type, pandoc_type_info  in PANDOC_TYPES.items():
+                try:
+                    if type(pandoc_ast) in pandoc_type_info["pandoc"]:
+                        mock_data, children = pandoc_type_info["parse_pandoc"](pandoc_ast, self, page)
+                        notion_data = mock_block(pandoc_type, mock_data)
+                        class_args = [self, notion_data, page]
+                        new_block = pandoc_type_info["class"](*class_args, **kwargs)
+                        # children = self._process_pandoc_children(pandoc_children, page)
+                        new_block.has_children = bool(children)
+                        new_block._children = children
+                        return new_block
+                    else:
+                        raise UseNextType()
+                except UseNextType:
+                    logger.debug("Skipping %s due to UseNextType exception", pandoc_type)
+    
+    def _process_pandoc_children(self, pandoc_children, page):
+        class_children = []
+        for pandoc_child in pandoc_children:
+            class_child = self.instantiate_class(pandoc_child, page)
+            class_children.append(class_child)
+        return class_children
 
     def _wrap_notion_page(self, notion_data):
         """
@@ -391,8 +429,8 @@ class Client:
         )
         return self._parse_response(response)
 
-    def parse_pandoc(self, page, pandoc_ast):
-        new_block = self.instantiate_class_from_pandoc(pandoc_ast, self, page)
+    def save_block(self, page, pandoc_ast):
+        new_block = self.instantiate_class(pandoc_ast, page)
         self.store_unsaved_block(page, new_block)
 
     def store_unsaved_block(self, page, block):
@@ -403,18 +441,3 @@ class Client:
                 self.unsaved_blocks[page] = [block]
         else:
             self.unsaved_blocks = {page: [block]}
-
-    def instantiate_class_from_pandoc(self, pandoc_ast, *args, **kwargs):
-        for type in PANDOC_TYPES:
-            try:
-                if isinstance(pandoc_ast, type["type"]):
-                    mock_data, children = type["notion_data"](pandoc_ast)
-                    notion_data = mock_block("child_page", mock_data)
-                    args.insert(1, notion_data)
-                    new_block = type["class"](*args, **kwargs)
-                    new_block._pandoc_children = children
-                    return 
-                else:
-                    raise UseNextType()
-            except UseNextType:
-                logger.debug("Skipping %s due to UseNextEs exception", type["type"].__name__)

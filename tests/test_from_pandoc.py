@@ -10,5 +10,5 @@ def test_from_pandoc():
   object_id = id_from_share_link(url)
   page = client.get_page_or_database(object_id)
   pandoc_ast = page.to_pandoc()
-  client.parse_pandoc(page, pandoc_ast)
+  client.save_block(page, pandoc_ast)
   assert 1 == 0

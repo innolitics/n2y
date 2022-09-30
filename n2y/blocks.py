@@ -1,3 +1,4 @@
+from __future__ import annotations
 from itertools import groupby
 import logging
 from urllib.parse import urljoin
@@ -6,8 +7,11 @@ from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, Strikeout,
+    Code, Strong, Emph, Strikeout, Underline,  InlineMath, LineBreak, Space
 )
+
+from n2y.notion_mocks import mock_annotations
 
 
 logger = logging.getLogger(__name__)
@@ -53,9 +57,6 @@ class Block:
 
     def to_pandoc(self):
         raise NotImplementedError()
-
-    def from_pandoc(self):
-        raise NotImplementedError(f'{self.notion_type} does not have this functionality yet')
 
     def children_to_pandoc(self):
         assert self.has_children
@@ -658,61 +659,102 @@ DEFAULT_BLOCKS = {
     "unsupported": UnsupportedBlock,
 }
 
-def generate_notion_data(pandoc_ast):
+def process_pandoc(pandoc_ast, client, page):
     arguments = pandoc_ast.__dict__['_args']
-    notion_data = {}
+    mock_notion_data = {}
     if len(arguments) == 2:
         title = arguments[0].__dict__["_args"][0]["title"].__dict__["_args"][0]
-        notion_data["title"] = title
-    children = arguments[-1]
-    if type(children) != list:
+        mock_notion_data["title"] = title
+    children = process_pandoc_children(arguments, client, page)
+    return mock_notion_data, children
+
+def process_child_page_pandoc(pandoc_ast, client, page):
+    arguments = pandoc_ast.__dict__['_args']
+    title = arguments[0].__dict__["_args"][0]["title"].__dict__["_args"][0]
+    mock_notion_data = {
+        "title": title
+    }
+    children = process_pandoc_children(arguments, client, page)
+    return mock_notion_data, children
+
+def process_str_pandoc(pandoc):
+    return pandoc.__dict__["_args"][0]
+
+def process_rich_text_pandoc(pandoc_text, client, page):
+    annotation_types = {
+        Strong: "strong",
+        Emph: "italic",
+        Strikeout: "strikethrough",
+        Underline: "underline",
+        Code: "code"
+    }
+    rich_text = {
+        "type": None,
+        "annotations": [],
+        "plain_text": "",
+        "href": None
+    }
+    text_types = {
+        Space: " ",
+        LineBreak: "\n",
+        Str: process_str_pandoc
+    }
+    
+    for i, pandoc in enumerate(pandoc_text):
+        pandoc_type = type(pandoc)
+        if pandoc_type in annotation_types:
+            rich_text["annotations"].append(annotation_types[pandoc_type])
+        elif pandoc_type == Link:
+            raise NotImplementedError("Math type text is not yet supported")
+        elif pandoc_type == Math:
+            raise NotImplementedError("Math type text is not yet supported")
+        elif pandoc_type == InlineMath:
+            raise NotImplementedError("InlineMath type text is not yet supported")
+        elif pandoc_type in text_types:
+            if i == 0:
+                rich_text["type"] = "text"
+                rich_text["text"] = {"content": "", "link": None}
+            if pandoc_type == Str:
+                rich_text["text"]["content"] += text_types[Str](pandoc)
+                rich_text["plain_text"]+= text_types[Str](pandoc)
+            else:
+                rich_text["text"]["content"] += text_types[pandoc_type]
+                rich_text["plain_text"]+= text_types[pandoc_type]
+    rich_text["annotations"] = mock_annotations(rich_text["annotations"])
+    return [rich_text]
+
+def process_paragraph_pandoc(pandoc_ast, client, page):
+    arguments = pandoc_ast.__dict__['_args']
+    rich_text_array = process_rich_text_pandoc(arguments[0], client, page)
+    mock_notion_data = {
+        "rich_text": rich_text_array
+    }
+    return mock_notion_data, []
+
+def process_pandoc_children(arguments, client, page):
+    pandoc_children = arguments[-1]
+    if type(pandoc_children) != list:
         raise NotImplementedError(
             (
-                f"Children are not the last arument for the "
+                f"Children are not the last arument for the ",
                 "{type(pandoc_ast)} type: arguments - {arguments}"
             )
         )
-    return notion_data, children
+    class_children = []
+    for pandoc_child in pandoc_children:
+        class_child = client.instantiate_class(pandoc_child, page)
+        class_children.append(class_child)
+    return class_children
 
-PANDOC_TYPES = [
-    {
-        "type": Para,
+PANDOC_TYPES = {
+    "paragraph": {
+        "pandoc": [Para],
         "class": ParagraphBlock,
-        "notion_data": generate_notion_data,
+        "parse_pandoc": process_paragraph_pandoc,
     },
-    {
-        "type": Pandoc,
+    "child_page": {
+        "pandoc": [Pandoc],
         "class": ChildPageBlock,
-        "notion_data": generate_notion_data,
+        "parse_pandoc": process_child_page_pandoc,
     },
-    # ("heading_1", HeadingOneBlock),
-    # ("heading_2", HeadingTwoBlock),
-    # ("heading_3", HeadingThreeBlock),
-    # ("bulleted_list_item", BulletedListItemBlock),
-    # ("numbered_list_item", NumberedListItemBlock),
-    # ("to_do", ToDoListItemBlock),
-    # ("toggle", ToggleBlock),
-    # ("child_database", ChildDatabaseBlock),
-    # ("embed", EmbedBlock),
-    # ("image", ImageBlock),
-    # ("video", VideoBlock),
-    # ("file", FileBlock),
-    # ("pdf", PdfBlock),
-    # ("bookmark", BookmarkBlock),
-    # ("callout", CalloutBlock),
-    # ("quote", QuoteBlock),
-    # ("equation", EquationBlock),
-    # ("divider", DividerBlock),
-    # ("table_of_contents", TableOfContentsBlock),
-    # ("breadcrumb", TableOfContentsBlock),
-    # ("column", ColumnBlock),
-    # ("column_list", ColumnListBlock),
-    # ("link_preview", LinkPreviewBlock),
-    # ("synced_block", SyncedBlock),
-    # ("template", TemplateBlock),
-    # ("link_to_page", LinkToPageBlock),
-    # ("code", FencedCodeBlock),
-    # ("table", TableBlock),
-    # ("table_row", RowBlock),
-    # ("unsupported", UnsupportedBlock),
-]
+}
