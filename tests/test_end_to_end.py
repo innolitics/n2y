@@ -11,6 +11,7 @@ except ImportError:
 
 from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 from n2y.main import main
+from n2y.notion import Client
 
 
 def run_n2y(temp_dir, config):
@@ -217,10 +218,10 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "![Image **caption**](media/5c264631.jpeg)" in lines
+    assert "![Image **caption**](media/All_Blocks_Test_Page-5f18c7d7eda.jpeg)" in lines
 
     # from a file block in the Notion page
-    assert os.path.exists(tmpdir / "media" / "5c264631.jpeg")
+    assert os.path.exists(tmpdir / "media" / "All_Blocks_Test_Page-5f18c7d7eda.jpeg")
 
 
 def test_page_in_database_to_markdown(tmpdir):
@@ -298,3 +299,10 @@ def test_builtin_plugins(tmpdir):
     assert "Untitled" not in document
     assert "Unshared Page" not in document
     assert "This page is not shared with the integration." not in document
+
+
+def test_comment():
+    block_with_comments_id = "ac496c7db16743488495976f7433dbfb"
+    comments = Client(NOTION_ACCESS_TOKEN).get_comments(block_with_comments_id)
+    assert comments[0].rich_text.to_plain_text() == "Test Comment"
+    assert comments[1].rich_text.to_plain_text() == "Test Comment 2"

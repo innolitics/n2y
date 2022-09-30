@@ -1,10 +1,6 @@
-import hashlib
 import logging
 import json
 from os import path, makedirs
-import os
-import shutil
-import tempfile
 from urllib.parse import urljoin, urlparse
 import importlib.util
 
@@ -17,12 +13,14 @@ from n2y.errors import (
 from n2y.file import File
 from n2y.page import Page
 from n2y.database import Database
+from n2y.comment import Comment
 from n2y.blocks import DEFAULT_BLOCKS
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
+from n2y.utils import sanitize_filename
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -36,6 +34,7 @@ DEFAULT_NOTION_CLASSES = {
     "rich_text_array": RichTextArray,
     "rich_texts": DEFAULT_RICH_TEXTS,
     "mentions": DEFAULT_MENTIONS,
+    "comment": Comment,
 }
 
 
@@ -258,13 +257,7 @@ class Client:
             request_data["filter"] = filter
         if sorts:
             request_data["sorts"] = sorts
-        while True:
-            data = self._post_url(url, request_data)
-            results.extend(data["results"])
-            if not data["has_more"]:
-                return results
-            else:
-                request_data["start_cursor"] = data["next_cursor"]
+        return self._paginated_request(self._post_url, url, request_data)
 
     def get_page(self, page_id):
         """
@@ -297,15 +290,15 @@ class Client:
 
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"
-        params = {}
-        results = []
-        while True:
-            data = self._get_url(url, params)
-            results.extend(data["results"])
-            if not data["has_more"]:
-                return results
-            else:
-                params["start_cursor"] = data["next_cursor"]
+        return self._paginated_request(self._get_url, url, {})
+
+    def get_comments(self, block_id):
+        url = f"{self.base_url}comments"
+        comments = self._paginated_request(self._get_url, url, {"block_id": block_id})
+        return [self.wrap_notion_comment(nd) for nd in comments]
+
+    def wrap_notion_comment(self, notion_data):
+        return self.instantiate_class("comment", None, self, notion_data)
 
     def get_page_property(self, page_id, property_id):
         notion_property = self.get_notion_page_property(page_id, property_id)
@@ -327,6 +320,17 @@ class Client:
             data = {}
         response = requests.post(url, headers=self.headers, json=data)
         return self._parse_response(response)
+
+    def _paginated_request(self, request_method, url, initial_params):
+        params = initial_params
+        results = []
+        while True:
+            data = request_method(url, params)
+            results.extend(data["results"])
+            if not data["has_more"]:
+                return results
+            else:
+                params["start_cursor"] = data["next_cursor"]
 
     def _parse_response(self, response):
         """Taken from https://github.com/ramnes/notion-sdk-py"""
@@ -354,30 +358,30 @@ class Client:
         """
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
-        with requests.get(url, stream=True) as request_stream:
-            content_iterator = request_stream.iter_content(4096)
-            return self.save_file(content_iterator, page, extension)
+        request_stream = requests.get(url, stream=True)
+        return self.save_file(request_stream.content, page, extension)
 
-    def save_file(self, content_iterator, page, extension):
-        """
-        Save the content in the provided iterator into a file in MEDIA_ROOT. The
-        file name is determined from the page name, file extension, and an md5
-        hash of the content. The md5 hash is calculated as the data is streamed
-        to a temporary file, which is then moved to the final location once the
-        md5 hash can be calculated.
-        """
-        temp_fd, temp_filepath = tempfile.mkstemp()
-        hash_md5 = hashlib.md5()
-        with os.fdopen(temp_fd, 'wb') as temp_file:
-            for chunk in content_iterator:
-                hash_md5.update(chunk)
-                temp_file.write(chunk)
-
-        num_hash_characters = 8  # just long enough to avoid collisions
-        hash = hash_md5.hexdigest()[:num_hash_characters]
-        relative_filepath = "".join([hash, extension])
+    def save_file(self, content, page, extension):
+        page_id_chars = strip_hyphens(page.notion_id)
+        page_title = sanitize_filename(page.title)
+        relative_filepath = f"{page_title}-{page_id_chars[:11]}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
-
-        makedirs(path.dirname(full_filepath), exist_ok=True)
-        shutil.move(temp_filepath, full_filepath)
+        makedirs(self.media_root, exist_ok=True)
+        with open(full_filepath, 'wb') as temp_file:
+            temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
+
+    def append_block_children(self, block_id, children):
+        response = requests.patch(
+            f"{self.base_url}blocks/{block_id}/children",
+            json={"children": children}, headers=self.headers
+        )
+        return self._parse_response(response)
+
+    def delete_block(self, block_id):
+        headers = {**self.headers}
+        del headers['Content-Type']
+        response = requests.delete(
+            f"{self.base_url}blocks/{block_id}", headers=headers
+        )
+        return self._parse_response(response)
