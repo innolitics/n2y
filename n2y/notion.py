@@ -20,7 +20,7 @@ from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.user import User
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.mentions import DEFAULT_MENTIONS
-from n2y.utils import sanitize_filename
+from n2y.utils import sanitize_filename, strip_hyphens
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -250,7 +250,6 @@ class Client:
         return [self._wrap_notion_page(np) for np in notion_pages]
 
     def get_database_notion_pages(self, database_id, filter, sorts):
-        results = []
         url = f"{self.base_url}databases/{database_id}/query"
         request_data = {}
         if filter:
@@ -363,7 +362,7 @@ class Client:
 
     def save_file(self, content, page, extension):
         page_id_chars = strip_hyphens(page.notion_id)
-        page_title = sanitize_filename(page.title)
+        page_title = sanitize_filename(page.title.to_plain_text())
         relative_filepath = f"{page_title}-{page_id_chars[:11]}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
