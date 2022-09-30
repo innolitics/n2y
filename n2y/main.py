@@ -67,6 +67,7 @@ def main(raw_args, access_token):
                 export["pandoc_options"],
                 export["id_property"],
                 export["url_property"],
+                export["property_map"],
             )
             with open(export["output"], "w") as f:
                 f.write(result)
@@ -89,6 +90,7 @@ def main(raw_args, access_token):
                     content_property=export["content_property"],
                     notion_filter=export["notion_filter"],
                     notion_sorts=export["notion_sorts"],
+                    property_map=export["property_map"],
                 )
                 with open(export["output"], "w") as f:
                     f.write(result)
@@ -103,6 +105,7 @@ def main(raw_args, access_token):
                     notion_sorts=export["notion_sorts"],
                     id_property=export["id_property"],
                     url_property=export["url_property"],
+                    property_map=export["property_map"],
                 )
             else:
                 logger.error("Unknown node_type '%s'", node_type)

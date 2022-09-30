@@ -27,6 +27,7 @@ EXPORT_DEFAULTS = {
         '--eol', 'lf',  # use linux-style line endings
     ],
     "plugins": [],
+    "property_map": {},
 }
 
 
@@ -111,6 +112,7 @@ def _validate_config_item(config_item):
             return False
     # TODO: validate pandoc_formation
     # TODO: validate pandoc_options
+    # TODO: property map
     return True
 
 

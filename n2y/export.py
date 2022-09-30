@@ -12,7 +12,9 @@ from n2y.utils import pandoc_write_or_log_errors, sanitize_filename
 logger = logging.getLogger(__name__)
 
 
-def _page_properties(page, id_property, url_property):
+def _page_properties(page, id_property=None, url_property=None, property_map=None):
+    if property_map is None:
+        property_map = {}
     properties = page.properties_to_values()
     if id_property in properties:
         logger.warning(
@@ -29,11 +31,24 @@ def _page_properties(page, id_property, url_property):
         )
     if url_property:
         properties[url_property] = page.notion_url
+    for original, new in property_map.items():
+        if original in properties:
+            properties[new] = properties.pop(original)
+        else:
+            msg = "Property %s not found in page %s; skipping remapping from %s to %s"
+            logger.warning(msg, original, page.notion_url, original, new)
     return properties
 
 
-def export_page(page, pandoc_format, pandoc_options, id_property=None, url_property=None):
-    page_properties = _page_properties(page, id_property, url_property)
+def export_page(
+    page,
+    pandoc_format,
+    pandoc_options,
+    id_property=None,
+    url_property=None,
+    property_map=None,
+):
+    page_properties = _page_properties(page, id_property, url_property, property_map)
     pandoc_ast = page.to_pandoc()
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
     return '\n'.join([
@@ -47,11 +62,12 @@ def database_to_yaml(
     database,
     pandoc_format,
     pandoc_options,
+    notion_filter=None,
+    notion_sorts=None,
     id_property=None,
     url_property=None,
     content_property=None,
-    notion_filter=None,
-    notion_sorts=None,
+    property_map=None,
 ):
     if content_property in database.schema:
         logger.warning(
@@ -60,7 +76,7 @@ def database_to_yaml(
         )
     results = []
     for page in database.children_filtered(notion_filter, notion_sorts):
-        result = _page_properties(page, id_property, url_property)
+        result = _page_properties(page, id_property, url_property, property_map)
         if content_property:
             pandoc_ast = page.to_pandoc()
             if pandoc_ast:
@@ -83,6 +99,7 @@ def database_to_markdown_files(
     notion_sorts=None,
     id_property=None,
     url_property=None,
+    property_map=None,
 ):
     os.makedirs(directory, exist_ok=True)
     seen_file_names = set()
@@ -99,6 +116,7 @@ def database_to_markdown_files(
                         pandoc_options,
                         id_property,
                         url_property,
+                        property_map,
                     )
                     f.write(document)
             else:

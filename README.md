@@ -53,6 +53,7 @@ The export configuration items may contain the following keys:
 | plugins | A list of python modules to use as plugins. |
 | notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
 | notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
+| property_map | A mapping between the name of properties in Notion, and the name of the properties in the exported files. |
 
 ## Example Configuration Files
 
@@ -272,6 +273,7 @@ Here are some features we're planning to add in the future:
 - The export is now configured using a single YAML file instead of the growing list of commandline arguments. Using a configuration file allows multiple page and database exports to be made in a single run, which in turn improves caching and will enable future improvements, like preserving links between generated HTML or markdown pages.
 - Added the `pandoc_format` and `pandoc_options` fields, making it possible to output to any format that pandoc supports.
 - Removed the ability to export a set of related databases (this is less useful now that we have a configuration file).
+- Add support for remapping property names in the exports using the `property_map` option
 
 ### v0.5.0
 
