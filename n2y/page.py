@@ -20,7 +20,7 @@ class Page:
         self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
         self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
         self.archived = notion_data['archived']
-        self.icon = notion_data['icon'] and client.wrap_notion_file(notion_data['icon'])
+        self.emoji = self._init_icon(notion_data['icon'])
         self.cover = notion_data['cover'] and client.wrap_notion_file(notion_data['cover'])
         self.archived = notion_data['archived']
         self.properties = {
@@ -34,6 +34,17 @@ class Page:
         self._children = None
 
         self.plugin_data = {}
+
+    def _init_icon(self, icon_notion_data):
+        """
+        The icon property is unique in that it can be either an emoji or a file.
+        """
+        if icon_notion_data is None:
+            return None
+        elif icon_notion_data["type"] == "emoji":
+            return self.client.wrap_notion_emoji(icon_notion_data)
+        else:
+            return self.client.wrap_notion_file(icon_notion_data)
 
     @property
     def title(self):
