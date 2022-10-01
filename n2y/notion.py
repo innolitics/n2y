@@ -268,7 +268,7 @@ class Client:
             try:
                 notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
             except ObjectNotFound:
-                self.pages_cache[(page_id, self.active_plugins)] = None
+                self.pages_cache[page_id] = None
                 return
             # _wrap_notion_page will add the page to the cache
             page = self._wrap_notion_page(notion_page)
