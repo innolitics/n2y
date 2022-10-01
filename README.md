@@ -119,6 +119,7 @@ At the core of n2y are a set of python classes that represent the various parts 
 | Mention | A reference to another Notion object (e.g., a page, database, block, user, etc. )
 | User | A notion user; used in property values and in page, block, and database metadata |
 | File | A file |
+| Emoji | An emoji |
 
 The `Property`, `PropertyValue`, `Block`, `RichText`, and `Mention` classes have subclasses that represent the various subtypes. E.g., there is a `ParagraphBlock` that represents paragraph.
 
@@ -274,6 +275,7 @@ Here are some features we're planning to add in the future:
 - Added the `pandoc_format` and `pandoc_options` fields, making it possible to output to any format that pandoc supports.
 - Removed the ability to export a set of related databases (this is less useful now that we have a configuration file).
 - Add support for remapping property names in the exports using the `property_map` option
+- Add basic support for emoji icons for pages.
 
 ### v0.5.0
 

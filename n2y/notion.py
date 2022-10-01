@@ -11,6 +11,7 @@ from n2y.errors import (
     UseNextClass, is_api_error_code, APIErrorCode
 )
 from n2y.file import File
+from n2y.emoji import Emoji
 from n2y.page import Page
 from n2y.database import Database
 from n2y.comment import Comment
@@ -31,6 +32,7 @@ DEFAULT_NOTION_CLASSES = {
     "property_values": DEFAULT_PROPERTY_VALUES,
     "user": User,
     "file": File,
+    "emoji": Emoji,
     "rich_text_array": RichTextArray,
     "rich_texts": DEFAULT_RICH_TEXTS,
     "mentions": DEFAULT_MENTIONS,
@@ -194,6 +196,9 @@ class Client:
 
     def wrap_notion_file(self, notion_data):
         return self.instantiate_class("file", None, self, notion_data)
+
+    def wrap_notion_emoji(self, notion_data):
+        return self.instantiate_class("emoji", None, self, notion_data)
 
     def wrap_notion_rich_text_array(self, notion_data, block=None):
         return self.instantiate_class("rich_text_array", None, self, notion_data, block)
