@@ -3,7 +3,6 @@ import json
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
 import importlib.util
-from webbrowser import get
 
 import requests
 
@@ -13,9 +12,9 @@ from n2y.page import Page
 from n2y.emoji import Emoji
 from n2y.comment import Comment
 from n2y.database import Database
+from n2y.blocks import DEFAULT_BLOCKS
 from n2y.mentions import DEFAULT_MENTIONS
 from n2y.properties import DEFAULT_PROPERTIES
-from n2y.blocks import DEFAULT_BLOCKS, PANDOC_TYPES
 from n2y.utils import sanitize_filename, strip_hyphens
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
@@ -34,17 +33,10 @@ DEFAULT_NOTION_CLASSES = {
     "blocks": DEFAULT_BLOCKS,
     "database": Database,
     "comment": Comment,
-    "user": User,
-    "file": File,
-<<<<<<< HEAD
     "emoji": Emoji,
-    "rich_text_array": RichTextArray,
-    "rich_texts": DEFAULT_RICH_TEXTS,
-    "mentions": DEFAULT_MENTIONS,
-    "comment": Comment,
-=======
+    "user": User,
     "page": Page,
->>>>>>> 5509c4b (parse pandoc Para class successfully into notion data)
+    "file": File,
 }
 
 

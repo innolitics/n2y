@@ -7,11 +7,8 @@ from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, Strikeout,
-    Code, Strong, Emph, Strikeout, Underline,  InlineMath, LineBreak, Space
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
-
-from n2y.notion_mocks import mock_annotations
 
 
 logger = logging.getLogger(__name__)
@@ -128,6 +125,7 @@ class EquationBlock(Block):
 class ParagraphBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
+        print("RICH TEXT DATA:",self.notion_data["rich_text"])
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
     def to_pandoc(self):
@@ -657,104 +655,4 @@ DEFAULT_BLOCKS = {
     "table": TableBlock,
     "table_row": RowBlock,
     "unsupported": UnsupportedBlock,
-}
-
-def process_pandoc(pandoc_ast, client, page):
-    arguments = pandoc_ast.__dict__['_args']
-    mock_notion_data = {}
-    if len(arguments) == 2:
-        title = arguments[0].__dict__["_args"][0]["title"].__dict__["_args"][0]
-        mock_notion_data["title"] = title
-    children = process_pandoc_children(arguments, client, page)
-    return mock_notion_data, children
-
-def process_child_page_pandoc(pandoc_ast, client, page):
-    arguments = pandoc_ast.__dict__['_args']
-    title = arguments[0].__dict__["_args"][0]["title"].__dict__["_args"][0]
-    mock_notion_data = {
-        "title": title
-    }
-    children = process_pandoc_children(arguments, client, page)
-    return mock_notion_data, children
-
-def process_str_pandoc(pandoc):
-    return pandoc.__dict__["_args"][0]
-
-def process_rich_text_pandoc(pandoc_text, client, page):
-    annotation_types = {
-        Strong: "strong",
-        Emph: "italic",
-        Strikeout: "strikethrough",
-        Underline: "underline",
-        Code: "code"
-    }
-    rich_text = {
-        "type": None,
-        "annotations": [],
-        "plain_text": "",
-        "href": None
-    }
-    text_types = {
-        Space: " ",
-        LineBreak: "\n",
-        Str: process_str_pandoc
-    }
-    
-    for i, pandoc in enumerate(pandoc_text):
-        pandoc_type = type(pandoc)
-        if pandoc_type in annotation_types:
-            rich_text["annotations"].append(annotation_types[pandoc_type])
-        elif pandoc_type == Link:
-            raise NotImplementedError("Math type text is not yet supported")
-        elif pandoc_type == Math:
-            raise NotImplementedError("Math type text is not yet supported")
-        elif pandoc_type == InlineMath:
-            raise NotImplementedError("InlineMath type text is not yet supported")
-        elif pandoc_type in text_types:
-            if i == 0:
-                rich_text["type"] = "text"
-                rich_text["text"] = {"content": "", "link": None}
-            if pandoc_type == Str:
-                rich_text["text"]["content"] += text_types[Str](pandoc)
-                rich_text["plain_text"]+= text_types[Str](pandoc)
-            else:
-                rich_text["text"]["content"] += text_types[pandoc_type]
-                rich_text["plain_text"]+= text_types[pandoc_type]
-    rich_text["annotations"] = mock_annotations(rich_text["annotations"])
-    return [rich_text]
-
-def process_paragraph_pandoc(pandoc_ast, client, page):
-    arguments = pandoc_ast.__dict__['_args']
-    rich_text_array = process_rich_text_pandoc(arguments[0], client, page)
-    mock_notion_data = {
-        "rich_text": rich_text_array
-    }
-    return mock_notion_data, []
-
-def process_pandoc_children(arguments, client, page):
-    pandoc_children = arguments[-1]
-    if type(pandoc_children) != list:
-        raise NotImplementedError(
-            (
-                f"Children are not the last arument for the ",
-                "{type(pandoc_ast)} type: arguments - {arguments}"
-            )
-        )
-    class_children = []
-    for pandoc_child in pandoc_children:
-        class_child = client.instantiate_class(pandoc_child, page)
-        class_children.append(class_child)
-    return class_children
-
-PANDOC_TYPES = {
-    "paragraph": {
-        "pandoc": [Para],
-        "class": ParagraphBlock,
-        "parse_pandoc": process_paragraph_pandoc,
-    },
-    "child_page": {
-        "pandoc": [Pandoc],
-        "class": ChildPageBlock,
-        "parse_pandoc": process_child_page_pandoc,
-    },
 }
