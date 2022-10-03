@@ -73,7 +73,7 @@ class Block:
                         # would handle this, but it doesn't appear to work
                         pandoc_ast.append(result)
         return pandoc_ast
-    
+
     @property
     def children(self):
         if self.get_children and self.has_children and not self._children:

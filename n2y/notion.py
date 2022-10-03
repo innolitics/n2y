@@ -167,21 +167,22 @@ class Client:
                 logger.debug("Skipping %s due to UseNextClass exception", klass.__name__)
 
     def _instantiate_class_from_pandoc(self, pandoc_ast, page, **kwargs):
-        for pandoc_type, pandoc_type_info  in PANDOC_TYPES.items():
-                try:
-                    if type(pandoc_ast) in pandoc_type_info["pandoc"]:
-                        mock_data, children = pandoc_type_info["parse_pandoc"](pandoc_ast, self, page)
-                        notion_data = mock_block(pandoc_type, mock_data)
-                        class_args = [self, notion_data, page]
-                        new_block = pandoc_type_info["class"](*class_args, **kwargs)
-                        new_block.has_children = bool(children)
-                        new_block._children = children
-                        return new_block
-                    else:
-                        raise UseNextType()
-                except UseNextType:
-                    logger.debug("Skipping %s due to UseNextType exception", pandoc_type)
-    
+        for pandoc_type, pandoc_type_info in PANDOC_TYPES.items():
+            try:
+                if type(pandoc_ast) in pandoc_type_info["pandoc"]:
+                    mock_data, children = \
+                        pandoc_type_info["parse_pandoc"](pandoc_ast, self, page)
+                    notion_data = mock_block(pandoc_type, mock_data)
+                    class_args = [self, notion_data, page]
+                    new_block = pandoc_type_info["class"](*class_args, **kwargs)
+                    new_block.has_children = bool(children)
+                    new_block._children = children
+                    return new_block
+                else:
+                    raise UseNextType()
+            except UseNextType:
+                logger.debug("Skipping %s due to UseNextType exception", pandoc_type)
+
     def _process_pandoc_children(self, pandoc_children, page):
         class_children = []
         for pandoc_child in pandoc_children:

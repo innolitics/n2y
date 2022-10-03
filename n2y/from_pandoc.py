@@ -1,7 +1,7 @@
 from n2y.blocks import ChildPageBlock, ParagraphBlock
 from pandoc.types import (
-    Str, Para, Pandoc, Link, Math, Strikeout,
-    Code, Strong, Emph, Strikeout, Underline,  InlineMath, LineBreak, Space
+    Str, Para, Pandoc, Link, Math, Strikeout, LineBreak,
+    Code, Strong, Emph, Underline,  InlineMath, Space,
 )
 
 from n2y.notion_mocks import mock_annotations
@@ -42,9 +42,8 @@ class PandocToRichText():
 
     def _store_rich_text(self):
         if self.current_rich_text != self._new_rich_text:
-          self.rich_text_array.append(self.current_rich_text)
-          self.current_rich_text = self._new_rich_text
-
+            self.rich_text_array.append(self.current_rich_text)
+            self.current_rich_text = self._new_rich_text
 
     def _parse_rich_text(self, pandoc_text):
         for i, pandoc in enumerate(pandoc_text, 1):
@@ -69,11 +68,11 @@ class PandocToRichText():
         if pandoc_type == Code:
             text = arguments[1]
             self.current_rich_text["text"]["content"] += text
-            self.current_rich_text["plain_text"]+= text
+            self.current_rich_text["plain_text"] += text
         else:
             self._iterate_over_further_annotations(arguments[0])
             self.current_rich_text["text"]["content"] += self.annotated_text
-            self.current_rich_text["plain_text"]+= self.annotated_text
+            self.current_rich_text["plain_text"] += self.annotated_text
             self.annotated_text = ""
         self.current_rich_text["annotations"].append(self.annotation_types[pandoc_type])
         self._store_rich_text()
@@ -97,19 +96,19 @@ class PandocToRichText():
         self._type_is_text()
         if pandoc_type == Str:
             self.current_rich_text["text"]["content"] += self.text_types[Str](pandoc)
-            self.current_rich_text["plain_text"]+= self.text_types[Str](pandoc)
+            self.current_rich_text["plain_text"] += self.text_types[Str](pandoc)
         else:
             self.current_rich_text["text"]["content"] += self.text_types[pandoc_type]
-            self.current_rich_text["plain_text"]+= self.text_types[pandoc_type]
+            self.current_rich_text["plain_text"] += self.text_types[pandoc_type]
 
 
-def process_pandoc_children(arguments, client, page):
+def process_pandoc_children(client, page, arguments, pandoc_type):
     pandoc_children = arguments[-1]
     if type(pandoc_children) != list:
         raise NotImplementedError(
             (
-                f"Children are not the last arument for the ",
-                "{type(pandoc_ast)} type: arguments - {arguments}"
+                "Children are not the last arument for the ",
+                f"{pandoc_type} type: arguments - {arguments}"
             )
         )
     class_children = []
@@ -118,17 +117,20 @@ def process_pandoc_children(arguments, client, page):
         class_children.append(class_child)
     return class_children
 
+
 def process_child_page_pandoc(pandoc_ast, client, page):
     arguments = pandoc_ast.__dict__["_args"]
     title = first_pandoc_arg(first_pandoc_arg(arguments[0])["title"])
     mock_notion_data = {
         "title": title
     }
-    children = process_pandoc_children(arguments, client, page)
+    children = process_pandoc_children(client, page, arguments, type(pandoc_ast))
     return mock_notion_data, children
+
 
 def first_pandoc_arg(pandoc):
     return pandoc.__dict__["_args"][0]
+
 
 def process_paragraph_pandoc(pandoc_ast, *_):
     rich_text_array = PandocToRichText(first_pandoc_arg(pandoc_ast)).rich_text_array
