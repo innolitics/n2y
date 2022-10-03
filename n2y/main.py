@@ -27,11 +27,6 @@ def main(raw_args, access_token):
         help="Level to set the root logging module to",
     )
 
-    # TODO: Add the ability to dump out a "schema" file that contains the schema
-    # for a set of databases
-
-    # TODO: Add the ability to export everything as a sqlite file
-
     args = parser.parse_args(raw_args)
 
     logging_level = logging.__dict__[args.verbosity]
@@ -50,6 +45,7 @@ def main(raw_args, access_token):
     client = notion.Client(access_token, config["media_root"], config["media_url"])
 
     for export in config['exports']:
+        logger.info("Exporting to %s", export['output'])
         client.load_plugins(export["plugins"])
         node_type = export["node_type"]
         if node_type == "page":
