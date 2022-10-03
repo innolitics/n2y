@@ -49,8 +49,14 @@ class Block:
         self.archived = notion_data['archived']
         self.notion_type = notion_data['type']
         self.notion_data = notion_data[notion_data['type']]
-        self.get_children = get_children
-        self._children = []
+        if get_children:
+            if self.has_children:
+                children = self.client.get_child_blocks(self.notion_id, page, get_children)
+            else:
+                children = []
+        else:
+            children = None
+        self.children = children
 
     def to_pandoc(self):
         raise NotImplementedError()
@@ -74,14 +80,15 @@ class Block:
                         pandoc_ast.append(result)
         return pandoc_ast
 
-    @property
-    def children(self):
-        if self.get_children and self.has_children and not self._children:
-            children = self.client.get_child_blocks(
-                self.notion_id, self.page, self.get_children
-            )
-            self._children = children
-        return self._children
+    def _retrieve_chidren(self):
+        if self.get_children:
+            if self.has_children:
+                children = self.client.get_child_blocks(self.notion_id, self.page, self.get_children)
+            else:
+                children = []
+        else:
+            children = None
+        self.children = children
 
     @property
     def notion_url(self):
