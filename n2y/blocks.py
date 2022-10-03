@@ -125,7 +125,6 @@ class EquationBlock(Block):
 class ParagraphBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        print("RICH TEXT DATA:",self.notion_data["rich_text"])
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
 
     def to_pandoc(self):
