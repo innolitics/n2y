@@ -28,7 +28,7 @@ class UseNextClass(Exception):
 
 class UseNextType(Exception):
     """
-    Used by pandoc typing system to indicate that the 
+    Used by pandoc typing system to indicate that the
     next type should be used instead of current one.
     """
     pass
