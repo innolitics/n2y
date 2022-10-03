@@ -7,33 +7,6 @@ from pandoc.types import (
 from n2y.notion_mocks import mock_annotations
 
 
-def process_pandoc_children(arguments, client, page):
-    pandoc_children = arguments[-1]
-    if type(pandoc_children) != list:
-        raise NotImplementedError(
-            (
-                f"Children are not the last arument for the ",
-                "{type(pandoc_ast)} type: arguments - {arguments}"
-            )
-        )
-    class_children = []
-    for pandoc_child in pandoc_children:
-        class_child = client.instantiate_class(pandoc_child, page)
-        class_children.append(class_child)
-    return class_children
-
-def process_child_page_pandoc(pandoc_ast, client, page):
-    arguments = pandoc_ast.__dict__['_args']
-    title = first_pandoc_arg(first_pandoc_arg(arguments[0])["title"])
-    mock_notion_data = {
-        "title": title
-    }
-    children = process_pandoc_children(arguments, client, page)
-    return mock_notion_data, children
-
-def first_pandoc_arg(pandoc):
-    return pandoc.__dict__["_args"][0]
-
 class PandocToRichText():
     def __init__(self, pandoc_text):
         self.annotation_types = {
@@ -49,6 +22,7 @@ class PandocToRichText():
             Str: first_pandoc_arg
         }
         self.rich_text_array = []
+        self.annotated_text = ""
         self.current_rich_text = self._new_rich_text
         self._parse_rich_text(pandoc_text)
 
@@ -68,8 +42,6 @@ class PandocToRichText():
 
     def _store_rich_text(self):
         if self.current_rich_text != self._new_rich_text:
-          self.current_rich_text["annotations"] = \
-              mock_annotations(self.current_rich_text["annotations"])
           self.rich_text_array.append(self.current_rich_text)
           self.current_rich_text = self._new_rich_text
 
@@ -87,26 +59,39 @@ class PandocToRichText():
                 raise NotImplementedError("InlineMath type text is not yet supported")
             elif pandoc_type in self.text_types:
                 self._process_pandoc_text(pandoc_type, pandoc)
-            if i == len(pandoc_text) and self.current_rich_text != self._new_rich_text:
+            if i == len(pandoc_text):
                 self._store_rich_text()
 
     def _process_pandoc_annotations(self, pandoc_type, pandoc):
         self._store_rich_text()
         self._type_is_text()
-        arguments = pandoc.__dict__['_args']
+        arguments = pandoc.__dict__["_args"]
         if pandoc_type == Code:
             text = arguments[1]
             self.current_rich_text["text"]["content"] += text
             self.current_rich_text["plain_text"]+= text
         else:
-            annotated_rich_text = PandocToRichText(arguments[0]).rich_text_array[0]
-            for annotation, bool in annotated_rich_text["annotations"].items():
-                if bool != "default" and bool:
-                    self.current_rich_text["annotations"].append(annotation)
-            annotated_rich_text["annotations"] = [*self.current_rich_text["annotations"]]
-            self.current_rich_text = annotated_rich_text
+            self._iterate_over_further_annotations(arguments[0])
+            self.current_rich_text["text"]["content"] += self.annotated_text
+            self.current_rich_text["plain_text"]+= self.annotated_text
+            self.annotated_text = ""
         self.current_rich_text["annotations"].append(self.annotation_types[pandoc_type])
         self._store_rich_text()
+
+    def _iterate_over_further_annotations(self, pandoc_text):
+        for pandoc in pandoc_text:
+            pandoc_type = type(pandoc)
+            if pandoc_type == Code:
+                self.current_rich_text["annotations"].append("code")
+                self.annotated_text += pandoc.__dict__["_args"][1]
+            elif pandoc_type in self.text_types:
+                if pandoc_type == Str:
+                    self.annotated_text += self.text_types[Str](pandoc)
+                else:
+                    self.annotated_text += self.text_types[pandoc_type]
+            else:
+                self.current_rich_text["annotations"].append(self.annotation_types[pandoc_type])
+                self._iterate_over_further_annotations(first_pandoc_arg(pandoc))
 
     def _process_pandoc_text(self, pandoc_type, pandoc):
         self._type_is_text()
@@ -118,9 +103,37 @@ class PandocToRichText():
             self.current_rich_text["plain_text"]+= self.text_types[pandoc_type]
 
 
+def process_pandoc_children(arguments, client, page):
+    pandoc_children = arguments[-1]
+    if type(pandoc_children) != list:
+        raise NotImplementedError(
+            (
+                f"Children are not the last arument for the ",
+                "{type(pandoc_ast)} type: arguments - {arguments}"
+            )
+        )
+    class_children = []
+    for pandoc_child in pandoc_children:
+        class_child = client.instantiate_class(pandoc_child, page)
+        class_children.append(class_child)
+    return class_children
+
+def process_child_page_pandoc(pandoc_ast, client, page):
+    arguments = pandoc_ast.__dict__["_args"]
+    title = first_pandoc_arg(first_pandoc_arg(arguments[0])["title"])
+    mock_notion_data = {
+        "title": title
+    }
+    children = process_pandoc_children(arguments, client, page)
+    return mock_notion_data, children
+
+def first_pandoc_arg(pandoc):
+    return pandoc.__dict__["_args"][0]
+
 def process_paragraph_pandoc(pandoc_ast, *_):
-    arguments = pandoc_ast.__dict__['_args']
-    rich_text_array = PandocToRichText(arguments[0]).rich_text_array
+    rich_text_array = PandocToRichText(first_pandoc_arg(pandoc_ast)).rich_text_array
+    for rich_text in rich_text_array:
+        rich_text["annotations"] = mock_annotations(rich_text["annotations"])
     mock_notion_data = {
         "rich_text": rich_text_array
     }

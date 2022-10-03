@@ -174,7 +174,6 @@ class Client:
                         notion_data = mock_block(pandoc_type, mock_data)
                         class_args = [self, notion_data, page]
                         new_block = pandoc_type_info["class"](*class_args, **kwargs)
-                        # children = self._process_pandoc_children(pandoc_children, page)
                         new_block.has_children = bool(children)
                         new_block._children = children
                         return new_block

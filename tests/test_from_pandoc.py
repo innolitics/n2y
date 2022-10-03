@@ -25,8 +25,6 @@ def test_from_pandoc_2():
 
 def test_from_pandoc_3():
   pandoc_ast = page.block.children[-3].to_pandoc()
-  print("PANDOC_AST:", pandoc_ast)
   client.save_block(page, pandoc_ast)
   new_block_ast = client.unsaved_blocks[page][-1].to_pandoc()
-  print("NEW_BLOCK_AST:", new_block_ast)
   assert pandoc_ast == new_block_ast
