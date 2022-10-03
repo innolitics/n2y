@@ -49,6 +49,7 @@ class Block:
         self.archived = notion_data['archived']
         self.notion_type = notion_data['type']
         self.notion_data = notion_data[notion_data['type']]
+
         if get_children:
             if self.has_children:
                 children = self.client.get_child_blocks(self.notion_id, page, get_children)
