@@ -1,7 +1,7 @@
 from n2y.blocks import ChildPageBlock, ParagraphBlock
 from pandoc.types import (
     Str, Para, Pandoc, Link, Math, Strikeout, LineBreak,
-    Code, Strong, Emph, Underline,  InlineMath, Space
+    Code, Strong, Emph, Underline, InlineMath, Space,
 )
 
 from n2y.notion_mocks import mock_annotations
