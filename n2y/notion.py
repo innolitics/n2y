@@ -153,7 +153,9 @@ class Client:
 
     def instantiate_class(self, class_to_instantiate, *args, **kwargs):
         if type(class_to_instantiate) == str:
-            return self._instantiate_class_from_notion(class_to_instantiate, args[0], *args[1:], **kwargs)
+            return self._instantiate_class_from_notion(
+                class_to_instantiate, args[0], *args[1:], **kwargs
+            )
         else:
             return self._instantiate_class_from_pandoc(class_to_instantiate, args[0], **kwargs)
 
