@@ -61,6 +61,7 @@ def _load_config_from_yaml(path):
     if not validate_config(config):
         logger.error("Invalid config file: %s", path)
         return None
+    return config
 
 
 def merge_config(config_items, builtin_defaults, defaults):
