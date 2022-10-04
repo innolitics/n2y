@@ -1,4 +1,3 @@
-from __future__ import annotations
 from itertools import groupby
 import logging
 from urllib.parse import urljoin
@@ -80,16 +79,6 @@ class Block:
                         # would handle this, but it doesn't appear to work
                         pandoc_ast.append(result)
         return pandoc_ast
-
-    def _retrieve_chidren(self):
-        if self.get_children:
-            if self.has_children:
-                children = self.client.get_child_blocks(self.notion_id, self.page, self.get_children)
-            else:
-                children = []
-        else:
-            children = None
-        self.children = children
 
     @property
     def notion_url(self):

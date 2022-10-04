@@ -151,12 +151,11 @@ class Client:
         except KeyError:
             raise NotImplementedError(f'Unknown "{notion_object}" class of type "{object_type}"')
 
-    def instantiate_class(self, *args, **kwargs):
-        first_arg = args[0]
-        if type(first_arg) == str:
-            return self._instantiate_class_from_notion(first_arg, args[1], *args[2:])
+    def instantiate_class(self, class_to_instantiate, *args, **kwargs):
+        if type(class_to_instantiate) == str:
+            return self._instantiate_class_from_notion(class_to_instantiate, args[0], *args[1:], **kwargs)
         else:
-            return self._instantiate_class_from_pandoc(first_arg, args[1], **kwargs)
+            return self._instantiate_class_from_pandoc(class_to_instantiate, args[0], **kwargs)
 
     def _instantiate_class_from_notion(self, notion_object, object_type, *args, **kwargs):
         class_list = self.get_class_list(notion_object, object_type)
