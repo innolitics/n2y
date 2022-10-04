@@ -103,6 +103,63 @@ Sometimes it is useful to ensure that a root Notion page, and it's child-pages, 
 n2yaudit PAGE_LINK
 ```
 
+### Bigger Example
+
+This example shows how you can use the `export_defaults` property to avoid duplicated configuration between export items. It also shows now you can use notion filters to export pages from the same database into two different directories.
+
+```
+media_root: "media"
+media_url: "./media/"
+export_defaults:
+  plugins:
+    - "n2y.plugins.mermaid"
+    - "n2y.plugins.rawcodeblocks"
+    - "n2y.plugins.removecallouts"
+    - "n2y.plugins.deepheaders"
+    - "n2y.plugins.expandlinktopages"
+  content_property: null
+  id_property: id
+  url_property: url
+exports:
+  - output: "documents/dhf"
+    node_type: "database_as_files"
+    filename_property: "Name"
+    id: e24f839e724848d69342d43c07cb5f3e
+    plugins:
+      - "n2y.plugins.mermaid"
+      - "n2y.plugins.rawcodeblocks"
+      - "n2y.plugins.removecallouts"
+      - "n2y.plugins.deepheaders"
+      - "n2y.plugins.expandlinktopages"
+      - "plugins.page"
+      - "plugins.idmentions"
+    notion_filter:
+      property: "Tags"
+      multi_select: { "contains": "DHF" }
+  - output: "documents/510k"
+    id: e24f839e724848d69342d43c07cb5f3e
+    filename_property: "Name"
+    node_type: "database_as_files"
+    plugins:
+      - "n2y.plugins.mermaid"
+      - "n2y.plugins.rawcodeblocks"
+      - "n2y.plugins.removecallouts"
+      - "n2y.plugins.deepheaders"
+      - "n2y.plugins.expandlinktopages"
+      - "plugins.page"
+      - "plugins.idmentions"
+    notion_filter:
+      property: "Tags"
+      multi_select: { "contains": "510(k)" }
+  - output: "data/Roles.yml"
+    id: b47a694953714222810152736d9dc66c
+    node_type: "database_as_yaml"
+    content_property: "Description"
+  - output: "data/Glossary.yml"
+    id: df6bef74e2372118becd93e321de2c69
+    node_type: "database_as_yaml"
+```
+
 ## Plugins
 
 At the core of n2y are a set of python classes that represent the various parts of a Notion workspace:
