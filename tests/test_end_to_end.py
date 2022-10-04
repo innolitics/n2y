@@ -1,9 +1,6 @@
-import sys
-import json
 from os import listdir
 import os.path
 from os.path import isfile, join
-from io import StringIO
 
 import yaml
 
@@ -17,56 +14,92 @@ from n2y.main import main
 from n2y.notion import Client
 
 
-def run_n2y(arguments):
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = StringIO()
-    sys.stderr = StringIO()
+def run_n2y(temp_dir, config):
+    config_path = os.path.join(temp_dir, "config.yaml")
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
+    old_cwd = os.getcwd()
+    os.chdir(temp_dir)
     try:
-        status = main(arguments, NOTION_ACCESS_TOKEN)
-        stdout = sys.stdout.getvalue()
-        stderr = sys.stderr.getvalue()
+        status = main([config_path], NOTION_ACCESS_TOKEN)
     finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
-    return status, stdout, stderr
+        os.chdir(old_cwd)
+    return status
 
 
-def test_simple_database_to_yaml():
+def run_n2y_page(temp_dir, page_id, **export_config_keys):
+    config = {
+        "exports": [
+            {
+                "id": page_id,
+                "node_type": "page",
+                "output": "page.md",
+                **export_config_keys,
+            }
+        ]
+    }
+    status = run_n2y(temp_dir, config)
+    assert status == 0
+    with open(str(temp_dir / "page.md"), "r") as f:
+        page_as_markdown = f.read()
+    return page_as_markdown
+
+
+def run_n2y_database_as_yaml(temp_dir, database_id, **export_config_keys):
+    config = {
+        "exports": [
+            {
+                "id": database_id,
+                "node_type": "database_as_yaml",
+                "output": "database.yml",
+                **export_config_keys,
+            }
+        ]
+    }
+    status = run_n2y(temp_dir, config)
+    assert status == 0
+    with open(str(temp_dir / "database.yml"), "r") as f:
+        unsorted_database = yaml.load(f, Loader=Loader)
+    return unsorted_database
+
+
+def run_n2y_database_as_files(temp_dir, database_id, **export_config_keys):
+    config = {
+        "exports": [
+            {
+                "id": database_id,
+                "node_type": "database_as_files",
+                "output": "database",
+                **export_config_keys,
+            }
+        ]
+    }
+    status = run_n2y(temp_dir, config)
+    assert status == 0
+    return os.path.join(temp_dir, "database")
+
+
+def test_simple_database_to_yaml(tmpdir):
     """
     The database can be seen here:
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     object_id = "176fa24d4b7f4256877e60a1035b45a4"
-    status, stdoutput, _ = run_n2y(
-        [
-            object_id,
-            "--output",
-            "yaml",
-            "--content-property",
-            "Content",
-        ]
-    )
-    assert status == 0
-    unsorted_database = yaml.load(stdoutput, Loader=Loader)
+    unsorted_database = run_n2y_database_as_yaml(tmpdir, object_id, content_property="Content")
     database = sorted(unsorted_database, key=lambda row: row["Name"])
     assert len(database) == 3
     assert database[0]["Name"] == "A"
     assert database[0]["Tags"] == ["a", "b"]
     assert database[0]["Content"] is None
-    assert database[0]["id"] is not None
-    assert database[0]["url"] is not None
 
 
-def test_big_database_to_yaml():
+def test_big_database_to_yaml(tmpdir):
     """
     The database can be seen here:
     https://fresh-pencil-9f3.notion.site/9341a0ddf7d4442d94ad74e5100f72af
     """
     object_id = "9341a0ddf7d4442d94ad74e5100f72af"
-    status, stdoutput, _ = run_n2y([object_id, "--output", "yaml"])
-    assert status == 0
-    database = yaml.load(stdoutput, Loader=Loader)
+    database = run_n2y_database_as_yaml(tmpdir, object_id)
     assert len(database) == 101
 
 
@@ -76,138 +109,73 @@ def test_simple_database_to_markdown_files(tmpdir):
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     object_id = "176fa24d4b7f4256877e60a1035b45a4"
-    status, _, _ = run_n2y(
-        [
-            object_id,
-            "--format",
-            "markdown",
-            "--output",
-            str(tmpdir),
-        ]
-    )
-    assert status == 0
-    generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
+    output_directory = run_n2y_database_as_files(tmpdir, object_id, filename_property="Name")
+    generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
     assert generated_files == {"A.md", "B.md", "C.md"}
-    document_as_markdown = open(join(tmpdir, "A.md"), "r").read()
-    metadata = parse_yaml_front_matter(document_as_markdown)
+    document = open(join(output_directory, "A.md"), "r").read()
+    metadata = parse_yaml_front_matter(document)
     assert metadata["Name"] == "A"
     assert metadata["Tags"] == ["a", "b"]
     assert "content" not in metadata
 
 
-def test_simple_database_config():
+def test_simple_database_config(tmpdir):
     """
     The database can be seen here:
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     database_id = "176fa24d4b7f4256877e60a1035b45a4"
-    database_config = {
-        database_id: {
-            "sorts": [
-                {
-                    "property": "Name",
-                    "direction": "descending",
-                }
-            ],
-            "filter": {
-                "or": [
-                    {"property": "Name", "rich_text": {"contains": "A"}},
-                    {"property": "Name", "rich_text": {"contains": "C"}},
-                ]
-            },
+    notion_sorts = [
+        {
+            "property": "Name",
+            "direction": "descending",
         }
-    }
-    status, stdoutput, _ = run_n2y(
-        [
-            database_id,
-            "--database-config",
-            json.dumps(database_config),
+    ]
+    notion_filter = {
+        "or": [
+            {"property": "Name", "rich_text": {"contains": "A"}},
+            {"property": "Name", "rich_text": {"contains": "C"}},
         ]
+    }
+    database = run_n2y_database_as_yaml(
+        tmpdir, database_id,
+        notion_sort=notion_sorts, notion_filter=notion_filter,
     )
-    assert status == 0
-    database = yaml.load(stdoutput, Loader=Loader)
     assert len(database) == 2
     assert database[0]["Name"] == "C"
     assert database[1]["Name"] == "A"
 
 
-def test_simple_related_databases(tmpdir):
-    """
-    The page can be seen here:
-    https://fresh-pencil-9f3.notion.site/Simple-Related-Databases-7737303365434ee6b699786c110830a2
-    """
-    object_id = "6cc54e2b49994787927c24a9ac3d4676"
-    status, _, _ = run_n2y(
-        [
-            object_id,
-            "--format",
-            "yaml-related",
-            "--output",
-            str(tmpdir),
-        ]
-    )
-    assert status == 0
-    generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
-    assert generated_files == {"A.yml", "B.yml", "C.yml"}
-
-
-def test_unshared_related_databases(tmpdir):
-    """
-    The page can be seen here:
-    https://fresh-pencil-9f3.notion.site/bc86b1692c2e4b7d991d7e6f6cacac54?v=cb6887a78ddd41f1a8a75385f7a40d47
-    """
-    object_id = "bc86b1692c2e4b7d991d7e6f6cacac54"
-    status, _, stderr = run_n2y(
-        [
-            object_id,
-            "--format",
-            "yaml-related",
-            "--output",
-            str(tmpdir),
-        ]
-    )
-    assert status == 0
-    generated_files = {f for f in listdir(tmpdir) if isfile(join(tmpdir, f))}
-    assert generated_files == {"Database_with_Relationship_to_Unshared_Database.yml"}
-    # TODO: add an assertion that checks that warnings were displayed in stderr
-    # (at the moment, they don't appear to be because the related pages simply
-    # don't show up at all)
-
-
-def test_all_properties_database():
+def test_all_properties_database(tmpdir):
     """
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/53b9fa3da3f348e7ba3346254f1c722f
     """
     object_id = "53b9fa3da3f348e7ba3346254f1c722f"
-    status, stdoutput, _ = run_n2y([object_id, "--output", "yaml"])
-    assert status == 0
-    unsorted_database = yaml.load(stdoutput, Loader=Loader)
-    assert len(unsorted_database) == 4
+    database = run_n2y_database_as_yaml(tmpdir, object_id)
+    assert len(database) == 4
 
 
-def test_mention_in_simple_table(tmp_path):
+def test_mention_in_simple_table(tmpdir):
     '''
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Simple-Table-with-Mention-Test-e12497428b0e43c3b14e016de6c5a2cf
     '''
     object_id = 'e12497428b0e43c3b14e016de6c5a2cf'
-    _, document_as_markdown, _ = run_n2y([object_id, '--media-root', str(tmp_path)])
-    assert "In Table: Simple Test Page" in document_as_markdown
-    assert "Out of Table: Simple Test Page" in document_as_markdown
+    document = run_n2y_page(tmpdir, object_id)
+    assert "In Table: Simple Test Page" in document
+    assert "Out of Table: Simple Test Page" in document
 
 
-def test_all_blocks_page_to_markdown(tmp_path):
+def test_all_blocks_page_to_markdown(tmpdir):
     """
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Test-Page-5f18c7d7eda44986ae7d938a12817cc0
     """
     object_id = "5f18c7d7eda44986ae7d938a12817cc0"
-    status, document_as_markdown, stderr = run_n2y(
-        [object_id, "--media-root", str(tmp_path)]
-    )
-    lines = document_as_markdown.split("\n")
-    metadata = parse_yaml_front_matter(document_as_markdown)
+    document = run_n2y_page(tmpdir, object_id)
+    lines = document.split("\n")
+    metadata = parse_yaml_front_matter(document)
     assert metadata["title"] == "All Blocks Test Page"
     column_string = (
         '<table><tbody><tr class="odd"><td><p>Column 1</p><table>'
@@ -221,8 +189,6 @@ def test_all_blocks_page_to_markdown(tmp_path):
         "<td><p>Column 2</p></td>" in lines,
     ]
 
-    # TODO: look into why there's extra space in between the list entries
-    assert status == 0
     assert "Text block" in lines
     assert "Text *italics* too" in lines
     assert "-   [ ] To do list block" in lines
@@ -237,7 +203,7 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "---" in lines
     assert "Callout block" in lines
     assert "$e^{-i \\pi} = -1$" in lines
-    assert "``` javascript\nCode Block\n```" in document_as_markdown
+    assert "``` javascript\nCode Block\n```" in document
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
 
@@ -252,13 +218,13 @@ def test_all_blocks_page_to_markdown(tmp_path):
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
     # the word "caption" is bolded
-    assert "![Image **caption**](All_Blocks_Test_Page-5f18c7d7eda.jpeg)" in lines
+    assert "![Image **caption**](media/All_Blocks_Test_Page-5f18c7d7eda.jpeg)" in lines
 
     # from a file block in the Notion page
-    assert os.path.exists(tmp_path / "All_Blocks_Test_Page-5f18c7d7eda.jpeg")
+    assert os.path.exists(tmpdir / "media" / "All_Blocks_Test_Page-5f18c7d7eda.jpeg")
 
 
-def test_page_in_database_to_markdown():
+def test_page_in_database_to_markdown(tmpdir):
     """
     This test exports a single page, or "row", that is in a database. Unlike
     pages that are not in a database, who only have a single "Title" property,
@@ -269,53 +235,40 @@ def test_page_in_database_to_markdown():
     https://fresh-pencil-9f3.notion.site/C-7e967a44893f4b25917965896e81c137
     """
     object_id = "7e967a44893f4b25917965896e81c137"
-    _, document_as_markdown, _ = run_n2y([object_id])
-    lines = document_as_markdown.split("\n")
-    metadata = parse_yaml_front_matter(document_as_markdown)
+    document = run_n2y_page(tmpdir, object_id)
+    lines = document.split("\n")
+    metadata = parse_yaml_front_matter(document)
     assert metadata["Name"] == "C"
     assert metadata["Tags"] == ["d", "a", "b", "c"]
     assert "content" not in metadata
     assert "Has some basic content" in lines
 
 
-def test_simple_page_to_markdown():
+def test_simple_page_to_markdown(tmpdir):
     """
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Simple-Test-Page-6670dc17a7bc4426b91bca4cf3ac5623
     """
     object_id = "6670dc17a7bc4426b91bca4cf3ac5623"
-    status, document_as_markdown, _ = run_n2y([object_id])
-    assert status == 0
-    assert "Page content" in document_as_markdown
+    document = run_n2y_page(tmpdir, object_id)
+    assert "Page content" in document
 
 
-def test_builtin_plugins(tmp_path):
+def test_builtin_plugins(tmpdir):
     """
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Plugins-Test-96d71e2876eb47b285833582e8cf27eb
     """
     object_id = "96d71e2876eb47b285833582e8cf27eb"
-    status, document_as_markdown, _ = run_n2y(
-        [
-            object_id,
-            "--plugin",
-            "n2y.plugins.deepheaders",
-            "--plugin",
-            "n2y.plugins.removecallouts",
-            "--plugin",
-            "n2y.plugins.rawcodeblocks",
-            "--plugin",
-            "n2y.plugins.mermaid",
-            "--plugin",
-            "n2y.plugins.footnotes",
-            "--plugin",
-            "n2y.plugins.expandlinktopages",
-            "--media-root",
-            str(tmp_path),
-        ]
-    )
-    assert status == 0
-    lines = document_as_markdown.split("\n")
+    document = run_n2y_page(tmpdir, object_id, plugins=[
+        "n2y.plugins.deepheaders",
+        "n2y.plugins.removecallouts",
+        "n2y.plugins.rawcodeblocks",
+        "n2y.plugins.mermaid",
+        "n2y.plugins.footnotes",
+        "n2y.plugins.expandlinktopages",
+    ])
+    lines = document.split("\n")
     assert "#### H4" in lines
     assert "##### H5" in lines
     assert not any("should disappear" in l for l in lines)
@@ -337,20 +290,15 @@ def test_builtin_plugins(tmp_path):
     # assert "[^2]: Second footnote" in lines
 
     # The word "Bulletlist" only shows up in the linked page that is expanded
-    assert "Bulletlist" in document_as_markdown
+    assert "Bulletlist" in document
 
     # Ensure a link to page to an unshared page doesn't get expanded; note that
     # Notion will actually represent these pages as an "UnsupportedBlock" (which
     # is odd). This will throw a warning and won't produce any content though,
     # which is the desired behavior.
-    assert "Untitled" not in document_as_markdown
-    assert "Unshared Page" not in document_as_markdown
-    assert "This page is not shared with the integration." not in document_as_markdown
-
-
-def test_missing_object_exception():
-    invalid_page_id = "11111111111111111111111111111111"
-    assert run_n2y([invalid_page_id]) != 0
+    assert "Untitled" not in document
+    assert "Unshared Page" not in document
+    assert "This page is not shared with the integration." not in document
 
 
 def test_comment():

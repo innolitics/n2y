@@ -4,11 +4,9 @@ import logging
 import argparse
 
 from n2y import notion
-from n2y.database import Database
-from n2y.page import Page
-from n2y.errors import APIErrorCode, APIResponseError
-from n2y.utils import id_from_share_link
-from n2y.config import database_config_json_to_dict
+from n2y.export import export_page, database_to_yaml, database_to_markdown_files
+from n2y.config import load_config
+from n2y.utils import share_link_from_id
 
 logger = None
 
@@ -24,86 +22,16 @@ def main(raw_args, access_token):
         description="Move data from Notion into YAML/markdown",
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("object_id", help="The id or url for a Notion database or page")
-    parser.add_argument(
-        "--format", '-f',
-        choices=["yaml", "yaml-related", "markdown", "html"], default="yaml",
-        help=(
-            "Select output type (only applies to databases)\n"
-            "  yaml - log yaml to stdout\n"
-            "  yaml-related - save all related databases to a set of YAML files\n"
-            "  markdown - create a markdown file for each page"
-            "  html - create an html file for each page"
-        )
-    )
-    parser.add_argument(
-        "--content-property", default='',
-        help=(
-            "Store each database page's content in this property. "
-            "The page's content isn't exported if it's set to a blank string. "
-            "Only applies when dumping a database to YAML."
-        )
-    )
-    parser.add_argument(
-        "--id-property", default='id',
-        help=(
-            "Store each database page's id in this property. "
-            "The page's id isn't exported if it's set to a blank string. "
-        )
-    )
-    parser.add_argument(
-        "--url-property", default='url',
-        help=(
-            "Store each database page's url in this property. "
-            "The page's id isn't exported if it's set to a blank string. "
-        )
-    )
-    parser.add_argument(
-        "--filename-property", default=None,
-        help=(
-            "The database property used to generate the filename for its pages. "
-            "Only applies when dumping a database to markdown files."
-        )
-    )
-    parser.add_argument(
-        "--media-root", help="Filesystem path to directory where images and media are saved"
-    )
-    parser.add_argument("--media-url", help="URL for media root; must end in slash if non-empty")
-    parser.add_argument(
-        "--plugin", '-p', action='append',
-        help="Plugin module location, e.g. ('n2y.plugins.deepheaders')",
-    )
-    parser.add_argument(
-        "--output", '-o', default='./',
-        help="Relative path to output directory",
-    )
+    parser.add_argument("config", help="The path to the config file")
     parser.add_argument(
         "--verbosity", '-v', default='INFO',
         help="Level to set the root logging module to",
     )
-    parser.add_argument(
-        "--logging-format", default='%(asctime)s - %(levelname)s: %(message)s',
-        help="Default format used when logging",
-    )
-    parser.add_argument(
-        "--database-config", default='{}',
-        help=(
-            "A JSON string in the format {database_id: {sorts: {...}, filter: {...}}}. "
-            "These can be used to filter and sort databases. See "
-            "https://developers.notion.com/reference/post-database-query-filter and "
-            "https://developers.notion.com/reference/post-database-query-sort"
-        )
-    )
-
-    # TODO: Add the ability to dump out a "schema" file that contains the schema
-    # for a set of databases
-
-    # TODO: Add the ability to export everything as a sqlite file
 
     args = parser.parse_args(raw_args)
 
     logging_level = logging.__dict__[args.verbosity]
-    logging.basicConfig(format=args.logging_format, level=logging_level)
+    logging.basicConfig(level=logging_level)
     global logger
     logger = logging.getLogger(__name__)
 
@@ -111,122 +39,83 @@ def main(raw_args, access_token):
         logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
-    object_id = id_from_share_link(args.object_id)
-    media_root = args.media_root or args.output
-
-    database_config = database_config_json_to_dict(args.database_config)
-    valid_database_config = database_config is not None
-    if not valid_database_config:
-        logger.critical(
-            'Database config validation failed. Please make sure you pass in '
-            'a JSON string with the format {database_id: {sorts: {...}, filter: {...}}}'
-        )
-        return 1
-
-    client = notion.Client(
-        access_token,
-        media_root,
-        args.media_url,
-        plugins=args.plugin,
-        content_property=args.content_property,
-        id_property=args.id_property,
-        url_property=args.url_property,
-        filename_property=args.filename_property,
-        database_config=database_config,
-    )
-
-    node = client.get_page_or_database(object_id)
-
-    if isinstance(node, Database) and args.format == 'markdown':
-        export_database_as_markdown_files(node, options=args)
-    if isinstance(node, Database) and args.format == 'html':
-        export_database_as_html_files(node, options=args)
-    elif isinstance(node, Database) and args.format == 'yaml':
-        print(node.to_yaml())
-    elif isinstance(node, Database) and args.format == 'yaml-related':
-        export_related_databases(node, options=args)
-    elif isinstance(node, Page):
-        print(node.to_markdown())
-    elif node is None:
-        msg = (
-            "Unable to find database or page with id %s. "
-            "Perhaps its not shared with the integration?"
-        )
-        logger.error(msg, object_id)
+    config = load_config(args.config)
+    if config is None:
         return 2
 
-    return 0
+    client = notion.Client(access_token, config["media_root"], config["media_url"])
+
+    error_occurred = False
+    for export in config['exports']:
+        logger.info("Exporting to %s", export['output'])
+        client.load_plugins(export["plugins"])
+        export_completed = _export_node_from_config(client, export)
+        if not export_completed:
+            error_occurred = True
+    return 0 if not error_occurred else 3
 
 
-def export_database_as_markdown_files(database, options):
-    os.makedirs(options.output, exist_ok=True)
-    seen_file_names = set()
-    counts = {'unnamed': 0, 'duplicate': 0}
-    for page in database.children:
-        if page.filename:
-            if page.filename not in seen_file_names:
-                seen_file_names.add(page.filename)
-                with open(os.path.join(options.output, f"{page.filename}.md"), 'w') as f:
-                    f.write(page.to_markdown())
-            else:
-                logger.warning('Skipping page named "%s" since it has been used', page.filename)
-                counts['duplicate'] += 1
+def _export_node_from_config(client, export):
+    node_type = export["node_type"]
+    if node_type == "page":
+        page = client.get_page(export['id'])
+        if page is None:
+            msg = (
+                "Unable to find page with id '%s' (%s). "
+                "Perhaps the integration doesn't have permission to access this page?"
+            )
+            logger.error(msg, export['id'], share_link_from_id(export['id']))
+            return False
+        result = export_page(
+            page,
+            export["pandoc_format"],
+            export["pandoc_options"],
+            export["id_property"],
+            export["url_property"],
+            export["property_map"],
+        )
+        with open(export["output"], "w") as f:
+            f.write(result)
+    else:
+        database = client.get_database(export['id'])
+        if database is None:
+            msg = (
+                "Unable to find database with id '%s' (%s). "
+                "Perhaps the integration doesn't have permission to access this database?"
+            )
+            logger.error(msg, export['id'], share_link_from_id(export['id']))
+            return False
+        if node_type == "database_as_yaml":
+            result = database_to_yaml(
+                database=database,
+                pandoc_format=export["pandoc_format"],
+                pandoc_options=export["pandoc_options"],
+                id_property=export["id_property"],
+                url_property=export["url_property"],
+                content_property=export["content_property"],
+                notion_filter=export["notion_filter"],
+                notion_sorts=export["notion_sorts"],
+                property_map=export["property_map"],
+            )
+            with open(export["output"], "w") as f:
+                f.write(result)
+        elif node_type == "database_as_files":
+            database_to_markdown_files(
+                database=database,
+                directory=export["output"],
+                pandoc_format=export["pandoc_format"],
+                pandoc_options=export["pandoc_options"],
+                filename_property=export["filename_property"],
+                notion_filter=export["notion_filter"],
+                notion_sorts=export["notion_sorts"],
+                id_property=export["id_property"],
+                url_property=export["url_property"],
+                property_map=export["property_map"],
+            )
         else:
-            counts['unnamed'] += 1
-    for key, count in counts.items():
-        if count > 0:
-            logger.info("%d %s page(s) skipped", count, key)
-
-
-# Note these two functions are quite similar; if a third copy is needed, find a
-# way to de-duplicate
-def export_database_as_html_files(database, options):
-    os.makedirs(options.output, exist_ok=True)
-    seen_file_names = set()
-    counts = {'unnamed': 0, 'duplicate': 0}
-    for page in database.children:
-        if page.filename:
-            if page.filename not in seen_file_names:
-                seen_file_names.add(page.filename)
-                with open(os.path.join(options.output, f"{page.filename}.html"), 'w') as f:
-                    f.write(page.to_html())
-            else:
-                logger.warning('Skipping page named "%s" since it has been used', page.filename)
-                counts['duplicate'] += 1
-        else:
-            counts['unnamed'] += 1
-    for key, count in counts.items():
-        if count > 0:
-            logger.info("%d %s page(s) skipped", count, key)
-
-
-def export_related_databases(seed_database, options):
-    os.makedirs(options.output, exist_ok=True)
-
-    seen_database_ids = set()
-    seen_file_names = set()
-
-    def _export_related_databases(database):
-        seen_database_ids.add(database.notion_id)
-        if database.filename not in seen_file_names:
-            seen_file_names.add(database.filename)
-            with open(os.path.join(options.output, f"{database.filename}.yml"), 'w') as f:
-                f.write(database.to_yaml())
-        else:
-            logger.warning('Database name "%s" has been used', database.filename)
-        for database_id in database.related_database_ids:
-            if database_id not in seen_database_ids:
-                try:
-                    related_database = database.client.get_database(database_id)
-                    _export_related_databases(related_database)
-                except APIResponseError as err:
-                    if err.code == APIErrorCode.ObjectNotFound:
-                        msg = 'Skipping database with id "%s" due to lack of permissions'
-                        logger.warning(msg, database_id)
-                    else:
-                        raise err
-
-    _export_related_databases(seed_database)
+            logger.error("Unknown node_type '%s'", node_type)
+            return False
+    return True
 
 
 if __name__ == "__main__":

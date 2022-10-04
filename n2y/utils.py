@@ -69,6 +69,8 @@ def pandoc_ast_to_html(pandoc_ast):
 
 
 def pandoc_write_or_log_errors(pandoc_ast, format, options):
+    if pandoc_ast is None or pandoc_ast == []:
+        return ""
     try:
         # TODO: add a mechanism to customize this
         return pandoc.write(pandoc_ast, format=format, options=options)
@@ -121,6 +123,14 @@ def id_from_share_link(share_link):
         query_removed = domain_removed.split("?")[0]
         assert len(query_removed) >= 32
         return query_removed[-32:]
+
+
+def share_link_from_id(id):
+    # Note that ordinarily page links include a hyphenated titled, but
+    # fortunately they will redirect to the canonical page URL including the
+    # hyphenated title if you visit the link with only the UUID. Similarly,
+    # database urls often have a version parameter, but we can omit that too.
+    return f"https://www.notion.so/{id}"
 
 
 def strip_hyphens(string):

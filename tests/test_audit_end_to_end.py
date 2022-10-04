@@ -7,17 +7,13 @@ from n2y.audit import main
 
 def run_n2yaudit(arguments):
     old_stdout = sys.stdout
-    old_stderr = sys.stderr
     sys.stdout = StringIO()
-    sys.stderr = StringIO()
     try:
         status = main(arguments, NOTION_ACCESS_TOKEN)
         stdout = sys.stdout.getvalue()
-        stderr = sys.stderr.getvalue()
     finally:
         sys.stdout = old_stdout
-        sys.stderr = old_stderr
-    return status, stdout, stderr
+    return status, stdout
 
 
 def test_audit():
@@ -26,7 +22,7 @@ def test_audit():
     https://fresh-pencil-9f3.notion.site/Audited-cfa8ff07bba244c8b967c9b6a7a954c1
     '''
     object_id = 'cfa8ff07bba244c8b967c9b6a7a954c1'
-    status, stdoutput, _ = run_n2yaudit([object_id])
+    status, stdoutput = run_n2yaudit([object_id])
     assert status == 3
 
     external_mention_in_top_page = \

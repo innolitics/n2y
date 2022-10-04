@@ -26,30 +26,73 @@ To do this, go to the "Settings and Members" page in Notion. You should see an "
 
 Finally, in Notion you'll need to share the relevant pages with your internal integration---just like you'd share a page with another person.
 
-## Example Usage
+## Configuration
+
+N2y is configured using a single YAML file. This file contains a few top-level keys:
+
+| Top-level key | Description |
+| --- | --- |
+| media_url | Sets the base URL for all downloaded media files (e.g., images, videos, PDFs, etc.) |
+| media_root | The directory where media files should be downloaded to |
+| exports | A list of export configuration items, indicating how a notion page or database is to be exported. See below for the keys.  |
+| export_defaults | Default values for the export configuration items. |
+
+The export configuration items may contain the following keys:
+
+| Export key | Description |
+| --- | --- |
+| id | The notion database or page id, taken from the "share URL". |
+| node_type | Either "database_as_yaml", "database_as_files", or "page". |
+| output | The path the output file, or directory, where the data will be written. |
+| pandoc_format | The [pandoc format](https://pandoc.org/MANUAL.html#general-options) that we're generating. |
+| pandoc_options | A list of strings that are [writer options](https://pandoc.org/MANUAL.html#general-writer-options) for pandoc. |
+| content_property | When set, it indicates the property name that will contain the content of the notion pages in that databse. If set to `None`, then only the page's properties will be included in the export. (Only applies to the `database_as_files` node type.) |
+| id_property | When set, this indicates the property name in which to place the page's underlying notion ID. |
+| url_property | When set, this indicates the property name in which to place the page's underlying notion url. |
+| filename_property | This key is required for the "database_as_files" node type; when set, it indicates which property to use when generating the file name. |
+| plugins | A list of python modules to use as plugins. |
+| notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
+| notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
+| property_map | A mapping between the name of properties in Notion, and the name of the properties in the exported files. |
+
+## Example Configuration Files
+
+The command is run using `n2y configuration.yaml`.
 
 ### Convert a Database to YAML
 
-Copy the link for the database you'd like to export to YAML. Note that linked databases aren't supported. Then run:
+A notion database (e.g., with a share URL like this https://www.notion.so/176fa24d4b7f4256877e60a1035b45a4?v=130ffd3224fd4512871bb45dbceaa7b2) could be exported into a YAML file using this minimal configuration file:
 
 ```
-n2y DATABASE_LINK > database.yml
+exports:
+- id: 176fa24d4b7f4256877e60a1035b45a4
+  node_type: database_as_yaml
+  output: database.yml
 ```
 
 ### Convert a Database to a set of Markdown Files
 
+The same database could be exported into a set of markdown files as follows:
+
 ```
-n2y -f markdown DATABASE_LINK
+exports:
+- id: 176fa24d4b7f4256877e60a1035b45a4
+  node_type: database_as_files
+  output: directory
+  filename_property: "Name"
 ```
 
-This process will automatically skip untitled pages or pages with duplicate names.
+Each page in the database will generate a single markdown file, named according to the `filename_property`. This process will automatically skip pages whose "Name" property is empty.
 
 ### Convert a Page to a Markdown File
 
-If the page is in a database, then it's properties will be included in the YAML front matter. If the page is not in a database, then the title of the page will be included in the YAML front matter.
+An individual notion page (e.g., with a share URL like this https://www.notion.so/All-Blocks-Test-Page-5f18c7d7eda44986ae7d938a12817cc0) could be exported to markdown with this minimal configuration file:
 
 ```
-n2y PAGE_LINK > page.md
+exports:
+- id: 5f18c7d7eda44986ae7d938a12817cc0
+  node_type: page
+  output: page.md
 ```
 
 ### Audit a Page and it's Children For External Links
@@ -58,6 +101,63 @@ Sometimes it is useful to ensure that a root Notion page, and it's child-pages, 
 
 ```
 n2yaudit PAGE_LINK
+```
+
+### Bigger Example
+
+This example shows how you can use the `export_defaults` property to avoid duplicated configuration between export items. It also shows now you can use notion filters to export pages from the same database into two different directories.
+
+```
+media_root: "media"
+media_url: "./media/"
+export_defaults:
+  plugins:
+    - "n2y.plugins.mermaid"
+    - "n2y.plugins.rawcodeblocks"
+    - "n2y.plugins.removecallouts"
+    - "n2y.plugins.deepheaders"
+    - "n2y.plugins.expandlinktopages"
+  content_property: null
+  id_property: id
+  url_property: url
+exports:
+  - output: "documents/dhf"
+    node_type: "database_as_files"
+    filename_property: "Name"
+    id: e24f839e724848d69342d43c07cb5f3e
+    plugins:
+      - "n2y.plugins.mermaid"
+      - "n2y.plugins.rawcodeblocks"
+      - "n2y.plugins.removecallouts"
+      - "n2y.plugins.deepheaders"
+      - "n2y.plugins.expandlinktopages"
+      - "plugins.page"
+      - "plugins.idmentions"
+    notion_filter:
+      property: "Tags"
+      multi_select: { "contains": "DHF" }
+  - output: "documents/510k"
+    id: e24f839e724848d69342d43c07cb5f3e
+    filename_property: "Name"
+    node_type: "database_as_files"
+    plugins:
+      - "n2y.plugins.mermaid"
+      - "n2y.plugins.rawcodeblocks"
+      - "n2y.plugins.removecallouts"
+      - "n2y.plugins.deepheaders"
+      - "n2y.plugins.expandlinktopages"
+      - "plugins.page"
+      - "plugins.idmentions"
+    notion_filter:
+      property: "Tags"
+      multi_select: { "contains": "510(k)" }
+  - output: "data/Roles.yml"
+    id: b47a694953714222810152736d9dc66c
+    node_type: "database_as_yaml"
+    content_property: "Description"
+  - output: "data/Glossary.yml"
+    id: df6bef74e2372118becd93e321de2c69
+    node_type: "database_as_yaml"
 ```
 
 ## Plugins
@@ -76,6 +176,7 @@ At the core of n2y are a set of python classes that represent the various parts 
 | Mention | A reference to another Notion object (e.g., a page, database, block, user, etc. )
 | User | A notion user; used in property values and in page, block, and database metadata |
 | File | A file |
+| Emoji | An emoji |
 
 The `Property`, `PropertyValue`, `Block`, `RichText`, and `Mention` classes have subclasses that represent the various subtypes. E.g., there is a `ParagraphBlock` that represents paragraph.
 
@@ -85,7 +186,7 @@ The default implementation of these classes can be modified using a plugin syste
 
 1. Create a new Python module
 2. Subclass the various notion classes, modifying their constructor or `to_pandoc` method as desired
-3. Run n2y with the `--plugin` argument pointing to your python module
+3. Set the `plugins` property in your export config to the module name (e.g., `n2y.plugins.deepheaders`)
 
 See the [builtin plugins](https://github.com/innolitics/n2y/tree/main/n2y/plugins) for examples.
 
@@ -94,6 +195,10 @@ See the [builtin plugins](https://github.com/innolitics/n2y/tree/main/n2y/plugin
 You can use multiple plugins. If two plugins provide classes for the same notion object, then the last one that was loaded will be instantiated first.
 
 Often you'll want to use a different class only in certain situations. For example, you may want to use a different Page class with its own unique behavior only for pages in a particular database. To accomplish this you can use the `n2y.errors.UseNextClass` exception. If your plugin class raise the `n2y.errors.UseNextClass` exception in its constructor, then n2y will move on to the next class (which may be the builtin class if only one plugin was used).
+
+### Different Plugins for Different Exports
+
+You may use different plugins for different export items, but keep in mind that the plugin module is imported only once. Also, if you export the same `Page` or `Database` multiple times with different plugins, due to an internal cache, the plugins that were enabled during the first run will be used.
 
 ### Default Block Class's
 
@@ -131,7 +236,6 @@ Here are the default block classes that can be extended:
 | ToDoItemBlock | |
 | ToggleBlock | Convert the toggles into a bulleted list. |
 | VideoBlock | Acts the same way as the Image block |
-
 
 Most of the Notion blocks can generate their pandoc AST from _only_ their own data. The one exception is the list item blocks; pandoc, unlike Notion, has an encompassing node in the AST for the entire list. The `ListItemBlock.list_to_pandoc` class method is responsible for generating this top-level node.
 
@@ -175,12 +279,12 @@ Note that any link to a page that the integration doesn't have access to will be
 
 ## Architecture
 
-N2y's architecture is divided into four main steps:
+An n2y run is divided into four stages:
 
-1. Configuration
+1. Loading the configuration (mostly in `config.py`)
 2. Retrieve data from Notion (by instantiating various Notion object instances, e.g., `Page`, `Block`, `RichText`, etc.)
 3. Convert to the pandoc AST (by calling `block.to_pandoc()`)
-4. Writing the pandoc AST into markdown or YAML
+4. Writing the pandoc AST into one of the various output formats (mostly in `export.py`)
 
 Every page object has a `parent` property, which may be a page, a database, or a workspace.
 
@@ -219,11 +323,16 @@ Here are some features we're planning to add in the future:
 - Add support for recursively dumping sets of pages and preserving links between them
 - Add some sort of Notion API caching mechanism
 - Add more examples to the documentation
-- Make it so that plugins and other configuration can be set for only a sub-set
-  of the exported pages, that way multiple configurations can be applied in a
-  single export
 
 ## Changelog
+
+### v0.6.0
+
+- The export is now configured using a single YAML file instead of the growing list of commandline arguments. Using a configuration file allows multiple page and database exports to be made in a single run, which in turn improves caching and will enable future improvements, like preserving links between generated HTML or markdown pages.
+- Added the `pandoc_format` and `pandoc_options` fields, making it possible to output to any format that pandoc supports.
+- Removed the ability to export a set of related databases (this is less useful now that we have a configuration file).
+- Add support for remapping property names in the exports using the `property_map` option
+- Add basic support for emoji icons for pages.
 
 ### v0.5.0
 

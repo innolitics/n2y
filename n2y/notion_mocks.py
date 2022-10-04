@@ -17,7 +17,10 @@ def mock_person_user(name, email):
 
 
 def mock_rich_text_array(text_blocks_descriptors):
-    return [mock_rich_text(t, a) for t, a in text_blocks_descriptors]
+    if isinstance(text_blocks_descriptors, str):
+        return [mock_rich_text(text_blocks_descriptors, [])]
+    else:
+        return [mock_rich_text(t, a) for t, a in text_blocks_descriptors]
 
 
 def mock_rich_text(text, annotations=None, href=None, mention=None):
@@ -99,7 +102,7 @@ def mock_block(block_type, content, has_children=False, **kwargs):
 def mock_paragraph_block(text_blocks_descriptors, **kwargs):
     return mock_block('paragraph', {
         'color': 'default',
-        'rich_text': [mock_rich_text(t, a) for t, a in text_blocks_descriptors],
+        'rich_text': mock_rich_text_array(text_blocks_descriptors),
     }, **kwargs)
 
 
@@ -116,6 +119,10 @@ def mock_property_value(property_value_type, content):
         'type': property_value_type,
         property_value_type: content,
     }
+
+
+def mock_rich_text_property_value(text_blocks_descriptors):
+    return mock_property_value("rich_text", mock_rich_text_array(text_blocks_descriptors))
 
 
 def mock_formula_property_value(formula_type, content):
@@ -146,7 +153,9 @@ def mock_relation_value():
     return {"id": mock_id()}
 
 
-def mock_page(title="Mock Title"):
+def mock_page(title="Mock Title", extra_properties=None):
+    if extra_properties is None:
+        extra_properties = {}
     user = mock_user()
     created_time = datetime.now().isoformat()
     notion_id = mock_id()
@@ -166,10 +175,8 @@ def mock_page(title="Mock Title"):
             'title': {
                 'id': 'title',
                 'type': 'title',
-                'title': mock_rich_text_array([
-                    (title, []),
-                ]),
-            }
+                'title': mock_rich_text_array(title)
+            }, **extra_properties,
         },
         'url': f'https://www.notion.so/{hyphenated_title}-{notion_id}',
     }

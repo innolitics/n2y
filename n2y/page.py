@@ -1,9 +1,8 @@
 import logging
 
-import yaml
 from .blocks import ChildDatabaseBlock, ChildPageBlock
 
-from n2y.utils import pandoc_ast_to_html, pandoc_ast_to_markdown, fromisoformat, sanitize_filename
+from n2y.utils import fromisoformat
 from n2y.property_values import TitlePropertyValue
 
 
@@ -21,7 +20,7 @@ class Page:
         self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
         self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
         self.archived = notion_data['archived']
-        self.icon = notion_data['icon'] and client.wrap_notion_file(notion_data['icon'])
+        self.emoji = self._init_icon(notion_data['icon'])
         self.cover = notion_data['cover'] and client.wrap_notion_file(notion_data['cover'])
         self.archived = notion_data['archived']
         self.properties = {
@@ -35,6 +34,17 @@ class Page:
         self._children = None
 
         self.plugin_data = {}
+
+    def _init_icon(self, icon_notion_data):
+        """
+        The icon property is unique in that it can be either an emoji or a file.
+        """
+        if icon_notion_data is None:
+            return None
+        elif icon_notion_data["type"] == "emoji":
+            return self.client.wrap_notion_emoji(icon_notion_data)
+        else:
+            return self.client.wrap_notion_file(icon_notion_data)
 
     @property
     def title(self):
@@ -83,74 +93,8 @@ class Page:
             assert parent_type == "database_id"
             return self.client.get_database(self.notion_parent["database_id"])
 
-    @property
-    def filename(self):
-        # TODO: switch to using the database's natural keys as the file names
-        filename_property = self.client.filename_property
-        if filename_property is None:
-            return sanitize_filename(self.title.to_plain_text())
-        elif filename_property in self.properties:
-            return sanitize_filename(self.properties[filename_property].to_value())
-        else:
-            logger.warning(
-                'Invalid filename property, "%s". Valid options are %s',
-                filename_property, ", ".join(self.properties.keys()),
-            )
-            return sanitize_filename(self.title.to_plain_text())
-
     def to_pandoc(self):
         return self.block.to_pandoc()
 
-    def content_to_markdown(self):
-        pandoc_ast = self.to_pandoc()
-        if pandoc_ast is not None:
-            return pandoc_ast_to_markdown(pandoc_ast)
-        else:
-            return None
-
     def properties_to_values(self):
-        properties = {k: v.to_value() for k, v in self.properties.items()}
-
-        id_property = self.client.id_property
-        if id_property in properties:
-            logger.warning(
-                'The id property "%s" is shadowing an existing '
-                'property with the same name', id_property,
-            )
-        if id_property:
-            notion_id = self.notion_id
-            properties[id_property] = notion_id
-
-        url_property = self.client.url_property
-        if url_property in properties:
-            logger.warning(
-                'The url property "%s" is shadowing an existing '
-                'property with the same name', url_property,
-            )
-        if url_property:
-            properties[url_property] = self.notion_url
-        return properties
-
-    def to_markdown(self):
-        return '\n'.join([
-            '---',
-            yaml.dump(self.properties_to_values()) + '---',
-            self.content_to_markdown() or '',
-        ])
-
-    def content_to_html(self):
-        pandoc_ast = self.to_pandoc()
-        if pandoc_ast is not None:
-            return pandoc_ast_to_html(pandoc_ast)
-        else:
-            return ''
-
-    def to_html(self):
-        # currently, the html output is generated for jekyll sites, hence the
-        # inclusion of the YAML front matter
-        # if someone needs just the HTML we should generalize
-        return '\n'.join([
-            '---',
-            yaml.dump(self.properties_to_values()) + '---',
-            self.content_to_html() or '',
-        ])
+        return {k: v.to_value() for k, v in self.properties.items()}

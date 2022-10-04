@@ -491,8 +491,14 @@ class WarningBlock(NoopBlock):
         return None
 
 
-class ChildDatabaseBlock(WarningBlock):
-    pass
+class ChildDatabaseBlock(NoopBlock):
+    def to_pandoc(self):
+        msg = (
+            'Skipping unsupported "%s" block (%s). '
+            'Perhaps you can convert the database into a simple table?'
+        )
+        logger.warning(msg, self.notion_type, self.notion_url)
+        return None
 
 
 class EmbedBlock(WarningBlock):
@@ -518,7 +524,7 @@ class VideoBlock(Block):
         return Para(content_ast)
 
 
-class PdfBlock(WarningBlock):
+class PdfBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.pdf = client.wrap_notion_file(notion_data['pdf'])
@@ -582,8 +588,13 @@ class LinkToPageBlock(Block):
     def to_pandoc(self):
         # TODO: in the future, if we are exporting the linked page too, then add
         # a link to the page. For now, we just display the text of the page.
+        if self.link_type == "page_id":
+            node = self.client.get_page(self.linked_page_id)
+        elif self.link_type == "database_id":
+            node = self.client.get_database(self.linked_page_id)
+        else:
+            raise NotImplementedError(f"Unknown link type: {self.link_type}")
 
-        node = self.client.get_page_or_database(self.linked_page_id)
         if node is None:
             msg = "Permission denied when attempting to access linked node [%s]"
             logger.warning(msg, self.notion_url)
