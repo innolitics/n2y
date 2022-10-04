@@ -6,6 +6,7 @@ import argparse
 from n2y import notion
 from n2y.export import export_page, database_to_yaml, database_to_markdown_files
 from n2y.config import load_config
+from n2y.utils import share_link_from_id
 
 logger = None
 
@@ -52,10 +53,10 @@ def main(raw_args, access_token):
             page = client.get_page(export['id'])
             if page is None:
                 msg = (
-                    "Unable to find page with id '%s'. "
+                    "Unable to find page with id '%s' (%s). "
                     "Perhaps the integration doesn't have permission to access this page?"
                 )
-                logger.error(msg, export['id'])
+                logger.error(msg, export['id'], share_link_from_id(export['id']))
                 continue
             result = export_page(
                 page,
