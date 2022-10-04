@@ -125,5 +125,13 @@ def id_from_share_link(share_link):
         return query_removed[-32:]
 
 
+def share_link_from_id(id):
+    # Note that ordinarily page links include a hyphenated titled, but
+    # fortunately they will redirect to the canonical page URL including the
+    # hyphenated title if you visit the link with only the UUID. Similarly,
+    # database urls often have a version parameter, but we can omit that too.
+    return f"https://www.notion.so/{id}"
+
+
 def strip_hyphens(string):
     return string.replace("-", "")

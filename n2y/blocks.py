@@ -491,8 +491,11 @@ class WarningBlock(NoopBlock):
         return None
 
 
-class ChildDatabaseBlock(WarningBlock):
-    pass
+class ChildDatabaseBlock(NoopBlock):
+    def to_pandoc(self):
+        msg = 'Skipping unsupported "%s" block (%s). Perhaps you can convert the database into a simple table?'
+        logger.warning(msg, self.notion_type, self.notion_url)
+        return None
 
 
 class EmbedBlock(WarningBlock):
@@ -518,7 +521,7 @@ class VideoBlock(Block):
         return Para(content_ast)
 
 
-class PdfBlock(WarningBlock):
+class PdfBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.pdf = client.wrap_notion_file(notion_data['pdf'])
