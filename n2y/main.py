@@ -45,68 +45,77 @@ def main(raw_args, access_token):
 
     client = notion.Client(access_token, config["media_root"], config["media_url"])
 
+    error_occurred = False
     for export in config['exports']:
         logger.info("Exporting to %s", export['output'])
         client.load_plugins(export["plugins"])
-        node_type = export["node_type"]
-        if node_type == "page":
-            page = client.get_page(export['id'])
-            if page is None:
-                msg = (
-                    "Unable to find page with id '%s' (%s). "
-                    "Perhaps the integration doesn't have permission to access this page?"
-                )
-                logger.error(msg, export['id'], share_link_from_id(export['id']))
-                continue
-            result = export_page(
-                page,
-                export["pandoc_format"],
-                export["pandoc_options"],
-                export["id_property"],
-                export["url_property"],
-                export["property_map"],
+        export_completed = _export_node_from_config(client, export)
+        if not export_completed:
+            error_occurred = True
+    return 0 if not error_occurred else 3
+
+
+def _export_node_from_config(client, export):
+    node_type = export["node_type"]
+    if node_type == "page":
+        page = client.get_page(export['id'])
+        if page is None:
+            msg = (
+                "Unable to find page with id '%s' (%s). "
+                "Perhaps the integration doesn't have permission to access this page?"
+            )
+            logger.error(msg, export['id'], share_link_from_id(export['id']))
+            return False
+        result = export_page(
+            page,
+            export["pandoc_format"],
+            export["pandoc_options"],
+            export["id_property"],
+            export["url_property"],
+            export["property_map"],
+        )
+        with open(export["output"], "w") as f:
+            f.write(result)
+    else:
+        database = client.get_database(export['id'])
+        if database is None:
+            msg = (
+                "Unable to find database with id '%s' (%s). "
+                "Perhaps the integration doesn't have permission to access this database?"
+            )
+            logger.error(msg, export['id'], share_link_from_id(export['id']))
+            return False
+        if node_type == "database_as_yaml":
+            result = database_to_yaml(
+                database=database,
+                pandoc_format=export["pandoc_format"],
+                pandoc_options=export["pandoc_options"],
+                id_property=export["id_property"],
+                url_property=export["url_property"],
+                content_property=export["content_property"],
+                notion_filter=export["notion_filter"],
+                notion_sorts=export["notion_sorts"],
+                property_map=export["property_map"],
             )
             with open(export["output"], "w") as f:
                 f.write(result)
+        elif node_type == "database_as_files":
+            database_to_markdown_files(
+                database=database,
+                directory=export["output"],
+                pandoc_format=export["pandoc_format"],
+                pandoc_options=export["pandoc_options"],
+                filename_property=export["filename_property"],
+                notion_filter=export["notion_filter"],
+                notion_sorts=export["notion_sorts"],
+                id_property=export["id_property"],
+                url_property=export["url_property"],
+                property_map=export["property_map"],
+            )
         else:
-            database = client.get_database(export['id'])
-            if database is None:
-                msg = (
-                    "Unable to find database with id '%s'. "
-                    "Perhaps the integration doesn't have permission to access this page?"
-                )
-                logger.error(msg, export['id'])
-                continue
-            if node_type == "database_as_yaml":
-                result = database_to_yaml(
-                    database=database,
-                    pandoc_format=export["pandoc_format"],
-                    pandoc_options=export["pandoc_options"],
-                    id_property=export["id_property"],
-                    url_property=export["url_property"],
-                    content_property=export["content_property"],
-                    notion_filter=export["notion_filter"],
-                    notion_sorts=export["notion_sorts"],
-                    property_map=export["property_map"],
-                )
-                with open(export["output"], "w") as f:
-                    f.write(result)
-            elif node_type == "database_as_files":
-                database_to_markdown_files(
-                    database=database,
-                    directory=export["output"],
-                    pandoc_format=export["pandoc_format"],
-                    pandoc_options=export["pandoc_options"],
-                    filename_property=export["filename_property"],
-                    notion_filter=export["notion_filter"],
-                    notion_sorts=export["notion_sorts"],
-                    id_property=export["id_property"],
-                    url_property=export["url_property"],
-                    property_map=export["property_map"],
-                )
-            else:
-                logger.error("Unknown node_type '%s'", node_type)
-    return 0
+            logger.error("Unknown node_type '%s'", node_type)
+            return False
+    return True
 
 
 if __name__ == "__main__":

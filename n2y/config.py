@@ -32,17 +32,8 @@ EXPORT_DEFAULTS = {
 
 
 def load_config(path):
-    try:
-        with open(path, "r") as config_file:
-            config = yaml.safe_load(config_file)
-    except yaml.YAMLError as exc:
-        logger.error("Error parsing the config file: %s", exc)
-        return None
-    except FileNotFoundError:
-        logger.error("The config file '%s' does not exist", path)
-        return None
-    if not validate_config(config):
-        logger.error("Invalid config file: %s", path)
+    config = _load_config_from_yaml(path)
+    if config is None:
         return None
 
     defaults_copy = copy.deepcopy(DEFAULTS)
@@ -55,6 +46,21 @@ def load_config(path):
     )
     config["exports"] = merged_exports
     return config
+
+
+def _load_config_from_yaml(path):
+    try:
+        with open(path, "r") as config_file:
+            config = yaml.safe_load(config_file)
+    except yaml.YAMLError as exc:
+        logger.error("Error parsing the config file: %s", exc)
+        return None
+    except FileNotFoundError:
+        logger.error("The config file '%s' does not exist", path)
+        return None
+    if not validate_config(config):
+        logger.error("Invalid config file: %s", path)
+        return None
 
 
 def merge_config(config_items, builtin_defaults, defaults):
