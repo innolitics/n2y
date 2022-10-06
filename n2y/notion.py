@@ -108,8 +108,6 @@ class Client:
                 plugin_module = importlib.import_module(plugin)
                 try:
                     self.load_plugin(plugin_module.notion_classes)
-                    if "notion_classes" in plugin_module.__dict__:
-                        pass
                 except PluginError as err:
                     logger.error('Error loading plugin "%s": %s', plugin, err)
                     raise
