@@ -19,8 +19,8 @@ from n2y.utils import sanitize_filename, strip_hyphens
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.errors import (
-    HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
-    UseNextClass, UseNextType, is_api_error_code, APIErrorCode
+    UseNextClass, APIErrorCode, ObjectNotFound, PluginError,
+    HTTPResponseError, is_api_error_code, APIResponseError
 )
 
 
