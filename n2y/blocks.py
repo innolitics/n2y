@@ -93,7 +93,7 @@ class Block:
             return fragment
         else:
             return urljoin(self.page.notion_url, fragment)
-    
+
     @classmethod
     def _first_pandoc_arg(klass, pandoc_ast):
         return pandoc_ast.__dict__["_args"][0]
@@ -194,8 +194,6 @@ class ParagraphBlock(Block):
         class_args = [client, notion_data, page]
         new_block = klass(*class_args, **kwargs)
         return new_block
-
-
 
 
 class BulletedListItemBlock(ListItemBlock):

@@ -92,7 +92,7 @@ class Client:
             else:
                 notion_classes[notion_object] = [object_types]
         return notion_classes
-    
+
     def get_pandoc_types(self):
         notion_blocks = self.notion_classes["blocks"]
         pandoc_types = {}
@@ -108,9 +108,6 @@ class Client:
                 plugin_module = importlib.import_module(plugin)
                 try:
                     self.load_plugin(plugin_module.notion_classes)
-                    print()
-                    print("PLUGIN_MODULE:",plugin_module.__dict__)
-                    print()
                     if "notion_classes" in plugin_module.__dict__:
                         pass
                 except PluginError as err:
