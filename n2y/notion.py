@@ -179,15 +179,8 @@ class Client:
                 logger.debug("Skipping %s due to UseNextClass exception", klass.__name__)
 
     def _instantiate_class_from_pandoc(self, page, pandoc_ast, **kwargs):
-        for pandoc_type, notion_class in self.pandoc_types.items():
-            try:
-                if type(pandoc_ast) == pandoc_type:
-                    print(pandoc_type, notion_class)
-                    return notion_class.from_pandoc(self, page, pandoc_ast, **kwargs)
-                else:
-                    raise UseNextType()
-            except UseNextType:
-                logger.debug("Skipping %s due to UseNextType exception", pandoc_type)
+        notion_class = self.pandoc_types[type(pandoc_ast)]
+        return notion_class.from_pandoc(self, page, pandoc_ast, **kwargs)
 
     def _wrap_notion_page(self, notion_data):
         """
