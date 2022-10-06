@@ -9,6 +9,9 @@ from pandoc.types import (
     ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
 
+from n2y.rich_text import InlineToRichText
+from n2y.notion_mocks import mock_annotations, mock_block
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +30,15 @@ class Block:
     Notion doesn't have a wrapper around lists, while Pandoc does.
     """
 
+    pandoc_type = None
+
     def __init__(self, client, notion_data, page=None, get_children=True):
         """
         The Notion client object is passed down for the following reasons:
         1. Some child objects may be unknown until the block is processed.
-           Links to other Notion pages are an example.
+            Links to other Notion pages are an example.
         2. In some cases a block may choose not to get child blocks.
-           Currently, all blocks load all children.
+            Currently, all blocks load all children.
         """
         logger.debug('Instantiating "%s" block', type(self).__name__)
         self.client = client
@@ -88,6 +93,10 @@ class Block:
             return fragment
         else:
             return urljoin(self.page.notion_url, fragment)
+    
+    @classmethod
+    def _first_pandoc_arg(klass, pandoc_ast):
+        return pandoc_ast.__dict__["_args"][0]
 
 
 class ListItemBlock(Block):
@@ -97,6 +106,8 @@ class ListItemBlock(Block):
 
 
 class ChildPageBlock(Block):
+    pandoc_type = Pandoc
+
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.title = self.notion_data["title"]
@@ -109,6 +120,37 @@ class ChildPageBlock(Block):
         else:
             return None
 
+    @classmethod
+    def _process_pandoc_children(klass, client, page, arguments):
+        pandoc_children = arguments[-1]
+        if type(pandoc_children) != list:
+            raise NotImplementedError(
+                (
+                    "A list of children should be the last argument for the "
+                    '"Pandoc" class, but it wasn\'t.\nArguments: {arguments}'
+                )
+            )
+        class_children = []
+        for pandoc_child in pandoc_children:
+            class_child = client.instantiate_class(pandoc_child, page)
+            class_children.append(class_child)
+        return class_children
+
+    @classmethod
+    def from_pandoc(klass, client, page, pandoc_ast, **kwargs):
+        arguments = pandoc_ast.__dict__["_args"]
+        title = klass._first_pandoc_arg(klass._first_pandoc_arg(arguments[0])["title"])
+        mock_data = {
+            "title": title
+        }
+        children = klass._process_pandoc_children(client, page, arguments)
+        notion_data = mock_block("paragraph", mock_data)
+        class_args = [client, notion_data, page]
+        new_block = klass(*class_args, **kwargs)
+        new_block.has_children = bool(children)
+        new_block._children = children
+        return new_block
+
 
 class EquationBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
@@ -120,6 +162,8 @@ class EquationBlock(Block):
 
 
 class ParagraphBlock(Block):
+    pandoc_type = Para
+
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
@@ -137,6 +181,21 @@ class ParagraphBlock(Block):
         else:
             result = Para(content)
         return result
+
+    @classmethod
+    def from_pandoc(klass, client, page, pandoc_ast, **kwargs):
+        rich_text_array = InlineToRichText(klass._first_pandoc_arg(pandoc_ast)).rich_text_array
+        for rich_text in rich_text_array:
+            rich_text["annotations"] = mock_annotations(rich_text["annotations"])
+        mock_data = {
+            "rich_text": rich_text_array
+        }
+        notion_data = mock_block("paragraph", mock_data)
+        class_args = [client, notion_data, page]
+        new_block = klass(*class_args, **kwargs)
+        return new_block
+
+
 
 
 class BulletedListItemBlock(ListItemBlock):
@@ -286,6 +345,8 @@ class FencedCodeBlock(Block):
 
 
 class QuoteBlock(ParagraphBlock):
+    pandoc_type = BlockQuote
+
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)

@@ -230,3 +230,101 @@ class RichTextArray:
         else:
             rich_text = TextRichText.from_plain_text(self.client, string)
             self.items.append(rich_text)
+
+
+class InlineToRichText:
+    def __init__(self, pandoc_text):
+        self.annotation_types = {
+            Strong: "bold",
+            Emph: "italic",
+            Strikeout: "strikethrough",
+            Underline: "underline",
+            Code: "code"
+        }
+        self.text_types = {
+            Space: " ",
+            LineBreak: "\n",
+            Str: self._first_pandoc_arg
+        }
+        self.rich_text_array = []
+        self.annotated_text = ""
+        self.current_rich_text = self._new_rich_text
+        self._parse_rich_text(pandoc_text)
+
+    @property
+    def _new_rich_text(self):
+        return {
+            "type": None,
+            "annotations": [],
+            "plain_text": "",
+            "href": None
+        }
+
+    def _first_pandoc_arg(self, pandoc):
+        return pandoc.__dict__["_args"][0]
+
+    def _type_is_text(self):
+        if "text" not in self.current_rich_text:
+            self.current_rich_text["type"] = "text"
+            self.current_rich_text["text"] = {"content": "", "link": None}
+
+    def _store_rich_text(self):
+        if self.current_rich_text != self._new_rich_text:
+            self.rich_text_array.append(self.current_rich_text)
+            self.current_rich_text = self._new_rich_text
+
+    def _parse_rich_text(self, pandoc_text):
+        for i, pandoc in enumerate(pandoc_text, 1):
+            pandoc_type = type(pandoc)
+            if pandoc_type in self.annotation_types:
+                self._process_pandoc_annotations(pandoc_type, pandoc)
+            elif pandoc_type == Link:
+                raise NotImplementedError("Link type text is not yet supported")
+            elif pandoc_type == Math:
+                raise NotImplementedError("Math type text is not yet supported")
+            elif pandoc_type == InlineMath:
+                raise NotImplementedError("InlineMath type text is not yet supported")
+            elif pandoc_type in self.text_types:
+                self._process_pandoc_text(pandoc_type, pandoc)
+            if i == len(pandoc_text):
+                self._store_rich_text()
+
+    def _process_pandoc_annotations(self, pandoc_type, pandoc):
+        self._store_rich_text()
+        self._type_is_text()
+        arguments = pandoc.__dict__["_args"]
+        if pandoc_type == Code:
+            text = arguments[1]
+            self.current_rich_text["text"]["content"] += text
+            self.current_rich_text["plain_text"] += text
+        else:
+            self._iterate_over_further_annotations(arguments[0])
+            self.current_rich_text["text"]["content"] += self.annotated_text
+            self.current_rich_text["plain_text"] += self.annotated_text
+            self.annotated_text = ""
+        self.current_rich_text["annotations"].append(self.annotation_types[pandoc_type])
+        self._store_rich_text()
+
+    def _iterate_over_further_annotations(self, pandoc_text):
+        for pandoc in pandoc_text:
+            pandoc_type = type(pandoc)
+            if pandoc_type == Code:
+                self.current_rich_text["annotations"].append("code")
+                self.annotated_text += pandoc.__dict__["_args"][1]
+            elif pandoc_type in self.text_types:
+                if pandoc_type == Str:
+                    self.annotated_text += self.text_types[Str](pandoc)
+                else:
+                    self.annotated_text += self.text_types[pandoc_type]
+            else:
+                self.current_rich_text["annotations"].append(self.annotation_types[pandoc_type])
+                self._iterate_over_further_annotations(self._first_pandoc_arg(pandoc))
+
+    def _process_pandoc_text(self, pandoc_type, pandoc):
+        self._type_is_text()
+        if pandoc_type == Str:
+            self.current_rich_text["text"]["content"] += self.text_types[Str](pandoc)
+            self.current_rich_text["plain_text"] += self.text_types[Str](pandoc)
+        else:
+            self.current_rich_text["text"]["content"] += self.text_types[pandoc_type]
+            self.current_rich_text["plain_text"] += self.text_types[pandoc_type]

@@ -81,6 +81,7 @@ class Client:
         self.pages_cache = {}
 
         self.load_plugins(plugins)
+        self.pandoc_types = self.get_pandoc_types()
         self.plugin_data = {}
 
     def get_default_classes(self):
@@ -91,6 +92,14 @@ class Client:
             else:
                 notion_classes[notion_object] = [object_types]
         return notion_classes
+    
+    def get_pandoc_types(self):
+        notion_blocks = self.notion_classes["blocks"]
+        pandoc_types = {}
+        for _, block_list in notion_blocks.items():
+            block = block_list[-1]
+            pandoc_types[block.pandoc_type] = block
+        return pandoc_types
 
     def load_plugins(self, plugins):
         self.notion_classes = self.get_default_classes()
@@ -99,6 +108,11 @@ class Client:
                 plugin_module = importlib.import_module(plugin)
                 try:
                     self.load_plugin(plugin_module.notion_classes)
+                    print()
+                    print("PLUGIN_MODULE:",plugin_module.__dict__)
+                    print()
+                    if "notion_classes" in plugin_module.__dict__:
+                        pass
                 except PluginError as err:
                     logger.error('Error loading plugin "%s": %s', plugin, err)
                     raise
@@ -157,7 +171,7 @@ class Client:
                 class_to_instantiate, args[0], *args[1:], **kwargs
             )
         else:
-            return self._instantiate_class_from_pandoc(class_to_instantiate, args[0], **kwargs)
+            return self._instantiate_class_from_pandoc(args[0], class_to_instantiate, **kwargs)
 
     def _instantiate_class_from_notion(self, notion_object, object_type, *args, **kwargs):
         class_list = self.get_class_list(notion_object, object_type)
@@ -167,29 +181,16 @@ class Client:
             except UseNextClass:
                 logger.debug("Skipping %s due to UseNextClass exception", klass.__name__)
 
-    def _instantiate_class_from_pandoc(self, pandoc_ast, page, **kwargs):
-        for pandoc_type, pandoc_type_info in PANDOC_TYPES.items():
+    def _instantiate_class_from_pandoc(self, page, pandoc_ast, **kwargs):
+        for pandoc_type, notion_class in self.pandoc_types.items():
             try:
-                if type(pandoc_ast) in pandoc_type_info["pandoc"]:
-                    mock_data, children = \
-                        pandoc_type_info["parse_pandoc"](pandoc_ast, self, page)
-                    notion_data = mock_block(pandoc_type, mock_data)
-                    class_args = [self, notion_data, page]
-                    new_block = pandoc_type_info["class"](*class_args, **kwargs)
-                    new_block.has_children = bool(children)
-                    new_block._children = children
-                    return new_block
+                if type(pandoc_ast) == pandoc_type:
+                    print(pandoc_type, notion_class)
+                    return notion_class.from_pandoc(self, page, pandoc_ast, **kwargs)
                 else:
                     raise UseNextType()
             except UseNextType:
                 logger.debug("Skipping %s due to UseNextType exception", pandoc_type)
-
-    def _process_pandoc_children(self, pandoc_children, page):
-        class_children = []
-        for pandoc_child in pandoc_children:
-            class_child = self.instantiate_class(pandoc_child, page)
-            class_children.append(class_child)
-        return class_children
 
     def _wrap_notion_page(self, notion_data):
         """
