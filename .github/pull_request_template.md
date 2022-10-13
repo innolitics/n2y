@@ -1,6 +1,6 @@
 # Author's Checklist
 
-Check each item once it's completed. If an item is skipped, write a short explanation as to why below the item.
+Before assigning reviewers, step through the following checklist. Check each item once it's completed. If an item is skipped, write an explanation below the item.
 
 - [ ] **Automated Checks:** Confirm that the linter and automated tests are passing.
 - [ ] **Construction:** Review the code diff and confirm there's no dead code, debug code, or unnecessary comments.
