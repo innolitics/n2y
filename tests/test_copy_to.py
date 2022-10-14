@@ -18,6 +18,7 @@ def test_copy_to_paragraphs_and_nested_lists():
         original_page = client.get_page(current_page_id)
         original_page.block.children.copy_to(page_id)
         copied_page = client.get_page(page_id)
-        assert original_page.block.children.list == copied_page.block.children.list
+        assert [child.notion_data for child in original_page.block.children]\
+          == [child.notion_data for child in copied_page.block.children]
     finally:
         client.delete_block(page_id)

@@ -605,7 +605,7 @@ class Children(list):
     def __init__(self, *args, client=None):
         super().__init__(*args)
         if not client:
-            raise NotImplementedError("No client assigned")
+            raise NotImplementedError('No client assigned')
         self.notion_children = []
         self.child_dict = {}
         self.client = client
@@ -615,38 +615,34 @@ class Children(list):
         appension_return = self.client.append_block_children(
             destination, self.notion_children
         )
-        self.children_appended = appension_return["results"]
+        self.children_appended = appension_return['results']
         self._recursively_copy_children()
         return self.children_appended
 
     def _format_for_copy(self):
         for i, child in enumerate(self):
-            if child.children:
-                child_data = {
-                    "object": "block",
-                    "id": child.notion_id,
-                    "type": child.notion_type,
-                    "has_children": child.has_children,
-                    child.notion_type: child.notion_data
-                }
-                self.child_dict[i] = child.children
-            else:
-                child_data = {
-                    "object": "block",
-                    "id": child.notion_id,
-                    "type": child.notion_type,
-                    child.notion_type: child.notion_data
-                }
-            self.notion_children.append(child_data)
+            self._generate_child_data(child, i)
+
+    def _generate_child_data(self, child, i):
+        notion_type = child.notion_type
+        if notion_type == 'synced_block' and child.notion_data['synced_from']:
+            child.notion_data['synced_from'] = None
+        child_data = {
+            'object': 'block',
+            'type': notion_type,
+            'has_children': child.has_children,
+            notion_type: child.notion_data
+        }
+        if child.children:
+            self.child_dict[i] = child.children
+        else:
+            del child_data['has_children']
+        self.notion_children.append(child_data)
 
     def _recursively_copy_children(self):
         for index, children in self.child_dict.items():
-            parent_id = self.children_appended[index]["id"]
-            self.children_appended[index]["children"] = children.copy_to(parent_id)
-
-    @property
-    def list(self):
-        return [].extend(self)
+            parent_id = self.children_appended[index]['id']
+            self.children_appended[index]['children'] = children.copy_to(parent_id)
 
 
 def render_with_caption(content_ast, caption_ast):
