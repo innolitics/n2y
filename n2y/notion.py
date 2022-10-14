@@ -6,6 +6,21 @@ import importlib.util
 
 import requests
 
+<<<<<<< HEAD
+=======
+from n2y.user import User
+from n2y.file import File
+from n2y.page import Page
+from n2y.emoji import Emoji
+from n2y.comment import Comment
+from n2y.database import Database
+from n2y.blocks import DEFAULT_BLOCKS, Children
+from n2y.mentions import DEFAULT_MENTIONS
+from n2y.properties import DEFAULT_PROPERTIES
+from n2y.utils import sanitize_filename, strip_hyphens
+from n2y.property_values import DEFAULT_PROPERTY_VALUES
+from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
+>>>>>>> ab26b21 (create and test Chilren class for block children and copy_to functionality)
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -290,7 +305,10 @@ class Client:
 
     def get_child_blocks(self, block_id, page, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
+        children = Children(client=self)
+        child_list = [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
+        children.extend(child_list)
+        return children
 
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"
@@ -311,6 +329,11 @@ class Client:
     def get_notion_page_property(self, page_id, property_id):
         url = f"{self.base_url}pages/{page_id}/properties/{property_id}"
         response = requests.get(url, headers=self.headers)
+        return self._parse_response(response)
+
+    def create_notion_page(self, page_data):
+        creation_url = f'{self.base_url}pages'
+        response = requests.post(creation_url, headers=self.headers, json=page_data)
         return self._parse_response(response)
 
     def _get_url(self, url, params=None):
