@@ -1,5 +1,4 @@
 
-import requests
 from n2y.notion import Client
 from tests.utils import NOTION_ACCESS_TOKEN
 
@@ -9,8 +8,8 @@ def test_copy_to_paragraphs_and_nested_lists():
     destination_page_id = 'f488a7773d4546bca89c8bbfa5aafb79'
     current_page_id = 'c9e17a34da6a4b3295f82a1ad05bc3d8'
     page_data = {
-      'parent': {'page_id': destination_page_id},
-      'properties': {'title':[{'text':{'content':'Temp_Page'}}]}
+        'parent': {'page_id': destination_page_id},
+        'properties': {'title': [{'text': {'content': 'Temp_Page'}}]}
     }
     try:
         page_data = client.create_notion_page(page_data)
