@@ -6,8 +6,6 @@ import importlib.util
 
 import requests
 
-<<<<<<< HEAD
-=======
 from n2y.user import User
 from n2y.file import File
 from n2y.page import Page
@@ -20,7 +18,6 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.utils import sanitize_filename, strip_hyphens
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
->>>>>>> ab26b21 (create and test Chilren class for block children and copy_to functionality)
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
