@@ -711,6 +711,7 @@ class Children(list):
                             = self.link_dict[title]
                 else:
                     self.notion_children.append(self.unchanged_link_warning)
+                    self.unchanged_link_count += 1
 
     def _recursively_copy_children(self):
         for index, children in self.child_dict.items():
