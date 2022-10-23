@@ -44,13 +44,18 @@ def mock_rich_text(text, annotations=None, href=None, mention=None):
 def mock_annotations(annotations=None):
     if annotations is None:
         annotations = []
+    color_string = [a for a in annotations if 'color' in a]
+    if color_string:
+        color = color_string[0].replace('color:', '')
+    else:
+        color = 'default'
     return {
         'bold': True if 'bold' in annotations else False,
         'italic': True if 'italic' in annotations else False,
         'strikethrough': True if 'strikethrough' in annotations else False,
         'underline': True if 'underline' in annotations else False,
         'code': True if 'code' in annotations else False,
-        'color': 'default'
+        'color': color
     }
 
 

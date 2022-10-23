@@ -9,6 +9,8 @@ from pandoc.types import (
     ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
 
+from n2y.notion_mocks import mock_rich_text_array
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,7 @@ class Block:
         self.client = client
         self.page = page
 
+        self.notion_block = notion_data
         self.notion_id = notion_data['id']
         self.created_time = notion_data['created_time']
         self.created_by = notion_data['created_by']
@@ -387,6 +390,17 @@ class RowBlock(Block):
         ) for cell in self.cells]
         return Row(('', [], []), cells)
 
+    def format_notion_data(self):
+        if 'table_row' not in self.notion_data and self.notion_data['cells']:
+            self.notion_data['table_row'] = {
+                'cells': self.notion_data['cells']
+            }
+            del self.notion_data['cells']
+        if 'object' not in self.notion_data:
+            self.notion_data['object'] = 'block'
+        if 'type' not in self.notion_data:
+            self.notion_data['type'] = 'table_row'
+
 
 class ColumnListBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
@@ -580,20 +594,20 @@ class LinkToPageBlock(Block):
         self.link_type = self.notion_data["type"]
         # The key for the object id may be either "page_id"
         # or "database_id".
-        self.linked_page_id = self.notion_data[self.link_type]
+        self.linked_node_id = self.notion_data[self.link_type]
 
     def to_pandoc(self):
         # TODO: in the future, if we are exporting the linked page too, then add
         # a link to the page. For now, we just display the text of the page.
         if self.link_type == "page_id":
-            node = self.client.get_page(self.linked_page_id)
+            node = self.client.get_page(self.linked_node_id)
         elif self.link_type == "database_id":
-            node = self.client.get_database(self.linked_page_id)
+            node = self.client.get_database(self.linked_node_id)
         else:
             raise NotImplementedError(f"Unknown link type: {self.link_type}")
 
         if node is None:
-            msg = "Permission denied when attempting to access linked node [%s]"
+            msg = f"Permission denied when attempting to access linked node [%s]"
             logger.warning(msg, self.notion_url)
             return None
         else:
@@ -606,18 +620,49 @@ class Children(list):
         super().__init__(*args)
         if not client:
             raise NotImplementedError('No client assigned')
-        self.notion_children = []
-        self.child_dict = {}
+        self.default_link_title = '{Not Accessable}'
+        self.unchanged_link_count = 0
+        self.unchanged_link_warning = {
+            'object': 'block',
+            'type': 'paragraph',
+            'has_children': False,
+            'paragraph': {
+                'rich_text': mock_rich_text_array([
+                    (
+                        '{⬇️ Check Unchanged Link}',
+                        ['color:red']
+                    )
+                    ]),
+                'color': 'default'
+                }
+        }
+        self._default_info()
         self.client = client
 
-    def copy_to(self, destination):
+    @property
+    def block_list(self):
+        return [child.notion_block for child in self]
+
+    def _new_child_data(self, child):
+        notion_type = child.notion_type
+        self.child_data = {
+            'object': 'block',
+            'type': notion_type,
+            'has_children': child.has_children,
+            notion_type: {**child.notion_data}
+        }
+
+    def copy_to(self, destination_id, probe_links=True):
+        not probe_links or self._probe_destination_links(destination_id)
         self._format_for_copy()
         appension_return = self.client.append_block_children(
-            destination, self.notion_children
+            destination_id, self.notion_children
         )
         self.children_appended = appension_return['results']
         self._recursively_copy_children()
-        return self.children_appended
+        return_value = [*self.children_appended]
+        self._default_info()
+        return self._retrieve_node(destination_id)
 
     def _format_for_copy(self):
         for i, child in enumerate(self):
@@ -625,24 +670,109 @@ class Children(list):
 
     def _generate_child_data(self, child, i):
         notion_type = child.notion_type
+        self._new_child_data(child)
         if notion_type == 'synced_block' and child.notion_data['synced_from']:
-            child.notion_data['synced_from'] = None
-        child_data = {
-            'object': 'block',
-            'type': notion_type,
-            'has_children': child.has_children,
-            notion_type: child.notion_data
-        }
-        if child.children:
+            self.child_data[notion_type]['synced_from'] = None
+        if notion_type == 'paragraph':
+            self._audit_mentions()
+        if notion_type == 'link_to_page':
+            self._audit_links()
+        if notion_type == 'image':
+            pass
+
+        if notion_type == 'table':
+            child.children._format_for_copy()
+            self.child_data['table']['children'] = child.children.notion_children
+        elif child.children:
+            i += self.unchanged_link_count
             self.child_dict[i] = child.children
         else:
-            del child_data['has_children']
-        self.notion_children.append(child_data)
+            del self.child_data['has_children']
+        self.notion_children.append(self.child_data)
+
+    def _audit_links(self):
+        title, node_id = self._retrieve_link_info(self.child_data['link_to_page'])
+        if title in self.link_dict:
+            if self.link_dict[title] != node_id:
+                self.child_data['link_to_page'][self.child_data['link_to_page']['type']]\
+                    = self.link_dict[title]
+        else:
+            self.notion_children.append(self.unchanged_link_warning)
+            self.unchanged_link_count += 1
+
+    def _audit_mentions(self):
+        for text in self.child_data['paragraph']['rich_text']:
+            if text['type'] == 'mention' and text['mention']['type'] in ['page', 'database']:
+                title, node_id = self._retrieve_link_info(text['mention'])
+                if title in self.link_dict:
+                    if self.link_dict[title] != node_id:
+                        mention_type = text['mention']['type']
+                        text['mention'][mention_type]['id']\
+                            = self.link_dict[title]
+                else:
+                    self.notion_children.append(self.unchanged_link_warning)
 
     def _recursively_copy_children(self):
         for index, children in self.child_dict.items():
             parent_id = self.children_appended[index]['id']
-            self.children_appended[index]['children'] = children.copy_to(parent_id)
+            parent = children.copy_to(parent_id, False)
+            start = len(parent.children) - len(children)
+            self.children_appended[index]['children'] = parent.children.block_list[start:]
+
+    def _probe_destination_links(self, destination_id):
+        node = self._retrieve_node(destination_id)
+        if "block" in node.__dict__:
+            for child in node.block.children:
+                self._find_links(child)
+        else:
+            for child in node.children:
+                self._find_links(child)
+
+    def _default_info(self):
+        self.link_dict = {}
+        self.child_dict = {}
+        self.notion_children = []
+        self.children_appended = []
+
+    def _find_links(self, child):
+        if isinstance(child, LinkToPageBlock):
+            self._store_link_info(child.notion_data)
+        elif isinstance(child, ParagraphBlock):
+            for text in child.notion_data['rich_text']:
+                if text['type'] == 'mention' and \
+                    text['mention']['type'] in ['page', 'database']:
+                        self._store_link_info(text['mention'])
+        if child.children:
+            for child in child.children:
+                self._find_links(child)
+
+    def _retrieve_node(self, node_id):
+        node = self.client.get_page_or_database(node_id)
+        if node != None:
+            return node
+        return self.client.get_block(node_id, None)
+
+    def _store_link_info(self, notion_data):
+        title, link_id = self._retrieve_link_info(notion_data)
+        if title != self.default_link_title and title not in self.link_dict:
+            self.link_dict[title] = link_id
+
+    def _retrieve_link_info(self, notion_data):
+        node_id = notion_data[notion_data['type']] if\
+            isinstance(notion_data[notion_data['type']], str) else\
+            notion_data[notion_data['type']]['id']
+        if "page" in notion_data['type']:
+            node = self.client.get_page(node_id)
+        elif "database" in notion_data['type']:
+            node = self.client.get_database(node_id)
+        else:
+            raise NotImplementedError(f"Unknown link type: {notion_data['type']}")
+        if node is None:
+            msg = "Permission denied when attempting to access linked node [%s]"
+            logger.warning(msg, node_id)
+            return self.default_link_title, node_id
+        else:
+            return node.title.to_plain_text(), node_id
 
 
 def render_with_caption(content_ast, caption_ast):
