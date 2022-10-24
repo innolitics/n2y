@@ -51,12 +51,16 @@ class Block:
         self.archived = notion_data['archived']
         self.notion_type = notion_data['type']
         self.notion_data = notion_data[notion_data['type']]
+        self.get_children = get_children
 
         if get_children and self.has_children:
             children = self.client.get_child_blocks(self.notion_id, page, get_children)
         else:
             children = Children(client=self.client)
         self.children = children
+
+    def replicate(self):
+        return self.client.wrap_notion_block(self.notion_block, self.page, self.get_children)
 
     def to_pandoc(self):
         raise NotImplementedError()
@@ -652,17 +656,34 @@ class Children(list):
             notion_type: {**child.notion_data}
         }
 
-    def copy_to(self, destination_id, probe_links=True):
-        not probe_links or self._probe_destination_links(destination_id)
+    def copy_to(self, destination, probe_links=True):
+        self.destination = destination
+        not probe_links or self._probe_destination_links()
         self._format_for_copy()
         appension_return = self.client.append_block_children(
-            destination_id, self.notion_children
+            destination.notion_id, self.notion_children
         )
         self.children_appended = appension_return['results']
         self._recursively_copy_children()
-        return_value = [*self.children_appended]
+        self._copy_to_destination()
         self._default_info()
-        return self._retrieve_node(destination_id)
+        return self.destination
+
+    def _copy_to_destination(self):
+        for child in self.children_appended:
+            page = None
+            if '_block' in self.destination.__dict__:
+                page = self.destination
+                block = self.client.wrap_notion_block(child, page, True)
+                self.destination.block.children.append(block)
+            elif 'schema' in self.destination.__dict__:
+                raise NotImplementedError(
+                    'This functionality is not yet supported for Databases'
+                )
+            else:
+                page = self.destination.page
+                block = self.client.wrap_notion_block(child, page, True)
+                self.destination.children.append(block)
 
     def _format_for_copy(self):
         for i, child in enumerate(self):
@@ -671,13 +692,13 @@ class Children(list):
     def _generate_child_data(self, child, i):
         notion_type = child.notion_type
         self._new_child_data(child)
-        if notion_type == 'synced_block' and child.notion_data['synced_from']:
+        if notion_type == 'synced_block' and self.child_data[notion_type]['synced_from']:
             self.child_data[notion_type]['synced_from'] = None
-        if notion_type == 'paragraph':
+        elif notion_type == 'paragraph':
             self._audit_mentions()
-        if notion_type == 'link_to_page':
+        elif notion_type == 'link_to_page':
             self._audit_links()
-        if notion_type == 'image':
+        elif notion_type == 'image':
             pass
 
         if notion_type == 'table':
@@ -691,17 +712,19 @@ class Children(list):
         self.notion_children.append(self.child_data)
 
     def _audit_links(self):
-        title, node_id = self._retrieve_link_info(self.child_data['link_to_page'])
+        notion_data = self.child_data['link_to_page']
+        title, node_id = self._retrieve_link_info(notion_data)
         if title in self.link_dict:
             if self.link_dict[title] != node_id:
-                self.child_data['link_to_page'][self.child_data['link_to_page']['type']]\
+                notion_data[notion_data['type']]\
                     = self.link_dict[title]
         else:
             self.notion_children.append(self.unchanged_link_warning)
             self.unchanged_link_count += 1
 
     def _audit_mentions(self):
-        for text in self.child_data['paragraph']['rich_text']:
+        notion_data = self.child_data['paragraph']
+        for text in notion_data['rich_text']:
             if text['type'] == 'mention' and text['mention']['type'] in ['page', 'database']:
                 title, node_id = self._retrieve_link_info(text['mention'])
                 if title in self.link_dict:
@@ -716,17 +739,27 @@ class Children(list):
     def _recursively_copy_children(self):
         for index, children in self.child_dict.items():
             parent_id = self.children_appended[index]['id']
-            parent = children.copy_to(parent_id, False)
+            parent = self._retrieve_node(parent_id)
+            parent = children.copy_to(parent, False)
             start = len(parent.children) - len(children)
             self.children_appended[index]['children'] = parent.children.block_list[start:]
 
-    def _probe_destination_links(self, destination_id):
-        node = self._retrieve_node(destination_id)
-        if "block" in node.__dict__:
-            for child in node.block.children:
+    def _retrieve_node(self, node_id):
+        node = self.client.get_page_or_database(node_id)
+        if node != None:
+            return node
+        return self.client.get_block(node_id, None)
+
+    def _probe_destination_links(self):
+        if '_block' in self.destination.__dict__:
+            for child in self.destination.block.children:
                 self._find_links(child)
+        elif 'schema' in self.destination.__dict__:
+            raise NotImplementedError(
+                'This functionality is not yet supported for Databases'
+            )
         else:
-            for child in node.children:
+            for child in self.destination.children:
                 self._find_links(child)
 
     def _default_info(self):
@@ -746,12 +779,6 @@ class Children(list):
         if child.children:
             for child in child.children:
                 self._find_links(child)
-
-    def _retrieve_node(self, node_id):
-        node = self.client.get_page_or_database(node_id)
-        if node != None:
-            return node
-        return self.client.get_block(node_id, None)
 
     def _store_link_info(self, notion_data):
         title, link_id = self._retrieve_link_info(notion_data)

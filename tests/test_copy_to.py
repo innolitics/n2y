@@ -18,15 +18,8 @@ def test_copy_to_paragraphs_and_nested_lists():
         # page_id = page_data['id']
         page_id = destination_page_id
         original_page = client.get_page(current_page_id)
-        copied_page = original_page.block.children.copy_to(page_id)
-        print('FINAL:',client.get_notion_block(page_id))
-        print('FINAL:',client.get_block(page_id, None).children)
-        print()
-        print('COPIED_PAGE:', copied_page.block.notion_block)
-        print()
-        page = client.get_page(page_id)
-        page.block
-        print('COPIED_PAGE 2:', page.block.notion_block)
+        destination_page = client.get_page(page_id)
+        copied_page = original_page.block.children.copy_to(destination_page)
         for child in copied_page.block.children:
             if isinstance(child, ParagraphBlock):
                 if child.rich_text.to_plain_text() == '{⬇️ Check Unchanged Link}':
