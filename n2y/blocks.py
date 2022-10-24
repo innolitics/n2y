@@ -633,7 +633,7 @@ class Children(list):
             'paragraph': {
                 'rich_text': mock_rich_text_array([
                     (
-                        '{⬇️ Check Unchanged Link}',
+                        '{ ⬇️ Check Unchanged Link }',
                         ['color:red']
                     )
                     ]),
