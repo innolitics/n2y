@@ -1,6 +1,9 @@
 from itertools import groupby
 import logging
+from os import path
+from pathlib import Path
 from urllib.parse import urljoin
+import boto3
 
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
@@ -8,11 +11,14 @@ from pandoc.types import (
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
     ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
+import requests
 
 from n2y.notion_mocks import mock_rich_text_array
 
 
 logger = logging.getLogger(__name__)
+s3 = boto3.resource('s3')
+bucket = s3.Bucket('notion-qms')
 
 
 class Block:
@@ -625,21 +631,6 @@ class Children(list):
         if not client:
             raise NotImplementedError('No client assigned')
         self.default_link_title = '{Not Accessable}'
-        self.unchanged_link_count = 0
-        self.unchanged_link_warning = {
-            'object': 'block',
-            'type': 'paragraph',
-            'has_children': False,
-            'paragraph': {
-                'rich_text': mock_rich_text_array([
-                    (
-                        '{ ⬇️ Check Unchanged Link }',
-                        ['color:red']
-                    )
-                    ]),
-                'color': 'default'
-                }
-        }
         self._default_info()
         self.client = client
 
@@ -664,26 +655,78 @@ class Children(list):
             destination.notion_id, self.notion_children
         )
         self.children_appended = appension_return['results']
+        not probe_links or self._comment_warnings()
         self._recursively_copy_children()
         self._copy_to_destination()
         self._default_info()
         return self.destination
 
+    def _comment_warnings(self):
+        if 'schema' in self.destination.__dict__:
+            self._database_error()
+        elif '_block' in self.destination.__dict__:
+            page = self.destination
+        else:
+            page = self.destination.page
+        if not page:
+            raise NotImplementedError(
+                'Page must be defined.'
+            )
+        link_text, image_text = self._format_comments(page)
+        if image_text:
+            self.client.create_comment(page.notion_id, image_text)
+        if link_text:
+            self.client.create_comment(page.notion_id, link_text)
+
+    def _format_comments(self, page):
+        image_text = []
+        link_text = []
+        img_count = 0
+        for index, warning_type in self.comment_dict.items():
+            node = self.children_appended[index]
+            node_url = page.notion_url + f'#{node["id"]}'.replace('-', '')
+            if 'link' in warning_type:
+                if link_text == []:
+                    link_text.append(["Unaudited Links:\n"])
+                title_str = warning_type[5:]
+                link_text.extend([
+                    ['- '],
+                    (f'{title_str}\n',
+                        None,
+                        None,
+                        None,
+                        {'type': 'url', 'url': node_url})
+                ])
+            if 'image' in warning_type:
+                img_count += 1
+                if image_text == []:
+                    image_text.append(["Unaudited Images:\n"])
+                img_str = f'image{img_count}'
+                image_text.extend([
+                    ['- '],
+                    (f'{img_str}',
+                        None,
+                        None,
+                        None,
+                        {'type': 'url', 'url': node_url}),
+                    (f': {warning_type[6:]}\n',
+                        None,
+                        warning_type[6:])
+                ])
+        return link_text, image_text
+
     def _copy_to_destination(self):
+        if 'schema' in self.destination.__dict__:
+            self._database_error()
+        elif '_block' in self.destination.__dict__:
+            page = self.destination
+            destination_children = self.destination.block.children
+        else:
+            page = self.destination.page
+            destination_children = self.destination.children
         for child in self.children_appended:
-            page = None
-            if '_block' in self.destination.__dict__:
-                page = self.destination
-                block = self.client.wrap_notion_block(child, page, True)
-                self.destination.block.children.append(block)
-            elif 'schema' in self.destination.__dict__:
-                raise NotImplementedError(
-                    'This functionality is not yet supported for Databases'
-                )
-            else:
-                page = self.destination.page
-                block = self.client.wrap_notion_block(child, page, True)
-                self.destination.children.append(block)
+            block = self.client.wrap_notion_block(child, page, True)
+            destination_children.append(block)
 
     def _format_for_copy(self):
         for i, child in enumerate(self):
@@ -695,23 +738,32 @@ class Children(list):
         if notion_type == 'synced_block' and self.child_data[notion_type]['synced_from']:
             self.child_data[notion_type]['synced_from'] = None
         elif notion_type == 'paragraph':
-            self._audit_mentions()
+            self._audit_mentions(i)
         elif notion_type == 'link_to_page':
-            self._audit_links()
+            self._audit_links(i)
         elif notion_type == 'image':
-            pass
-
+            self._audit_image(i)
         if notion_type == 'table':
             child.children._format_for_copy()
             self.child_data['table']['children'] = child.children.notion_children
         elif child.children:
-            i += self.unchanged_link_count
             self.child_dict[i] = child.children
         else:
             del self.child_data['has_children']
         self.notion_children.append(self.child_data)
+    
+    def _audit_image(self, current_index):
+        notion_data = self.child_data['image']
+        if notion_data['type'] == 'file':
+            notion_data['type'] = 'external'
+            notion_data['external'] = {
+                'url': ('https://i1.wp.com/cornellsun.com/wp-content/uploads/2020/06/159'
+                '1119073-screen_shot_2020-06-02_at_10.30.13_am.png?fit=700%2C652&ssl=1')
+            }
+            self.comment_dict[current_index] = f'image:{notion_data["file"]["url"]}'
+            del notion_data['file']
 
-    def _audit_links(self):
+    def _audit_links(self, current_index):
         notion_data = self.child_data['link_to_page']
         title, node_id = self._retrieve_link_info(notion_data)
         if title in self.link_dict:
@@ -719,10 +771,9 @@ class Children(list):
                 notion_data[notion_data['type']]\
                     = self.link_dict[title]
         else:
-            self.notion_children.append(self.unchanged_link_warning)
-            self.unchanged_link_count += 1
+            self.comment_dict[current_index] = f'link:{title}'
 
-    def _audit_mentions(self):
+    def _audit_mentions(self, current_index):
         notion_data = self.child_data['paragraph']
         for text in notion_data['rich_text']:
             if text['type'] == 'mention' and text['mention']['type'] in ['page', 'database']:
@@ -733,8 +784,7 @@ class Children(list):
                         text['mention'][mention_type]['id']\
                             = self.link_dict[title]
                 else:
-                    self.notion_children.append(self.unchanged_link_warning)
-                    self.unchanged_link_count += 1
+                    self.comment_dict[current_index] = f'link:{title}'
 
     def _recursively_copy_children(self):
         for index, children in self.child_dict.items():
@@ -755,9 +805,7 @@ class Children(list):
             for child in self.destination.block.children:
                 self._find_links(child)
         elif 'schema' in self.destination.__dict__:
-            raise NotImplementedError(
-                'This functionality is not yet supported for Databases'
-            )
+            self._database_error()
         else:
             for child in self.destination.children:
                 self._find_links(child)
@@ -765,8 +813,14 @@ class Children(list):
     def _default_info(self):
         self.link_dict = {}
         self.child_dict = {}
+        self.comment_dict = {}
         self.notion_children = []
         self.children_appended = []
+
+    def _database_error(self):
+        raise NotImplementedError(
+            'This functionality is not yet supported for Databases'
+        )
 
     def _find_links(self, child):
         if isinstance(child, LinkToPageBlock):

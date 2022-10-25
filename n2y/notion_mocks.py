@@ -20,15 +20,15 @@ def mock_rich_text_array(text_blocks_descriptors):
     if isinstance(text_blocks_descriptors, str):
         return [mock_rich_text(text_blocks_descriptors, [])]
     else:
-        return [mock_rich_text(t, a) for t, a in text_blocks_descriptors]
+        return [mock_rich_text(*desc) for desc in text_blocks_descriptors]
 
 
-def mock_rich_text(text, annotations=None, href=None, mention=None):
+def mock_rich_text(text, annotations=None, href=None, mention=None, link=None):
     if annotations is None:
         annotations = []
     if mention is None:
         rich_text_type = 'text'
-        content = {'content': text, 'link': None}
+        content = {'content': text, 'link': link}
     else:
         rich_text_type = 'mention'
         content = mention

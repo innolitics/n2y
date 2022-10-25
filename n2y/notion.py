@@ -5,6 +5,7 @@ from urllib.parse import urljoin, urlparse
 import importlib.util
 
 import requests
+from n2y.notion_mocks import mock_rich_text_array
 
 from n2y.user import User
 from n2y.file import File
@@ -387,6 +388,21 @@ class Client:
         response = requests.patch(
             f"{self.base_url}blocks/{block_id}/children",
             json={"children": children}, headers=self.headers
+        )
+        return self._parse_response(response)
+
+    def create_comment(self, page_id, text_blocks_descriptors):
+        data = {
+            "rich_text": mock_rich_text_array(text_blocks_descriptors),
+            "parent": {
+                "type": "page_id",
+                "page_id": page_id,
+            },
+        }
+        response = requests.post(
+            "https://api.notion.com/v1/comments",
+            headers=self.headers,
+            json=data
         )
         return self._parse_response(response)
 
