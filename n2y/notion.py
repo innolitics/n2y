@@ -71,7 +71,7 @@ class Client:
         self.media_root = media_root
         self.media_url = media_url
 
-        self.base_url = "https://api.notion.com/v1/"
+        self.base_url = 'https://api.notion.com/v1/'
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
@@ -391,7 +391,7 @@ class Client:
         )
         return self._parse_response(response)
 
-    def create_comment(self, page_id, text_blocks_descriptors):
+    def create_notion_comment(self, page_id, text_blocks_descriptors):
         data = {
             "rich_text": mock_rich_text_array(text_blocks_descriptors),
             "parent": {
@@ -400,10 +400,17 @@ class Client:
             },
         }
         response = requests.post(
-            "https://api.notion.com/v1/comments",
+            f"{self.base_url}comments",
             headers=self.headers,
             json=data
         )
+        return self._parse_response(response)
+
+    def create_notion_database(self, notion_data):
+        response = requests.post(
+            f'{self.base_url}databases',
+            headers=self.headers,
+            json=notion_data)
         return self._parse_response(response)
 
     def delete_block(self, block_id):

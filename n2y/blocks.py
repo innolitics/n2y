@@ -638,82 +638,213 @@ class Children(list):
     def block_list(self):
         return [child.notion_block for child in self]
 
-    def _new_child_data(self, child):
-        notion_type = child.notion_type
-        self.child_data = {
-            'object': 'block',
-            'type': notion_type,
-            'has_children': child.has_children,
-            notion_type: {**child.notion_data}
-        }
-
     def copy_to(self, destination, probe_links=True):
         self.destination = destination
+        self._define_page()
         not probe_links or self._probe_destination_links()
         self._format_for_copy()
-        appension_return = self.client.append_block_children(
-            destination.notion_id, self.notion_children
-        )
-        self.children_appended = appension_return['results']
+        self._copy_to_api()
         not probe_links or self._comment_warnings()
         self._recursively_copy_children()
         self._copy_to_destination()
         self._default_info()
         return self.destination
 
-    def _comment_warnings(self):
-        if 'schema' in self.destination.__dict__:
-            self._database_error()
-        elif '_block' in self.destination.__dict__:
-            page = self.destination
-        else:
-            page = self.destination.page
-        if not page:
-            raise NotImplementedError(
-                'Page must be defined.'
-            )
-        link_text, image_text = self._format_comments(page)
-        if image_text:
-            self.client.create_comment(page.notion_id, image_text)
-        if link_text:
-            self.client.create_comment(page.notion_id, link_text)
+    def _copy_to_api(self):
+        last_index = 0
+        for i, node in enumerate(self.child_pages_or_databases):
+            if node[1] != last_index:
+                blocks = self.notion_children[last_index:node[1]]
+                appension_return = self.client.append_block_children(
+                    self.destination.notion_id, blocks
+                )
+                self.children_appended.extend(appension_return['results'])
 
-    def _format_comments(self, page):
-        image_text = []
+            if node[0] == 'database':
+                database = self.client.create_notion_database(self.notion_children[node[1]])
+                self.children_appended.append(database)
+            elif node[0] == 'page':
+                page = self.client.create_notion_page(self.notion_children[node[1]])
+                self.children_appended.append(page)
+
+            last_index = node[1] + 1
+
+            if i == len(self.child_pages_or_databases) - 1:
+                blocks = self.notion_children[last_index:]
+                appension_return = self.client.append_block_children(
+                    self.destination.notion_id, blocks
+                )
+                self.children_appended.extend(appension_return['results'])
+
+        if not self.child_pages_or_databases:
+            appension_return = self.client.append_block_children(
+                self.destination.notion_id, self.notion_children
+            )
+            self.children_appended = appension_return['results']
+
+    def _new_child_data(self, child):
+        if issubclass(type(child), Block):
+            notion_type = child.notion_type
+            self.child_data = {
+                'object': 'block',
+                'type': notion_type,
+                'has_children': child.has_children,
+                notion_type: {**child.notion_data}
+            }
+        elif isinstance(child, dict):
+            self.child_data = child
+        else:
+            raise NotImplementedError(
+                f'this process does not support children of the {type(child)} type)'
+            )
+
+    def _format_for_copy(self):
+        for i, child in enumerate(self):
+            self._generate_child_data(child, i)
+
+    def _generate_child_data(self, child, i):
+        notion_type = child.notion_type
+        self._new_child_data(child)
+        if notion_type == 'unsupported':
+            self._raise_unsupported_block_warning()
+            return
+        if notion_type == 'synced_block' and self.child_data[notion_type]['synced_from']:
+            self.child_data[notion_type]['synced_from'] = None
+        elif notion_type == 'paragraph':
+            self._audit_mentions(i)
+        elif notion_type == 'link_to_page':
+            self._audit_links(i)
+        elif notion_type == 'pdf':
+            self._audit_pdf(i)
+        elif notion_type in ['image', 'file']:
+            self._audit_file_or_image(i, notion_type)
+        elif 'child_' in notion_type:
+            raise NotImplementedError((
+                'This functionality is not yet supported for the '
+                f'block type {notion_type}.'
+            ))
+            # Child Databases and Child Pages are not currently supported
+            # but the commented out code will help handle them in the future
+
+            # self.child_data = self.client.get_notion_block(child.notion_id)
+            # self.child_pages_or_databases.append(('database', i))
+        if notion_type in ['table', 'column_list']:
+            child.children._format_for_copy()
+            self.child_data[notion_type]['children'] = child.children.notion_children
+        elif notion_type == 'column':
+            self._audit_column(child, i)
+        elif child.children:
+            self.child_dict[i] = child.children
+        else:
+            del self.child_data['has_children']
+        self.notion_children.append(self.child_data)
+
+    def _raise_unsupported_block_warning(self):
+        logger.warning('skipping unsupported block in Children.copy_to()')
+        warning = 'WARNING: Unsupported Block(s) Skipped'
+        comments = [
+            comment.rich_text.to_plain_text() for comment in \
+                self.client.get_comments(self.page.notion_id)
+        ]
+        warning in comments or self.client.create_notion_comment(
+            self.page.notion_id, [(warning, ['color:red'])]
+        )
+
+    def _comment_warnings(self):
+        page_url = self.page.notion_url
+        page_id = self.page.notion_id
+        link_text = self._format_link_comments(page_url)
+        file_text = self._format_file_comments(page_url)
+        image_text = self._format_image_comments(page_url)
+        pdf_text = self._format_pdf_comments(page_url)
+        if pdf_text:
+            self.client.create_notion_comment(page_id, pdf_text)
+        if image_text:
+            self.client.create_notion_comment(page_id, image_text)
+        if link_text:
+            self.client.create_notion_comment(page_id, link_text)
+        if file_text:
+            self.client.create_notion_comment(page_id, file_text)
+
+    def _format_link_comments(self, page_url):
         link_text = []
-        img_count = 0
-        for index, warning_type in self.comment_dict.items():
+        for index, title in self.comment_dict['link']:
             node = self.children_appended[index]
-            node_url = page.notion_url + f'#{node["id"]}'.replace('-', '')
-            if 'link' in warning_type:
-                if link_text == []:
-                    link_text.append(["Unaudited Links:\n"])
-                title_str = warning_type[5:]
-                link_text.extend([
-                    ['- '],
-                    (f'{title_str}\n',
-                        None,
-                        None,
-                        None,
-                        {'type': 'url', 'url': node_url})
-                ])
-            if 'image' in warning_type:
-                img_count += 1
-                if image_text == []:
-                    image_text.append(["Unaudited Images:\n"])
-                img_str = f'image{img_count}'
-                image_text.extend([
-                    ['- '],
-                    (f'{img_str}',
-                        None,
-                        None,
-                        None,
-                        {'type': 'url', 'url': node_url}),
-                    (f': {warning_type[6:]}\n',
-                        None,
-                        warning_type[6:])
-                ])
-        return link_text, image_text
+            node_url = page_url + f'#{node["id"]}'.replace('-', '')
+            if link_text == []:
+                link_text.append(["Unaudited Links:\n"])
+            link_text.extend([
+                ['- '],
+                (f'{title}\n',
+                    None,
+                    None,
+                    None,
+                    {'type': 'url', 'url': node_url})
+            ])
+        return link_text
+
+    def _format_pdf_comments(self, page_url):
+        pdf_text = []
+        for i, (index, url) in enumerate(self.comment_dict['pdf'], 1):
+            node = self.children_appended[index]
+            node_url = page_url + f'#{node["id"]}'.replace('-', '')
+            if pdf_text == []:
+                pdf_text.append(["Unaudited PDFs:\n"])
+            pdf_str = f'pdf_{i}'
+            pdf_text.extend([
+                ['- '],
+                (f'{pdf_str}',
+                    None,
+                    None,
+                    None,
+                    {'type': 'url', 'url': node_url}),
+                (f': {url}\n',
+                    None,
+                    url)
+            ])
+        return pdf_text
+
+    def _format_file_comments(self, page_url):
+        file_text = []
+        for i, (index, url) in enumerate(self.comment_dict['file'], 1):
+            node = self.children_appended[index]
+            node_url = page_url + f'#{node["id"]}'.replace('-', '')
+            if file_text == []:
+                file_text.append(["Unaudited Files:\n"])
+            file_str = f'file_{i}'
+            file_text.extend([
+                ['- '],
+                (f'{file_str}',
+                    None,
+                    None,
+                    None,
+                    {'type': 'url', 'url': node_url}),
+                (f': {url}\n',
+                    None,
+                    url)
+            ])
+        return file_text
+
+    def _format_image_comments(self, page_url):
+        image_text = []
+        for i, (index, url) in enumerate(self.comment_dict['image'], 1):
+            node = self.children_appended[index]
+            node_url = page_url + f'#{node["id"]}'.replace('-', '')
+            if image_text == []:
+                image_text.append(["Unaudited Images:\n"])
+            image_str = f'image_{i}'
+            image_text.extend([
+                ['- '],
+                (f'{image_str}',
+                    None,
+                    None,
+                    None,
+                    {'type': 'url', 'url': node_url}),
+                (f': {url}\n',
+                    None,
+                    url)
+            ])
+        return image_text
 
     def _copy_to_destination(self):
         if 'schema' in self.destination.__dict__:
@@ -728,39 +859,40 @@ class Children(list):
             block = self.client.wrap_notion_block(child, page, True)
             destination_children.append(block)
 
-    def _format_for_copy(self):
-        for i, child in enumerate(self):
-            self._generate_child_data(child, i)
+    def _audit_column(self, child, i):
+        col_list_children = Children(client=self.client)
+        for index, kid in enumerate(child.children):
+            if kid.notion_type == 'column_list':
+                col_list_children.append(child.children.pop(index))
+        child.children._format_for_copy()
+        self.child_data['column']['children'] = child.children.notion_children
+        if col_list_children:
+            self.child_dict[i] = col_list_children
 
-    def _generate_child_data(self, child, i):
-        notion_type = child.notion_type
-        self._new_child_data(child)
-        if notion_type == 'synced_block' and self.child_data[notion_type]['synced_from']:
-            self.child_data[notion_type]['synced_from'] = None
-        elif notion_type == 'paragraph':
-            self._audit_mentions(i)
-        elif notion_type == 'link_to_page':
-            self._audit_links(i)
-        elif notion_type == 'image':
-            self._audit_image(i)
-        if notion_type == 'table':
-            child.children._format_for_copy()
-            self.child_data['table']['children'] = child.children.notion_children
-        elif child.children:
-            self.child_dict[i] = child.children
-        else:
-            del self.child_data['has_children']
-        self.notion_children.append(self.child_data)
-    
-    def _audit_image(self, current_index):
-        notion_data = self.child_data['image']
+    def _audit_file_or_image(self, i, notion_type):
+        notion_data = self.child_data[notion_type]
         if notion_data['type'] == 'file':
             notion_data['type'] = 'external'
             notion_data['external'] = {
-                'url': ('https://i1.wp.com/cornellsun.com/wp-content/uploads/2020/06/159'
-                '1119073-screen_shot_2020-06-02_at_10.30.13_am.png?fit=700%2C652&ssl=1')
+                'url': (
+                    'https://i1.wp.com/cornellsun.com/wp-content/uploads/2020/06/159'
+                    '1119073-screen_shot_2020-06-02_at_10.30.13_am.png?fit=700%2C652&ssl=1'
+                )
             }
-            self.comment_dict[current_index] = f'image:{notion_data["file"]["url"]}'
+            self.comment_dict[notion_type].append((i, notion_data["file"]["url"]))
+            del notion_data['file']
+
+    def _audit_pdf(self, i):
+        notion_data = self.child_data['pdf']
+        if notion_data['type'] == 'file':
+            notion_data['type'] = 'external'
+            notion_data['external'] = {
+                'url': (
+                    'https://reportstream.cdc.gov/assets/pdf/Report'
+                    'Stream-Programmers-Guide-v2.3-updated.pdf'
+                )
+            }
+            self.comment_dict['pdf'].append((i, notion_data["file"]["url"]))
             del notion_data['file']
 
     def _audit_links(self, current_index):
@@ -771,7 +903,7 @@ class Children(list):
                 notion_data[notion_data['type']]\
                     = self.link_dict[title]
         else:
-            self.comment_dict[current_index] = f'link:{title}'
+            self.comment_dict['link'].append((current_index, title))
 
     def _audit_mentions(self, current_index):
         notion_data = self.child_data['paragraph']
@@ -784,7 +916,7 @@ class Children(list):
                         text['mention'][mention_type]['id']\
                             = self.link_dict[title]
                 else:
-                    self.comment_dict[current_index] = f'link:{title}'
+                    self.comment_dict['link'].append((current_index, title))
 
     def _recursively_copy_children(self):
         for index, children in self.child_dict.items():
@@ -798,7 +930,7 @@ class Children(list):
         node = self.client.get_page_or_database(node_id)
         if node != None:
             return node
-        return self.client.get_block(node_id, None)
+        return self.client.get_block(node_id, self.page)
 
     def _probe_destination_links(self):
         if '_block' in self.destination.__dict__:
@@ -809,13 +941,6 @@ class Children(list):
         else:
             for child in self.destination.children:
                 self._find_links(child)
-
-    def _default_info(self):
-        self.link_dict = {}
-        self.child_dict = {}
-        self.comment_dict = {}
-        self.notion_children = []
-        self.children_appended = []
 
     def _database_error(self):
         raise NotImplementedError(
@@ -856,6 +981,31 @@ class Children(list):
         else:
             return node.title.to_plain_text(), node_id
 
+    def _define_page(self):
+        if 'schema' in self.destination.__dict__:
+            self._database_error()
+        elif '_block' in self.destination.__dict__:
+            self.page = self.destination
+        else:
+            self.page = self.destination.page
+        if not self.page:
+            raise NotImplementedError(
+                'Page must be defined.'
+            )
+
+    def _default_info(self):
+        self.comment_dict = {
+            'pdf': [],
+            'file': [],
+            'link': [],
+            'image': [],
+        }
+        self.link_dict = {}
+        self.child_data = {}
+        self.child_dict = {}
+        self.notion_children = []
+        self.children_appended = []
+        self.child_pages_or_databases = []
 
 def render_with_caption(content_ast, caption_ast):
     header_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(content_ast)]]
