@@ -945,7 +945,7 @@ class Children(list):
         elif isinstance(child, ParagraphBlock):
             for text in child.notion_data['rich_text']:
                 if text['type'] == 'mention' and \
-                text['mention']['type'] in ['page', 'database']:
+                    text['mention']['type'] in ['page', 'database']:
                     self._store_link_info(text['mention'])
         if child.children:
             for child in child.children:
