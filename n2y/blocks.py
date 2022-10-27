@@ -1,9 +1,6 @@
-from itertools import groupby
 import logging
-from os import path
-from pathlib import Path
+from itertools import groupby
 from urllib.parse import urljoin
-import boto3
 
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
@@ -11,14 +8,9 @@ from pandoc.types import (
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
     ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
-import requests
-
-from n2y.notion_mocks import mock_rich_text_array
 
 
 logger = logging.getLogger(__name__)
-s3 = boto3.resource('s3')
-bucket = s3.Bucket('notion-qms')
 
 
 class Block:
@@ -617,7 +609,7 @@ class LinkToPageBlock(Block):
             raise NotImplementedError(f"Unknown link type: {self.link_type}")
 
         if node is None:
-            msg = f"Permission denied when attempting to access linked node [%s]"
+            msg = "Permission denied when attempting to access linked node [%s]"
             logger.warning(msg, self.notion_url)
             return None
         else:
@@ -743,8 +735,8 @@ class Children(list):
         logger.warning('skipping unsupported block in Children.copy_to()')
         warning = 'WARNING: Unsupported Block(s) Skipped'
         comments = [
-            comment.rich_text.to_plain_text() for comment in \
-                self.client.get_comments(self.page.notion_id)
+            comment.rich_text.to_plain_text() for comment in
+            self.client.get_comments(self.page.notion_id)
         ]
         warning in comments or self.client.create_notion_comment(
             self.page.notion_id, [(warning, ['color:red'])]
@@ -928,7 +920,7 @@ class Children(list):
 
     def _retrieve_node(self, node_id):
         node = self.client.get_page_or_database(node_id)
-        if node != None:
+        if node is not None:
             return node
         return self.client.get_block(node_id, self.page)
 
@@ -953,8 +945,8 @@ class Children(list):
         elif isinstance(child, ParagraphBlock):
             for text in child.notion_data['rich_text']:
                 if text['type'] == 'mention' and \
-                    text['mention']['type'] in ['page', 'database']:
-                        self._store_link_info(text['mention'])
+                text['mention']['type'] in ['page', 'database']:
+                    self._store_link_info(text['mention'])
         if child.children:
             for child in child.children:
                 self._find_links(child)
@@ -1006,6 +998,7 @@ class Children(list):
         self.notion_children = []
         self.children_appended = []
         self.child_pages_or_databases = []
+
 
 def render_with_caption(content_ast, caption_ast):
     header_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(content_ast)]]

@@ -49,8 +49,9 @@ def test_copy_to():
             elif original_child.notion_type == 'pdf' and copied_child.notion_type == 'pdf':
                 if copy_notion['external']['url'] == default_pdf:
                     copy_notion = og_notion
-            elif original_child.notion_type == 'synced_block' and copied_child.notion_type == 'synced_block':
-                if copy_notion['synced_from'] == None:
+            elif original_child.notion_type == 'synced_block' and \
+            copied_child.notion_type == 'synced_block':
+                if not copy_notion['synced_from']:
                     copy_notion = og_notion
             assert og_notion == copy_notion
     finally:
