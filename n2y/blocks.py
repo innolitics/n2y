@@ -392,17 +392,6 @@ class RowBlock(Block):
         ) for cell in self.cells]
         return Row(('', [], []), cells)
 
-    def format_notion_data(self):
-        if 'table_row' not in self.notion_data and self.notion_data['cells']:
-            self.notion_data['table_row'] = {
-                'cells': self.notion_data['cells']
-            }
-            del self.notion_data['cells']
-        if 'object' not in self.notion_data:
-            self.notion_data['object'] = 'block'
-        if 'type' not in self.notion_data:
-            self.notion_data['type'] = 'table_row'
-
 
 class ColumnListBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):

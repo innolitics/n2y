@@ -71,7 +71,7 @@ class Client:
         self.media_root = media_root
         self.media_url = media_url
 
-        self.base_url = 'https://api.notion.com/v1/'
+        self.base_url = "https://api.notion.com/v1/"
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
