@@ -13,7 +13,7 @@ from n2y.page import Page
 from n2y.emoji import Emoji
 from n2y.comment import Comment
 from n2y.database import Database
-from n2y.blocks import DEFAULT_BLOCKS, Children
+from n2y.blocks import DEFAULT_BLOCKS
 from n2y.mentions import DEFAULT_MENTIONS
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.utils import sanitize_filename, strip_hyphens
@@ -291,10 +291,7 @@ class Client:
 
     def get_child_blocks(self, block_id, page, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        children = Children(client=self)
-        child_list = [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
-        children.extend(child_list)
-        return children
+        return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"

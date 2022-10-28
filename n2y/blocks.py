@@ -51,10 +51,13 @@ class Block:
         self.notion_data = notion_data[notion_data['type']]
         self.get_children = get_children
 
-        if get_children and self.has_children:
-            children = self.client.get_child_blocks(self.notion_id, page, get_children)
+        if get_children:
+            if self.has_children:
+                children = self.client.get_child_blocks(self.notion_id, page, get_children)
+            else:
+                children = []
         else:
-            children = Children(client=self.client)
+            children = None
         self.children = children
 
     def to_pandoc(self):
