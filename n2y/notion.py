@@ -381,44 +381,51 @@ class Client:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
 
-    def append_block_children(self, block_id, children, page_or_database_info=None):
-        # `page_or_database_info` will allow this method to be able
-        # to support the appension of child pages and databases once
-        # the Notion API supports those block types more thoroughly
-        if page_or_database_info is None:
-            response = requests.patch(
-                f"{self.base_url}blocks/{block_id}/children",
-                json={"children": children}, headers=self.headers
-            )
-            return self._parse_response(response)['results']
-        else:
-            def append_blocks(children):
+    def append_child_notion_blocks(self, block_id, children):
+        '''
+        Appends each datapoint of a list of notion_data as children to the block specified by id.
+        Please note that not all block types are allowed to have children, so this method only works
+        for those that are.
+        '''
+        last_i = 0
+        children_appended = []
+        def append_blocks(i1, i2, blocks, list):
+            if i1 < i2:
+                child_list = blocks[i1:i2]
                 response = requests.patch(
                     f"{self.base_url}blocks/{block_id}/children",
-                    json={"children": children}, headers=self.headers
+                    json={"children": child_list}, headers=self.headers
                 )
-                return self._parse_response(response)['results']
-            last_index = 0
-            children_appended = []
-            for i, (type, index_in_child_list) in enumerate(page_or_database_info):
-                if index_in_child_list != last_index:
-                    blocks = children[last_index:index_in_child_list]
-                    appension_return = append_blocks(blocks)
-                    children_appended.extend(appension_return)
-                if type == 'database':
-                    database = self.create_notion_database(children[index_in_child_list])
-                    children_appended.append(database)
-                elif type == 'page':
-                    page = self.create_notion_page(children[index_in_child_list])
-                    children_appended.append(page)
-
-                last_index = index_in_child_list + 1
-
-                if i == len(page_or_database_info) - 1:
-                    blocks = children[last_index:]
-                    appension_return = append_blocks(blocks)
-                    children_appended.extend(appension_return)
-            return children_appended
+                appension_return = self._parse_response(response)
+                list.extend(appension_return['results'])
+            return list
+        for i, child in enumerate(children):
+            if child['object'] == 'database':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                child_database = self.create_notion_database(child)
+                children_appended.append(child_database)
+                last_i = i + 1
+            elif child['object'] == 'page':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                child_page = self.create_notion_page(child)
+                children_appended.append(child_page)
+                last_i = i + 1
+            elif child['type'] == 'child_database':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                database = self.get_database(child['id'])
+                child_database = self.create_notion_database(database.notion_data)
+                children_appended.append(child_database)
+                last_i = i + 1
+            elif child['type'] == 'child_page':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                page = self.get_page(child['id'])
+                child_page = self.create_notion_page(page.notion_data)
+                children_appended.append(child_page)
+                last_i = i + 1
+            elif i == len(children) - 1:
+                children_appended = append_blocks(i, len(children), children, children_appended)
+            
+        return children_appended
 
     def create_notion_comment(self, page_id, text_blocks_descriptors):
         data = {
@@ -442,7 +449,8 @@ class Client:
             json=notion_data)
         return self._parse_response(response)
 
-    def delete_block(self, block_id):
+    def delete_notion_block(self, notion_block):
+        block_id = notion_block['id']
         headers = {**self.headers}
         del headers['Content-Type']
         response = requests.delete(

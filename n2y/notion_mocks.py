@@ -158,7 +158,7 @@ def mock_relation_value():
     return {"id": mock_id()}
 
 
-def mock_page(title="Mock Title", extra_properties=None):
+def mock_page(title="Mock Page", extra_properties=None):
     if extra_properties is None:
         extra_properties = {}
     user = mock_user()
@@ -182,6 +182,52 @@ def mock_page(title="Mock Title", extra_properties=None):
                 'type': 'title',
                 'title': mock_rich_text_array(title)
             }, **extra_properties,
+        },
+        'url': f'https://www.notion.so/{hyphenated_title}-{notion_id}',
+    }
+
+
+def mock_database(title='Mock Database', extra_properties={}):
+    hyphenated_title = title.replace(" ", "-")
+    created_time = datetime.now().isoformat()
+    notion_id = mock_id()
+    user = mock_user()
+    return {
+        'object': 'database',
+        'id': notion_id,
+        'cover': None,
+        'icon': None,
+        'created_time': created_time,
+        'last_edited_time': created_time,
+        'created_by': user,
+        'last_edited_by': user,
+        'title': mock_rich_text_array(title),
+        'description': [],
+        'is_inline': False,
+        'archived': False,
+        'properties': {
+            'Tags': {
+                'id': mock_id(),
+                'name': 'Tags',
+                'type': 'multi_select',
+                'multi_select': {'options': []}
+            },
+            'Number': {
+                'id': mock_id(),
+                'name': 'Number',
+                'type': 'number',
+                'number': {'format': 'number'}
+            },
+            'Name': {
+                'id': 'title',
+                'name': 'Name',
+                'type': 'title',
+                'title': {}
+            }, **extra_properties,
+        },
+        'parent': {
+            'type': 'page_id',
+            'page_id': mock_id()
         },
         'url': f'https://www.notion.so/{hyphenated_title}-{notion_id}',
     }

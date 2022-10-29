@@ -42,7 +42,7 @@ class PageMention(Mention):
 class DatabaseMention(Mention):
     def __init__(self, client, notion_data, plain_text, block=None):
         super().__init__(client, notion_data, plain_text, block)
-        self.notion_database_id = notion_data["database"]["id"]
+        self.notion_type_database_id = notion_data["database"]["id"]
 
     def to_pandoc(self):
         return [Str(self.plain_text)]
