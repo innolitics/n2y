@@ -54,7 +54,7 @@ class Block:
         else:
             children = None
         self.children = children
-    
+
     def get_children(self):
         if self.has_children:
             return self.client.get_child_blocks(self.notion_id, self.page, True)
@@ -82,7 +82,7 @@ class Block:
                         # would handle this, but it doesn't appear to work
                         pandoc_ast.append(result)
         return pandoc_ast
-    
+
     @property
     def notion_type_data(self):
         return self.notion_data[self.notion_data["type"]]
@@ -129,7 +129,9 @@ class EquationBlock(Block):
 class ParagraphBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         content = self.rich_text.to_pandoc()
@@ -149,7 +151,9 @@ class ParagraphBlock(Block):
 class BulletedListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         content = [Plain(self.rich_text.to_pandoc())]
@@ -176,7 +180,9 @@ class ToDoListItemBlock(BulletedListItemBlock):
 class NumberedListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         content = [Plain(self.rich_text.to_pandoc())]
@@ -193,7 +199,9 @@ class NumberedListItemBlock(ListItemBlock):
 class HeadingBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
         # The Notion UI allows one to bold the text in a header, but the bold
         # styling isn't displayed. Thus, to avoid unexpected appearances of
@@ -275,8 +283,12 @@ class FencedCodeBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.language = self.notion_type_data["language"]
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
-        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
+        self.caption = client.wrap_notion_rich_text_array(
+            self.notion_type_data["caption"], self
+        )
 
     def to_pandoc(self):
         pandoc_language = self.notion_to_pandoc_highlight_languages.get(
@@ -295,7 +307,9 @@ class FencedCodeBlock(Block):
 class QuoteBlock(ParagraphBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         pandoc_ast = super().to_pandoc()
@@ -440,7 +454,9 @@ class ToggleBlock(Block):
 
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         header = self.rich_text.to_pandoc()
@@ -453,7 +469,9 @@ class ToggleBlock(Block):
 class CalloutBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_type_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
         # the color and icon are not currently used
 
     def to_pandoc(self):

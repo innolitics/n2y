@@ -387,8 +387,7 @@ class Client:
         Please note that not all block types are allowed to have children, so this method only works
         for those that are.
         '''
-        last_i = 0
-        children_appended = []
+
         def append_blocks(i1, i2, blocks, list):
             if i1 < i2:
                 child_list = blocks[i1:i2]
@@ -399,6 +398,9 @@ class Client:
                 appension_return = self._parse_response(response)
                 list.extend(appension_return['results'])
             return list
+
+        last_i = 0
+        children_appended = []
         for i, child in enumerate(children):
             if child['object'] == 'database':
                 children_appended = append_blocks(last_i, i, children, children_appended)
@@ -424,7 +426,6 @@ class Client:
                 last_i = i + 1
             elif i == len(children) - 1:
                 children_appended = append_blocks(i, len(children), children, children_appended)
-            
         return children_appended
 
     def create_notion_comment(self, page_id, text_blocks_descriptors):
