@@ -50,16 +50,15 @@ class Block:
         self.notion_data = notion_data
 
         if get_children:
-            children = self.get_children()
+            self.get_children()
         else:
-            children = None
-        self.children = children
+            self.children = None
 
     def get_children(self):
         if self.has_children:
-            return self.client.get_child_blocks(self.notion_id, self.page, True)
+            self.children = self.client.get_child_blocks(self.notion_id, self.page, True)
         else:
-            return []
+            self.children = []
 
     def to_pandoc(self):
         raise NotImplementedError()
