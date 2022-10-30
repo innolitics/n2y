@@ -20,15 +20,15 @@ def mock_rich_text_array(text_blocks_descriptors):
     if isinstance(text_blocks_descriptors, str):
         return [mock_rich_text(text_blocks_descriptors, [])]
     else:
-        return [mock_rich_text(t, a) for t, a in text_blocks_descriptors]
+        return [mock_rich_text(*desc) for desc in text_blocks_descriptors]
 
 
-def mock_rich_text(text, annotations=None, href=None, mention=None):
+def mock_rich_text(text, annotations=None, href=None, mention=None, link=None):
     if annotations is None:
         annotations = []
     if mention is None:
         rich_text_type = 'text'
-        content = {'content': text, 'link': None}
+        content = {'content': text, 'link': link}
     else:
         rich_text_type = 'mention'
         content = mention
@@ -44,13 +44,18 @@ def mock_rich_text(text, annotations=None, href=None, mention=None):
 def mock_annotations(annotations=None):
     if annotations is None:
         annotations = []
+    color_string = [a for a in annotations if 'color' in a]
+    if color_string:
+        color = color_string[0].replace('color:', '')
+    else:
+        color = 'default'
     return {
         'bold': True if 'bold' in annotations else False,
         'italic': True if 'italic' in annotations else False,
         'strikethrough': True if 'strikethrough' in annotations else False,
         'underline': True if 'underline' in annotations else False,
         'code': True if 'code' in annotations else False,
-        'color': 'default'
+        'color': color
     }
 
 
@@ -153,7 +158,7 @@ def mock_relation_value():
     return {"id": mock_id()}
 
 
-def mock_page(title="Mock Title", extra_properties=None):
+def mock_page(title="Mock Page", extra_properties=None):
     if extra_properties is None:
         extra_properties = {}
     user = mock_user()
@@ -177,6 +182,52 @@ def mock_page(title="Mock Title", extra_properties=None):
                 'type': 'title',
                 'title': mock_rich_text_array(title)
             }, **extra_properties,
+        },
+        'url': f'https://www.notion.so/{hyphenated_title}-{notion_id}',
+    }
+
+
+def mock_database(title='Mock Database', extra_properties={}):
+    hyphenated_title = title.replace(" ", "-")
+    created_time = datetime.now().isoformat()
+    notion_id = mock_id()
+    user = mock_user()
+    return {
+        'object': 'database',
+        'id': notion_id,
+        'cover': None,
+        'icon': None,
+        'created_time': created_time,
+        'last_edited_time': created_time,
+        'created_by': user,
+        'last_edited_by': user,
+        'title': mock_rich_text_array(title),
+        'description': [],
+        'is_inline': False,
+        'archived': False,
+        'properties': {
+            'Tags': {
+                'id': mock_id(),
+                'name': 'Tags',
+                'type': 'multi_select',
+                'multi_select': {'options': []}
+            },
+            'Number': {
+                'id': mock_id(),
+                'name': 'Number',
+                'type': 'number',
+                'number': {'format': 'number'}
+            },
+            'Name': {
+                'id': 'title',
+                'name': 'Name',
+                'type': 'title',
+                'title': {}
+            }, **extra_properties,
+        },
+        'parent': {
+            'type': 'page_id',
+            'page_id': mock_id()
         },
         'url': f'https://www.notion.so/{hyphenated_title}-{notion_id}',
     }

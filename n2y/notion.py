@@ -5,23 +5,24 @@ from urllib.parse import urljoin, urlparse
 import importlib.util
 
 import requests
+from n2y.notion_mocks import mock_rich_text_array
 
+from n2y.user import User
+from n2y.file import File
+from n2y.page import Page
+from n2y.emoji import Emoji
+from n2y.comment import Comment
+from n2y.database import Database
+from n2y.blocks import DEFAULT_BLOCKS
+from n2y.mentions import DEFAULT_MENTIONS
+from n2y.properties import DEFAULT_PROPERTIES
+from n2y.utils import sanitize_filename, strip_hyphens
+from n2y.property_values import DEFAULT_PROPERTY_VALUES
+from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
 )
-from n2y.file import File
-from n2y.emoji import Emoji
-from n2y.page import Page
-from n2y.database import Database
-from n2y.comment import Comment
-from n2y.blocks import DEFAULT_BLOCKS
-from n2y.properties import DEFAULT_PROPERTIES
-from n2y.property_values import DEFAULT_PROPERTY_VALUES
-from n2y.user import User
-from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.mentions import DEFAULT_MENTIONS
-from n2y.utils import sanitize_filename, strip_hyphens
 
 
 DEFAULT_NOTION_CLASSES = {
@@ -313,6 +314,11 @@ class Client:
         response = requests.get(url, headers=self.headers)
         return self._parse_response(response)
 
+    def create_notion_page(self, page_data):
+        creation_url = f'{self.base_url}pages'
+        response = requests.post(creation_url, headers=self.headers, json=page_data)
+        return self._parse_response(response)
+
     def _get_url(self, url, params=None):
         if params is None:
             params = {}
@@ -375,14 +381,77 @@ class Client:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
 
-    def append_block_children(self, block_id, children):
-        response = requests.patch(
-            f"{self.base_url}blocks/{block_id}/children",
-            json={"children": children}, headers=self.headers
+    def append_child_notion_blocks(self, block_id, children):
+        '''
+        Appends each datapoint of a list of notion_data as children to the block specified by id.
+        Please note that not all block types are allowed to have children, so this method only works
+        for those that are.
+        '''
+
+        def append_blocks(i1, i2, blocks, list):
+            if i1 < i2:
+                child_list = blocks[i1:i2]
+                response = requests.patch(
+                    f"{self.base_url}blocks/{block_id}/children",
+                    json={"children": child_list}, headers=self.headers
+                )
+                appension_return = self._parse_response(response)
+                list.extend(appension_return['results'])
+            return list
+
+        last_i = 0
+        children_appended = []
+        for i, child in enumerate(children):
+            if child['object'] == 'database':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                child_database = self.create_notion_database(child)
+                children_appended.append(child_database)
+                last_i = i + 1
+            elif child['object'] == 'page':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                child_page = self.create_notion_page(child)
+                children_appended.append(child_page)
+                last_i = i + 1
+            elif child['type'] == 'child_database':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                database = self.get_database(child['id'])
+                child_database = self.create_notion_database(database.notion_data)
+                children_appended.append(child_database)
+                last_i = i + 1
+            elif child['type'] == 'child_page':
+                children_appended = append_blocks(last_i, i, children, children_appended)
+                page = self.get_page(child['id'])
+                child_page = self.create_notion_page(page.notion_data)
+                children_appended.append(child_page)
+                last_i = i + 1
+            elif i == len(children) - 1:
+                children_appended = append_blocks(i, len(children), children, children_appended)
+        return children_appended
+
+    def create_notion_comment(self, page_id, text_blocks_descriptors):
+        data = {
+            "rich_text": mock_rich_text_array(text_blocks_descriptors),
+            "parent": {
+                "type": "page_id",
+                "page_id": page_id,
+            },
+        }
+        response = requests.post(
+            f"{self.base_url}comments",
+            headers=self.headers,
+            json=data
         )
         return self._parse_response(response)
 
-    def delete_block(self, block_id):
+    def create_notion_database(self, notion_data):
+        response = requests.post(
+            f'{self.base_url}databases',
+            headers=self.headers,
+            json=notion_data)
+        return self._parse_response(response)
+
+    def delete_notion_block(self, notion_block):
+        block_id = notion_block['id']
         headers = {**self.headers}
         del headers['Content-Type']
         response = requests.delete(

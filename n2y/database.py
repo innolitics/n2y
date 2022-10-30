@@ -11,6 +11,7 @@ class Database:
         logger.debug("Instantiating database")
         self.client = client
 
+        self.notion_data = notion_data
         self.notion_id = notion_data['id']
         self.created_time = fromisoformat(notion_data['created_time'])
         self.created_by = client.wrap_notion_user(notion_data['created_by'])

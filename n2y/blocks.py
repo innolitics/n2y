@@ -1,5 +1,5 @@
-from itertools import groupby
 import logging
+from itertools import groupby
 from urllib.parse import urljoin
 
 from pandoc.types import (
@@ -47,16 +47,18 @@ class Block:
         self.has_children = notion_data['has_children']
         self.archived = notion_data['archived']
         self.notion_type = notion_data['type']
-        self.notion_data = notion_data[notion_data['type']]
+        self.notion_data = notion_data
 
         if get_children:
-            if self.has_children:
-                children = self.client.get_child_blocks(self.notion_id, page, get_children)
-            else:
-                children = []
+            self.get_children()
         else:
-            children = None
-        self.children = children
+            self.children = None
+
+    def get_children(self):
+        if self.has_children:
+            self.children = self.client.get_child_blocks(self.notion_id, self.page, True)
+        else:
+            self.children = []
 
     def to_pandoc(self):
         raise NotImplementedError()
@@ -81,6 +83,10 @@ class Block:
         return pandoc_ast
 
     @property
+    def notion_type_data(self):
+        return self.notion_data[self.notion_data["type"]]
+
+    @property
     def notion_url(self):
         # the notion URL's don't work if the dashes from the block ID are present
         fragment = '#' + self.notion_id.replace('-', '')
@@ -99,7 +105,7 @@ class ListItemBlock(Block):
 class ChildPageBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.title = self.notion_data["title"]
+        self.title = self.notion_type_data["title"]
 
     def to_pandoc(self):
         assert self.children is not None
@@ -113,7 +119,7 @@ class ChildPageBlock(Block):
 class EquationBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.expression = self.notion_data["expression"]
+        self.expression = self.notion_type_data["expression"]
 
     def to_pandoc(self):
         return Para([Math(DisplayMath(), self.expression)])
@@ -122,7 +128,9 @@ class EquationBlock(Block):
 class ParagraphBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         content = self.rich_text.to_pandoc()
@@ -142,7 +150,9 @@ class ParagraphBlock(Block):
 class BulletedListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         content = [Plain(self.rich_text.to_pandoc())]
@@ -159,7 +169,7 @@ class BulletedListItemBlock(ListItemBlock):
 class ToDoListItemBlock(BulletedListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.checked = self.notion_data['checked']
+        self.checked = self.notion_type_data['checked']
 
         # TODO: Move this into the "to_pandoc" stage
         box = '☒ ' if self.checked else '☐ '
@@ -169,7 +179,9 @@ class ToDoListItemBlock(BulletedListItemBlock):
 class NumberedListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         content = [Plain(self.rich_text.to_pandoc())]
@@ -186,7 +198,9 @@ class NumberedListItemBlock(ListItemBlock):
 class HeadingBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
         # The Notion UI allows one to bold the text in a header, but the bold
         # styling isn't displayed. Thus, to avoid unexpected appearances of
@@ -218,8 +232,8 @@ class DividerBlock(Block):
 class BookmarkBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.url = self.notion_data["url"]
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+        self.url = self.notion_type_data["url"]
+        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
         if self.caption:
@@ -267,9 +281,13 @@ class FencedCodeBlock(Block):
 
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.language = self.notion_data["language"]
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+        self.language = self.notion_type_data["language"]
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
+        self.caption = client.wrap_notion_rich_text_array(
+            self.notion_type_data["caption"], self
+        )
 
     def to_pandoc(self):
         pandoc_language = self.notion_to_pandoc_highlight_languages.get(
@@ -288,7 +306,9 @@ class FencedCodeBlock(Block):
 class QuoteBlock(ParagraphBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         pandoc_ast = super().to_pandoc()
@@ -303,7 +323,7 @@ class FileBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['file'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
         url = None
@@ -322,7 +342,7 @@ class ImageBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['image'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
         url = None
@@ -339,9 +359,9 @@ class ImageBlock(Block):
 class TableBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.has_column_header = self.notion_data['has_column_header']
-        self.has_row_header = self.notion_data['has_row_header']
-        self.table_width = self.notion_data['table_width']
+        self.has_column_header = self.notion_type_data['has_column_header']
+        self.has_row_header = self.notion_type_data['has_row_header']
+        self.table_width = self.notion_type_data['table_width']
 
     def to_pandoc(self):
         children = self.children_to_pandoc()
@@ -377,7 +397,7 @@ class RowBlock(Block):
         super().__init__(client, notion_data, page, get_children)
         self.cells = [
             client.wrap_notion_rich_text_array(nc, self)
-            for nc in self.notion_data["cells"]
+            for nc in self.notion_type_data["cells"]
         ]
 
     def to_pandoc(self):
@@ -433,7 +453,9 @@ class ToggleBlock(Block):
 
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
 
     def to_pandoc(self):
         header = self.rich_text.to_pandoc()
@@ -446,7 +468,9 @@ class ToggleBlock(Block):
 class CalloutBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.rich_text = client.wrap_notion_rich_text_array(self.notion_data["rich_text"], self)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
         # the color and icon are not currently used
 
     def to_pandoc(self):
@@ -509,7 +533,7 @@ class VideoBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['video'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
         url = None
@@ -528,7 +552,7 @@ class PdfBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.pdf = client.wrap_notion_file(notion_data['pdf'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_data["caption"], self)
+        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
         url = self.client.download_file(self.pdf.url, self.page)
@@ -564,7 +588,7 @@ class SyncedBlock(Block):
     def _get_synced_block_children(self):
         if not self.original and self.shared:
             return self.client.get_child_blocks(
-                self.notion_data["synced_from"]["block_id"],
+                self.notion_type_data["synced_from"]["block_id"],
                 self.page, True,
             )
         return self.children
@@ -580,18 +604,18 @@ class LinkToPageBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
 
-        self.link_type = self.notion_data["type"]
+        self.link_type = self.notion_type_data["type"]
         # The key for the object id may be either "page_id"
         # or "database_id".
-        self.linked_page_id = self.notion_data[self.link_type]
+        self.linked_node_id = self.notion_type_data[self.link_type]
 
     def to_pandoc(self):
         # TODO: in the future, if we are exporting the linked page too, then add
         # a link to the page. For now, we just display the text of the page.
         if self.link_type == "page_id":
-            node = self.client.get_page(self.linked_page_id)
+            node = self.client.get_page(self.linked_node_id)
         elif self.link_type == "database_id":
-            node = self.client.get_database(self.linked_page_id)
+            node = self.client.get_database(self.linked_node_id)
         else:
             raise NotImplementedError(f"Unknown link type: {self.link_type}")
 
