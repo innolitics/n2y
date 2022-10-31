@@ -298,6 +298,10 @@ property value or some other location.
 
 Any git commit tagged with a string starting with "v" will automatically be pushed to pypi.
 
+Be sure to update the [setup.py](https://github.com/innolitics/n2y/blob/main/setup.py#L14) version number first.
+
+You can create the tag using, e.g., `git tag v0.3.4` and you can push it using `git push && git push --tags`.
+
 Before pushing such commits, be sure to update the change log below.
 
 ## Contributing
