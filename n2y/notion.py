@@ -391,12 +391,18 @@ class Client:
         def append_blocks(i1, i2, blocks, list):
             if i1 < i2:
                 child_list = blocks[i1:i2]
-                response = requests.patch(
-                    f"{self.base_url}blocks/{block_id}/children",
-                    json={"children": child_list}, headers=self.headers
-                )
-                appension_return = self._parse_response(response)
-                list.extend(appension_return['results'])
+                length = len(child_list)
+                for i in range(0, length, 100):
+                    if i+100 < length:
+                        portion = child_list[i:i+100]
+                    else:
+                        portion = child_list[i:]
+                    response = requests.patch(
+                        f"{self.base_url}blocks/{block_id}/children",
+                        json={"children": portion}, headers=self.headers
+                    )
+                    appension_return = self._parse_response(response)
+                    list.extend(appension_return['results'])
             return list
 
         last_i = 0
