@@ -431,7 +431,9 @@ class Client:
                 children_appended.append(child_page)
                 last_i = i + 1
             elif i == len(children) - 1:
-                children_appended = append_blocks(last_i, len(children), children, children_appended)
+                children_appended = append_blocks(
+                    last_i, len(children), children, children_appended
+                )
         return children_appended
 
     def create_notion_comment(self, page_id, text_blocks_descriptors):
