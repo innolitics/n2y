@@ -330,6 +330,16 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.2
+
+- The `Client.append_child_notion_blocks()` had a typo that is now fixed. It also limits the amount of children sent into the Notion API to be appended to 100 at a time, per their parameters
+
+### v0.6.1
+
+- Get_children is now a method in the `Block` class to allow for the updating of children lists after children have been appended.
+- Append_child_notion_blocks can now handle the appension of `child_page` and `child_database` block types.
+- The original notion_data used to save `Block` class objects is now stored by them in the `Block.notion_data` attribute and what used to be stored there (the notion type data) is now stored in a property called `Block.notion_type_data`
+
 ### v0.6.0
 
 - The export is now configured using a single YAML file instead of the growing list of commandline arguments. Using a configuration file allows multiple page and database exports to be made in a single run, which in turn improves caching and will enable future improvements, like preserving links between generated HTML or markdown pages.

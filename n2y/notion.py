@@ -389,14 +389,22 @@ class Client:
         '''
 
         def append_blocks(i1, i2, blocks, list):
+            max_new_blocks = 100
             if i1 < i2:
                 child_list = blocks[i1:i2]
-                response = requests.patch(
-                    f"{self.base_url}blocks/{block_id}/children",
-                    json={"children": child_list}, headers=self.headers
-                )
-                appension_return = self._parse_response(response)
-                list.extend(appension_return['results'])
+                length = len(child_list)
+                for i in range(0, length, max_new_blocks):
+                    portion_index_stop = i + max_new_blocks
+                    if portion_index_stop < length:
+                        portion = child_list[i:portion_index_stop]
+                    else:
+                        portion = child_list[i:]
+                    response = requests.patch(
+                        f"{self.base_url}blocks/{block_id}/children",
+                        json={"children": portion}, headers=self.headers
+                    )
+                    appension_return = self._parse_response(response)
+                    list.extend(appension_return['results'])
             return list
 
         last_i = 0
@@ -425,7 +433,9 @@ class Client:
                 children_appended.append(child_page)
                 last_i = i + 1
             elif i == len(children) - 1:
-                children_appended = append_blocks(i, len(children), children, children_appended)
+                children_appended = append_blocks(
+                    last_i, len(children), children, children_appended
+                )
         return children_appended
 
     def create_notion_comment(self, page_id, text_blocks_descriptors):
