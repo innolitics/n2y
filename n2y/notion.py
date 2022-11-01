@@ -389,12 +389,14 @@ class Client:
         '''
 
         def append_blocks(i1, i2, blocks, list):
+            max_new_blocks = 100
             if i1 < i2:
                 child_list = blocks[i1:i2]
                 length = len(child_list)
-                for i in range(0, length, 100):
-                    if i+100 < length:
-                        portion = child_list[i:i+100]
+                for i in range(0, length, max_new_blocks):
+                    portion_index_stop = i + max_new_blocks
+                    if portion_index_stop < length:
+                        portion = child_list[i:portion_index_stop]
                     else:
                         portion = child_list[i:]
                     response = requests.patch(
