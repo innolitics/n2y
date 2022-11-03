@@ -330,6 +330,9 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.3
+- Initiate the n2y.plugins module (somewhere along the line, the `init.py` file must have been deleted).
+
 ### v0.6.2
 
 - The `Client.append_child_notion_blocks()` had a typo that is now fixed. It also limits the amount of children sent into the Notion API to be appended to 100 at a time, per their parameters
