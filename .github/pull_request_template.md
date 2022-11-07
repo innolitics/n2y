@@ -12,8 +12,3 @@ Before assigning reviewers, step through the following checklist. Check each ite
 - [ ] **Low-level Documentation:** Comments or doc strings for affected code has been updated.
 - [ ] **High-Level Documentation:** The README is updated as appropriate.
 - [ ] **Change Log:** New features or bug fixes have been added to the README.
-
-# Content for the Reviewer
-
-- [x] Should be reviewed commit-by-commit
-- [ ] Should be reviewed all at once
