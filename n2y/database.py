@@ -48,6 +48,8 @@ class Database:
         else:
             tupled_filter = self._tuplize(filter)
             tupled_sort = self._tuplize(sort)
+            print(tupled_filter)
+            print(tupled_sort)
             if tupled_filter not in self._filtered_children:
                 self._filtered_children[tupled_filter] = {}
             if tupled_sort not in self._filtered_children[tupled_filter]:
@@ -56,14 +58,12 @@ class Database:
             return self._filtered_children[tupled_filter][tupled_sort]
 
     def _tuplize(self, item):
-        if type(item) is dict:
+        if callable(getattr(item, "items", None)):
             return tuple([(key, self._tuplize(val)) for (key, val) in item.items()])
-        elif type(item) is str:
-            return item
-        elif type(item) is bool or item is None:
-            return (item)
+        elif hasattr(item, '__iter__') and type(item) is not str:
+            return tuple([self._tuplize(i) for i in item])
         else:
-            return tuple(item)
+            return (item)
 
     @property
     def parent(self):
