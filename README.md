@@ -330,7 +330,13 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.4
+
+- Update how database filters children
+- Add version flag
+
 ### v0.6.3
+
 - Initiate the n2y.plugins module (somewhere along the line, the `init.py` file must have been deleted).
 
 ### v0.6.2
