@@ -30,6 +30,7 @@ class Database:
         self.archived = notion_data['archived']
 
         self._children = None
+        self._filtered_children = {}
 
     @property
     def filename(self):
@@ -42,9 +43,26 @@ class Database:
         return self._children
 
     def children_filtered(self, filter, sort=None):
-        if self._children is None:
-            self._children = self.client.get_database_pages(self.notion_id, filter, sort)
-        return self._children
+        if not filter:
+            return self.children
+        else:
+            tupled_filter = self._tuplize(filter)
+            tupled_sort = self._tuplize(sort)
+            if tupled_filter not in self._filtered_children:
+                self._filtered_children[tupled_filter] = {}
+            if tupled_sort not in self._filtered_children[tupled_filter]:
+                self._filtered_children[tupled_filter][tupled_sort] = self.client.get_database_pages(self.notion_id, filter, sort)
+            return self._filtered_children[tupled_filter][tupled_sort]
+    
+    def _tuplize(self, item):
+        if type(item) is dict:
+            return tuple([(key, self._tuplize(val)) for (key, val) in item.items()])
+        elif type(item) is str:
+            return item
+        elif type(item) is bool or item is None:
+            return (item)
+        else:
+            return tuple(item)
 
     @property
     def parent(self):
