@@ -330,9 +330,9 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
-### v0.6.4
+### v0.6.5
 
-- \#BUGFIX: delete superfluous print statements
+- Fix bug by deleting superfluous print statements
 
 ### v0.6.4
 
