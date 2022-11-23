@@ -332,6 +332,10 @@ Here are some features we're planning to add in the future:
 
 ### v0.6.4
 
+- \#BUGFIX: delete superfluous print statements
+
+### v0.6.4
+
 - Update how database filters children
 - Add version flag
 

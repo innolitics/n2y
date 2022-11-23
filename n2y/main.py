@@ -28,7 +28,7 @@ def main(raw_args, access_token):
         help="Level to set the root logging module to",
     )
     parser.add_argument(
-        "--version", '-v', action='version', version='0.6.4',
+        "--version", '-v', action='version', version='0.6.5',
         help="The version of n2y installed",
     )
 
