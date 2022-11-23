@@ -51,9 +51,10 @@ class Database:
             if tupled_filter not in self._filtered_children:
                 self._filtered_children[tupled_filter] = {}
             if tupled_sort not in self._filtered_children[tupled_filter]:
-                self._filtered_children[tupled_filter][tupled_sort] = self.client.get_database_pages(self.notion_id, filter, sort)
+                self._filtered_children[tupled_filter][tupled_sort] = \
+                    self.client.get_database_pages(self.notion_id, filter, sort)
             return self._filtered_children[tupled_filter][tupled_sort]
-    
+
     def _tuplize(self, item):
         if type(item) is dict:
             return tuple([(key, self._tuplize(val)) for (key, val) in item.items()])
