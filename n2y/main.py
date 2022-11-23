@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import argparse
+import pkg_resources
 
 from n2y import notion
 from n2y.export import export_page, database_to_yaml, database_to_markdown_files
@@ -24,11 +25,11 @@ def main(raw_args, access_token):
     )
     parser.add_argument("config", help="The path to the config file")
     parser.add_argument(
-        "--verbosity", '-ver', default='INFO',
+        "--verbosity", '-v', default='INFO',
         help="Level to set the root logging module to",
     )
     parser.add_argument(
-        "--version", '-v', action='version', version='0.6.5',
+        "--version", action='version', version=pkg_resources.require("n2y")[0].version,
         help="The version of n2y installed",
     )
 
