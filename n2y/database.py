@@ -48,8 +48,6 @@ class Database:
         else:
             tupled_filter = self._tuplize(filter)
             tupled_sort = self._tuplize(sort)
-            print(tupled_filter)
-            print(tupled_sort)
             if tupled_filter not in self._filtered_children:
                 self._filtered_children[tupled_filter] = {}
             if tupled_sort not in self._filtered_children[tupled_filter]:
