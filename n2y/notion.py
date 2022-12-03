@@ -380,7 +380,7 @@ class Client:
         with open(full_filepath, 'wb') as temp_file:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
-    
+
     def copy_notion_database_children(self, children, destination):
         '''
         copy the notion children (`children`) of one notion database to another (`destination`)

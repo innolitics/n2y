@@ -1,5 +1,5 @@
 from n2y.notion import Client
-from n2y.notion_mocks import mock_block, mock_database, mock_page, mock_rich_text
+from n2y.notion_mocks import mock_block, mock_rich_text
 from tests.utils import NOTION_ACCESS_TOKEN
 
 
@@ -32,7 +32,9 @@ def test_append_child_page_or_database():
     child_page = original.block.children[-2].notion_data
     print(child_page)
     print(child_database)
-    creation_response = client.append_child_notion_blocks(destination_id, [child_database, child_page])
+    creation_response = client.append_child_notion_blocks(
+        destination_id, [child_database, child_page]
+    )
     assert creation_response
     for child in creation_response:
         deletion_response = client.delete_notion_block(child)
