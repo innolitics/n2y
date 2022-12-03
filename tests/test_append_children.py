@@ -25,16 +25,14 @@ def test_append_and_delete_blocks():
 
 def test_append_child_page_or_database():
     client = Client(NOTION_ACCESS_TOKEN, plugins=None)
-    object_id = "c9e17a34da6a4b3295f82a1ad05bc3d8"
-    page = client.get_page_or_database(object_id)
-    parent = {'type': 'page_id', 'page_id': page.notion_id}
-    child_database = mock_database('Child_Database')
-    child_page = mock_page('Child_Page')
-    child_database['parent'] = parent
-    child_page['parent'] = parent
-    del child_database['url']
-    del child_page['url']
-    creation_response = client.append_child_notion_blocks(object_id, [child_database, child_page])
+    destination_id = "c9e17a34da6a4b3295f82a1ad05bc3d8"
+    original_id = "0b25a11e78b348c993b4dcf869f25a91"
+    original = client.get_page_or_database(original_id)
+    child_database = original.block.children[-1].notion_data
+    child_page = original.block.children[-2].notion_data
+    print(child_page)
+    print(child_database)
+    creation_response = client.append_child_notion_blocks(destination_id, [child_database, child_page])
     assert creation_response
     for child in creation_response:
         deletion_response = client.delete_notion_block(child)

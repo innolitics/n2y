@@ -380,7 +380,7 @@ class Client:
         with open(full_filepath, 'wb') as temp_file:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
-
+    
     def copy_notion_database_children(self, children, destination):
         '''
         copy the notion children (`children`) of one notion database to another (`destination`)
@@ -446,15 +446,15 @@ class Client:
 
         last_i = 0
         children_appended = []
+        parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
+        parent_type = parent.notion_data["object"]
+        type_is_database = lambda child: 'type' in child and child['type'] == 'child_database'
+        object_is_database = lambda child: child['object'] == 'database'
+        type_is_page = lambda child: 'type' in child and child['type'] == 'child_page'
+        object_is_page = lambda child: child['object'] == 'page'
         for i, child in enumerate(children):
-            type_is_database = 'type' in child and child['type'] == 'child_database'
-            type_is_page = 'type' in child and child['type'] == 'child_page'
-            object_is_database = child['object'] == 'database'
-            object_is_page = child['object'] == 'page'
-            if object_is_database or type_is_database:
+            if object_is_database(child) or type_is_database(child):
                 children_appended = append_blocks(last_i, i, children, children_appended)
-                parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
-                parent_type = parent.notion_data["object"]
                 if parent_type == 'block':
                     logger.warning((
                         'Skipping database with block type parent as '
@@ -462,24 +462,29 @@ class Client:
                     ))
                 else:
                     database = self.get_database(child['id'])
-                    child['properties'] = database.notion_data['properties']
+                    child = {
+                        key: value
+                        for (key, value) in
+                        database.notion_data.items()
+                        if key not in [
+                            'last_edited_by',
+                            'created_time',
+                            'last_edited_time',
+                            'created_by'
+                        ]
+                    }
                     child['parent'] = {
                         'type': f'{parent_type}_id',
                         f'{parent_type}_id': parent.notion_id
                     }
-                    child['object'] = 'database'
-                    if 'url' in child:
-                        del child['url']
                     child_database = self.create_notion_database(child)
                     children_appended.append(child_database)
                     if database.children:
                         notion_children = [child.notion_data for child in database.children]
                         self.copy_notion_database_children(notion_children, child_database)
                 last_i = i + 1
-            elif object_is_page or type_is_page:
+            elif object_is_page(child) or type_is_page(child):
                 children_appended = append_blocks(last_i, i, children, children_appended)
-                parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
-                parent_type = parent.notion_data["object"]
                 if parent_type == 'block':
                     logger.warning((
                         'Skipping page with block type parent as '
@@ -487,14 +492,21 @@ class Client:
                     ))
                 else:
                     page = self.get_page(child['id'])
-                    child['properties'] = page.notion_data['properties']
+                    child = {
+                        key: value
+                        for (key, value) in
+                        page.notion_data.items()
+                        if key not in [
+                            'last_edited_by',
+                            'created_time',
+                            'last_edited_time',
+                            'created_by'
+                        ]
+                    }
                     child['parent'] = {
                         'type': f'{parent_type}_id',
                         f'{parent_type}_id': parent.notion_id
                     }
-                    child['object'] = 'page'
-                    if 'url' in child:
-                        del child['url']
                     child_page = self.create_notion_page(child)
                     children_appended.append(child_page)
                 last_i = i + 1
