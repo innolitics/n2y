@@ -460,6 +460,7 @@ class Client:
                         'Skipping database with block type parent as '
                         'appension is currently unsupported by Notion API'
                     ))
+                    child_database = {}
                 else:
                     database = self.get_database(child['id'])
                     child = {
@@ -478,10 +479,10 @@ class Client:
                         f'{parent_type}_id': parent.notion_id
                     }
                     child_database = self.create_notion_database(child)
-                    children_appended.append(child_database)
                     if database.children:
                         notion_children = [child.notion_data for child in database.children]
                         self.copy_notion_database_children(notion_children, child_database)
+                children_appended.append(child_database)
                 last_i = i + 1
             elif object_is_page(child) or type_is_page(child):
                 children_appended = append_blocks(last_i, i, children, children_appended)
@@ -490,6 +491,7 @@ class Client:
                         'Skipping page with block type parent as '
                         'appension is currently unsupported by Notion API'
                     ))
+                    child_page = {}
                 else:
                     page = self.get_page(child['id'])
                     child = {
@@ -508,7 +510,7 @@ class Client:
                         f'{parent_type}_id': parent.notion_id
                     }
                     child_page = self.create_notion_page(child)
-                    children_appended.append(child_page)
+                children_appended.append(child_page)
                 last_i = i + 1
             elif i == len(children) - 1:
                 children_appended = append_blocks(

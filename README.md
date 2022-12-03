@@ -330,6 +330,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.7
+
+- Fix appension bug by replacing skipped child_page and child_database blocks with empty dictionaries in the list returned by `Client.append_child_notion_blocks()`
+
 ### v0.6.6
 
 - add `get_children()` method to databases and pages in order to update `Database._children` and `Page._children` manually
