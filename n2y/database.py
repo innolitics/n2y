@@ -42,6 +42,9 @@ class Database:
             self._children = self.client.get_database_pages(self.notion_id)
         return self._children
 
+    def get_children(self):
+        self._children = self.client.get_database_pages(self.notion_id)
+
     def children_filtered(self, filter, sort=None):
         if not filter:
             return self.children

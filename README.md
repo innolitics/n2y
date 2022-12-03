@@ -330,6 +330,12 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.6
+
+- add `get_children()` method to databases and pages in order to update `Database._children` and `Page._children` manually
+- add `Client.copy_notion_database_children()` which allows users to copy a list of children (pages) into another database
+- correct `Client.append_child_notion_blocks()` (it now copies database children the appended child_databases)
+
 ### v0.6.5
 
 - Fix bug by deleting superfluous print statements
