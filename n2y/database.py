@@ -46,17 +46,19 @@ class Database:
         self._children = self.client.get_database_pages(self.notion_id)
 
     def children_filtered(self, filter, sort=None):
-        if not filter:
-            return self.children
-        else:
+        loading_from_cache = filter != None
+        if loading_from_cache:
             tupled_filter = self._tuplize(filter)
             tupled_sort = self._tuplize(sort)
             if tupled_filter not in self._filtered_children:
                 self._filtered_children[tupled_filter] = {}
             if tupled_sort not in self._filtered_children[tupled_filter]:
-                self._filtered_children[tupled_filter][tupled_sort] = \
-                    self.client.get_database_pages(self.notion_id, filter, sort)
+                self._filtered_children[tupled_filter][tupled_sort] = self.client.get_database_pages(
+                    self.notion_id, filter, sort
+                )
             return self._filtered_children[tupled_filter][tupled_sort]
+        else:
+            return self.children
 
     def _tuplize(self, item):
         if callable(getattr(item, "items", None)):

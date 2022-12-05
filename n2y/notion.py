@@ -385,19 +385,20 @@ class Client:
         '''
         copy the notion children (`children`) of one notion database to another (`destination`)
         '''
+        bad_keys = [
+            'id',
+            'url',
+            'parent',
+            'created_by',
+            'created_time',
+            'last_edited_by',
+            'last_edited_time',
+        ]
         db_children = [
             {
                 key: value
                 for (key, value) in child.items()
-                if key not in [
-                    'id',
-                    'url',
-                    'parent',
-                    'created_by',
-                    'created_time',
-                    'last_edited_by',
-                    'last_edited_time',
-                ]
+                if key not in bad_keys
             } for child in children
         ]
         for page in db_children:
@@ -452,6 +453,12 @@ class Client:
         object_is_database = lambda child: child['object'] == 'database'
         type_is_page = lambda child: 'type' in child and child['type'] == 'child_page'
         object_is_page = lambda child: child['object'] == 'page'
+        bad_keys = [
+            'last_edited_by',
+            'created_time',
+            'last_edited_time',
+            'created_by'
+        ]
         for i, child in enumerate(children):
             if object_is_database(child) or type_is_database(child):
                 children_appended = append_blocks(last_i, i, children, children_appended)
@@ -467,12 +474,7 @@ class Client:
                         key: value
                         for (key, value) in
                         database.notion_data.items()
-                        if key not in [
-                            'last_edited_by',
-                            'created_time',
-                            'last_edited_time',
-                            'created_by'
-                        ]
+                        if key not in bad_keys
                     }
                     child['parent'] = {
                         'type': f'{parent_type}_id',
@@ -498,12 +500,7 @@ class Client:
                         key: value
                         for (key, value) in
                         page.notion_data.items()
-                        if key not in [
-                            'last_edited_by',
-                            'created_time',
-                            'last_edited_time',
-                            'created_by'
-                        ]
+                        if key not in bad_keys
                     }
                     child['parent'] = {
                         'type': f'{parent_type}_id',
