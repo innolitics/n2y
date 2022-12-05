@@ -330,7 +330,27 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.7
+
+- Fix appension bug by replacing skipped child_page and child_database blocks with empty dictionaries in the list returned by `Client.append_child_notion_blocks()`
+
+### v0.6.6
+
+- add `get_children()` method to databases and pages in order to update `Database._children` and `Page._children` manually
+- add `Client.copy_notion_database_children()` which allows users to copy a list of children (pages) into another database
+- correct `Client.append_child_notion_blocks()` (it now copies database children the appended child_databases)
+
+### v0.6.5
+
+- Fix bug by deleting superfluous print statements
+
+### v0.6.4
+
+- Update how database filters children
+- Add version flag
+
 ### v0.6.3
+
 - Initiate the n2y.plugins module (somewhere along the line, the `init.py` file must have been deleted).
 
 ### v0.6.2

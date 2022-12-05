@@ -71,6 +71,12 @@ class Page:
                 self._append_children(block)
         return self._children
 
+    def get_children(self):
+        self.block.get_children()
+        self._children = []
+        for block in self.block.children:
+            self._append_children(block)
+
     def _append_children(self, block):
         if isinstance(block, ChildPageBlock):
             page = self.client.get_page(block.notion_id)
