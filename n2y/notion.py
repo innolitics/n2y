@@ -412,7 +412,8 @@ class Client:
                 del page['properties'][key]['type']
                 prop_type_info = page['properties'][key][prop_type]
                 if isinstance(prop_type_info, dict):
-                    del page['properties'][key][prop_type]['id']
+                    if 'id' in prop_type_info:
+                        del page['properties'][key][prop_type]['id']
                 elif isinstance(prop_type_info, list) and prop_type != 'relation':
                     for item in page['properties'][key][prop_type]:
                         if 'id' in item:
