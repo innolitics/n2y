@@ -406,13 +406,15 @@ class Client:
                 'type': 'database_id',
                 'database_id': destination['id']
             }
+
             for key in page['properties'].keys():
                 del page['properties'][key]['id']
                 prop_type = page['properties'][key]['type']
                 del page['properties'][key]['type']
                 prop_type_info = page['properties'][key][prop_type]
                 if isinstance(prop_type_info, dict):
-                    del page['properties'][key][prop_type]['id']
+                    if 'id' in page['properties'][key][prop_type]:
+                        del page['properties'][key][prop_type]['id']
                 elif isinstance(prop_type_info, list) and prop_type != 'relation':
                     for item in page['properties'][key][prop_type]:
                         if 'id' in item:
