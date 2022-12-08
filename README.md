@@ -330,6 +330,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.7.0
+
+- Fix bug by adding block id to save file function in mermaid plugin and getting tests to pass.
+
 ### v0.6.9
 
 - Fix bug by naming files by the block id instead of the page id.

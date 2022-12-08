@@ -65,7 +65,7 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
             ], capture_output=True, input=diagram_as_bytes, check=True)
             with open(temp_filepath, 'rb') as temp_file:
                 content = temp_file.read(4096)
-                url = self.client.save_file(content, self.page, '.png')
+                url = self.client.save_file(content, self.page, '.png', self.notion_id)
             return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
         except subprocess.CalledProcessError as exc:
             # as of now, mmdc does not ever return a non-zero error code, so
