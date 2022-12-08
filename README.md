@@ -330,6 +330,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.9
+
+- Fix bug by naming files by the block id instead of the page id.
+
 ### v0.6.8
 
 - Fix bug by conditionally deleting the id property of property types when copying database children.

@@ -330,7 +330,7 @@ class FileBlock(Block):
         if self.file.type == "external":
             url = self.file.url
         elif self.file.type == "file":
-            url = self.client.download_file(self.file.url, self.page)
+            url = self.client.download_file(self.file.url, self.page, self.notion_id)
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
@@ -349,7 +349,7 @@ class ImageBlock(Block):
         if self.file.type == "external":
             url = self.file.url
         elif self.file.type == "file":
-            url = self.client.download_file(self.file.url, self.page)
+            url = self.client.download_file(self.file.url, self.page, self.notion_id)
         img_alt = [Str(url)]
         if self.caption:
             img_alt = self.caption.to_pandoc()
@@ -540,7 +540,7 @@ class VideoBlock(Block):
         if self.file.type == "external":
             url = self.file.url
         elif self.file.type == "file":
-            url = self.client.download_file(self.file.url, self.page)
+            url = self.client.download_file(self.file.url, self.page, self.notion_id)
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
@@ -555,7 +555,7 @@ class PdfBlock(Block):
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
-        url = self.client.download_file(self.pdf.url, self.page)
+        url = self.client.download_file(self.pdf.url, self.page, self.notion_id)
         content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
