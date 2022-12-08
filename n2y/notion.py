@@ -407,14 +407,16 @@ class Client:
                 'database_id': destination['id']
             }
             for key in page['properties'].keys():
-                del page['properties'][key]['id']
-                prop_type = page['properties'][key]['type']
-                del page['properties'][key]['type']
-                prop_type_info = page['properties'][key][prop_type]
+                prop = page['properties'][key]
+                del prop['id']
+                prop_type = prop['type']
+                del prop['type']
+                prop_type_info = prop[prop_type]
                 if isinstance(prop_type_info, dict):
-                    del page['properties'][key][prop_type]['id']
+                    if 'id' in prop_type_info:
+                        del prop_type_info['id']
                 elif isinstance(prop_type_info, list) and prop_type != 'relation':
-                    for item in page['properties'][key][prop_type]:
+                    for item in prop_type_info:
                         if 'id' in item:
                             del item['id']
             self.create_notion_page(page)

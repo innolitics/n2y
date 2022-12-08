@@ -330,6 +330,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.6.8
+
+- Fix bug by conditionally deleting the id property of property types when copying database children.
+
 ### v0.6.7
 
 - Fix appension bug by replacing skipped child_page and child_database blocks with empty dictionaries in the list returned by `Client.append_child_notion_blocks()`
