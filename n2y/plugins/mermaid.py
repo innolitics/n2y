@@ -1,8 +1,9 @@
-import logging
 import os
-import subprocess
-import tempfile
 import json
+import logging
+import tempfile
+import subprocess
+from pathlib import Path
 
 from pandoc.types import Para, Image
 
@@ -65,7 +66,8 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
             ], capture_output=True, input=diagram_as_bytes, check=True)
             with open(temp_filepath, 'rb') as temp_file:
                 content = temp_file.read()
-                with open(os.path.dirname(__file__) + '/mermaid_err.png', 'rb') as err_img:
+                root = root = Path(__file__).resolve().parent.parent
+                with open(root/'data'/'mermaid_err.png', 'rb') as err_img:
                     if content == err_img.read():
                         raise NotImplementedError(
                             'Syntax Error In Graph'

@@ -39,7 +39,7 @@ setup(
         ]
     },
     data_files=[
-        ('n2y/plugins', 'n2y/plugins/mermaid_err.png')
+        ('data', 'data/mermaid_err.png')
     ],
     entry_points={
         'console_scripts': [
