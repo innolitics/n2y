@@ -38,6 +38,7 @@ setup(
             'check-manifest',
         ]
     },
+    include_package_data=True
     package_data=[
         'data/mermaid_err.png',
     ],
