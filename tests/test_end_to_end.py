@@ -276,7 +276,7 @@ def test_builtin_plugins(tmpdir):
     assert "#### H4" in lines
     assert "##### H5" in lines
     assert not any("should disappear" in l for l in lines)
-
+    print (lines)
     assert lines[17] == '    invalid'
     assert lines[15] != '    invalid'
     assert 'media' in lines[15]
