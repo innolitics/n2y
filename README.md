@@ -330,6 +330,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.7.1
+
+- Handle graphical syntax errors in mermaid plugin and update end to end test.
+
 ### v0.7.0
 
 - Fix bug by adding block id to save file function in mermaid plugin and getting tests to pass.

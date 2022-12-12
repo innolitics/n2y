@@ -64,7 +64,12 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                 '-o', temp_filepath,
             ], capture_output=True, input=diagram_as_bytes, check=True)
             with open(temp_filepath, 'rb') as temp_file:
-                content = temp_file.read(4096)
+                content = temp_file.read()
+                with open(os.path.dirname(__file__) + '/mermaid_err.png', 'rb') as err_img:
+                    if content == err_img.read():
+                        raise NotImplementedError(
+                            'Syntax Error In Graph'
+                        )
                 url = self.client.save_file(content, self.page, '.png', self.notion_id)
             return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
         except subprocess.CalledProcessError as exc:
@@ -77,6 +82,12 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
             logger.error(msg, self.notion_url, exc.returncode, exc.stderr)
         except subprocess.SubprocessError:
             msg = "Unable to convert mermaid diagram (%s) into an image"
+            logger.exception(msg, self.notion_url)
+        except NotImplementedError:
+            msg = (
+                "Unable to convert mermaid diagram (%s) into"
+                " an image due to a syntax error in the graph"
+            )
             logger.exception(msg, self.notion_url)
         except FileNotFoundError:
             msg = (

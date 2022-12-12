@@ -1,9 +1,11 @@
 from os import listdir
-import os.path
+import os
+
+import re
 from os.path import isfile, join
+from pathlib import Path
 
 import yaml
-
 try:
     from yaml import CLoader as Loader
 except ImportError:
@@ -270,16 +272,20 @@ def test_builtin_plugins(tmpdir):
         "n2y.plugins.expandlinktopages",
     ])
     lines = document.split("\n")
+
     assert "#### H4" in lines
     assert "##### H5" in lines
     assert not any("should disappear" in l for l in lines)
 
-    # there are two mermaid diagrams on the page; one has a syntax error and not
-    # be swapped out for an image, while the other should be swapped out
-    # NOTE: Due to an issue with mermaid-cli, it seems that it does NOT report
-    # failed runs using a non-zero error code, thus this assertion is set to 0
-    # for now, but ideally it would be 1
-    assert sum(1 for l in lines if l == "``` mermaid") == 0
+    assert lines[17] == '    invalid'
+    assert lines[15] != '    invalid'
+    assert 'media' in lines[15]
+    im1_line = re.search(r'media.*png', lines[15])[0]
+    im1 = f'{tmpdir.strpath}/{im1_line}'
+    root = Path(__file__).resolve().parent.parent
+    with open(im1, 'rb') as img:
+        with open(root/'n2y'/'plugins'/'mermaid_err.png', 'rb') as err:
+            assert img.read() != err.read()
 
     assert "Raw markdown should show up" in lines
     assert "Raw html should not show up" not in lines

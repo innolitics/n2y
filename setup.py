@@ -38,7 +38,9 @@ setup(
             'check-manifest',
         ]
     },
-    data_files=[],
+    data_files=[
+        ('n2y/plugins', 'n2y/plugins/mermaid_err.png')
+    ],
     entry_points={
         'console_scripts': [
             'n2y = n2y.main:cli_main',
