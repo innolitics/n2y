@@ -38,8 +38,8 @@ setup(
             'check-manifest',
         ]
     },
-    data_files=[
-        ('data', 'data/mermaid_err.png')
+    package_data=[
+        'data/mermaid_err.png',
     ],
     entry_points={
         'console_scripts': [
