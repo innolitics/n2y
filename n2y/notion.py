@@ -363,8 +363,8 @@ class Client:
         """
         Download a file from a given URL into the MEDIA_ROOT.
 
-        Preserve the file extension from the URL, but use the name of the parent
-        page followed by an md5 hash.
+        Preserve the file extension from the URL, but use the
+        id of the block followed by an md5 hash.
         """
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
