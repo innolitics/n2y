@@ -330,6 +330,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.7.2
+
+- Fix bug in mermaid by fixing error image file path.
+
 ### v0.7.1
 
 - Handle graphical syntax errors in mermaid plugin and update end to end test.
