@@ -67,7 +67,7 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
             with open(temp_filepath, 'rb') as temp_file:
                 content = temp_file.read()
                 root = root = Path(__file__).resolve().parent.parent
-                with open(root/'data'/'mermaid_err.png', 'rb') as err_img:
+                with open(root/'n2y'/'data'/'mermaid_err.png', 'rb') as err_img:
                     if content == err_img.read():
                         raise NotImplementedError(
                             'Syntax Error In Graph'

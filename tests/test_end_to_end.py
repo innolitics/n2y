@@ -288,7 +288,7 @@ def test_builtin_plugins(tmpdir):
         im1 = f'{tmpdir.strpath}/{im1_line}'
         root = Path(__file__).resolve().parent.parent
         with open(im1, 'rb') as img:
-            with open(root/'data'/'mermaid_err.png', 'rb') as err:
+            with open(root/'n2y'/'data'/'mermaid_err.png', 'rb') as err:
                 assert img.read() != err.read()
 
     assert "Raw markdown should show up" in lines
