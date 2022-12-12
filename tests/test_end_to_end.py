@@ -276,16 +276,20 @@ def test_builtin_plugins(tmpdir):
     assert "#### H4" in lines
     assert "##### H5" in lines
     assert not any("should disappear" in l for l in lines)
-    print(lines)
-    assert lines[17] == '    invalid'
-    assert lines[15] != '    invalid'
-    assert 'media' in lines[15]
-    im1_line = re.search(r'media.*png', lines[15])[0]
-    im1 = f'{tmpdir.strpath}/{im1_line}'
-    root = Path(__file__).resolve().parent.parent
-    with open(im1, 'rb') as img:
-        with open(root/'n2y'/'plugins'/'mermaid_err.png', 'rb') as err:
-            assert img.read() != err.read()
+    invalid_mermaid = '    invalid'
+    assert lines[15] != invalid_mermaid
+    if lines[15] == '    sequenceDiagram':
+        assert lines[16] == '    A->>B: Hello'
+        assert lines[18] == invalid_mermaid
+    else:
+        assert lines[17] == invalid_mermaid
+        assert 'media' in lines[15]
+        im1_line = re.search(r'media.*png', lines[15])[0]
+        im1 = f'{tmpdir.strpath}/{im1_line}'
+        root = Path(__file__).resolve().parent.parent
+        with open(im1, 'rb') as img:
+            with open(root/'n2y'/'plugins'/'mermaid_err.png', 'rb') as err:
+                assert img.read() != err.read()
 
     assert "Raw markdown should show up" in lines
     assert "Raw html should not show up" not in lines
