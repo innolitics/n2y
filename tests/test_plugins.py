@@ -3,11 +3,13 @@ Unit tests of the builtin plugins.
 """
 import pytest
 
-from n2y.blocks import ParagraphBlock
+from n2y.blocks import ParagraphBlock, FencedCodeBlock
 from n2y.notion import Client
 from n2y.page import Page
 from n2y.errors import PluginError, UseNextClass
 from n2y.notion_mocks import mock_paragraph_block
+from n2y.plugins.mermaid import MermaidFencedCodeBlock
+from n2y.plugins.rawcodeblocks import RawFencedCodeBlock
 
 
 def test_load_plugin_invalid_notion_object():
@@ -84,3 +86,11 @@ def test_load_plugin_invalid_block_class():
     with pytest.raises(PluginError) as err:
         client.load_plugin({"blocks": {"paragraph": MyParagraphBlock}})
     assert "MyParagraphBlock" in str(err)
+
+
+def test_load_plugins_overrides_old_plugins():
+    client = Client('')
+    client.load_plugins(["n2y.plugins.mermaid"])
+    assert client.get_class_list("blocks", "code") == [FencedCodeBlock, MermaidFencedCodeBlock]
+    client.load_plugins(["n2y.plugins.rawcodeblocks"])
+    assert client.get_class_list("blocks", "code") == [FencedCodeBlock, RawFencedCodeBlock]
