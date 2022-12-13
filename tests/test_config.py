@@ -15,35 +15,47 @@ def mock_config_item(node_type):
     return config_item
 
 
-def test_load_config_basic(tmp_path):
-    # use a temporary file to test the config loading
-    config_path = tmp_path / "config.yaml"
+def test_load_config_basic():
     export_id = mock_id()
-    with open(config_path, "w") as f:
-        f.write(yaml.dump({
-            "media_root": "media",
-            "media_url": "https://example.com/media",
-            "export_defaults": {
-                "id_property": "id",
-                "url_property": "url",
+    export_id_2 = mock_id()
+    raw_config = {
+        "media_root": "media",
+        "media_url": "https://example.com/media",
+        "export_defaults": {
+            "id_property": "id",
+            "url_property": "url",
+            "plugins": ["a"],
+        },
+        "exports": [
+            {
+                "id": export_id,
+                "node_type": "page",
+                "output": "output.md",
+                "pandoc_format": "gfm",
+                "plugins": ["b"],
             },
-            "exports": [
-                {
-                    "id": export_id,
-                    "node_type": "page",
-                    "output": "output.md",
-                    "pandoc_format": "gfm",
-                }
-            ]
-        }))
-    config = load_config(config_path)
+            {
+                "id": export_id_2,
+                "node_type": "page",
+                "output": "output2.md",
+                "pandoc_format": "gfm",
+            }
+        ]
+    }
+    config = load_config(raw_config)
     assert config is not None, "The config is invalid"
+    assert len(config["exports"]) == 2
+
     merged_export = config["exports"][0]
     assert merged_export["id"] == export_id
     assert merged_export["node_type"] == "page"
     assert merged_export["id_property"] == "id"
     assert merged_export["url_property"] == "url"
     assert merged_export["pandoc_format"] == "gfm"
+    assert merged_export["plugins"] == ["b"]
+
+    merged_export_2 = config["exports"][1]
+    assert merged_export["plugins"] == ["a"]
 
 
 def test_merge_config_no_defaults():
