@@ -31,8 +31,7 @@ EXPORT_DEFAULTS = {
 }
 
 
-def load_config(path):
-    config = _load_config_from_yaml(path)
+def load_config(config):
     if config is None:
         return None
 
@@ -48,10 +47,10 @@ def load_config(path):
     return config
 
 
-def _load_config_from_yaml(path):
+def load_config_from_yaml(path):
     try:
         with open(path, "r") as config_file:
-            config = yaml.safe_load(config_file)
+            raw_config = yaml.safe_load(config_file)
     except yaml.YAMLError as exc:
         logger.error("Error parsing the config file: %s", exc)
         return None
@@ -61,7 +60,7 @@ def _load_config_from_yaml(path):
     if not validate_config(config):
         logger.error("Invalid config file: %s", path)
         return None
-    return config
+    return raw_config
 
 
 def merge_config(config_items, builtin_defaults, defaults):

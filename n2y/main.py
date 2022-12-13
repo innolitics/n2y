@@ -44,7 +44,8 @@ def main(raw_args, access_token):
         logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
-    config = load_config(args.config)
+    raw_config = load_config_from_file(args.config)
+    config = load_config(raw_config)
     if config is None:
         return 2
 
