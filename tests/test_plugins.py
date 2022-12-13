@@ -88,9 +88,28 @@ def test_load_plugin_invalid_block_class():
     assert "MyParagraphBlock" in str(err)
 
 
-def test_load_plugins_overrides_old_plugins():
+def test_load_plugins_overrides_old_block_plugins():
     client = Client('')
     client.load_plugins(["n2y.plugins.mermaid"])
     assert client.get_class_list("blocks", "code") == [FencedCodeBlock, MermaidFencedCodeBlock]
     client.load_plugins(["n2y.plugins.rawcodeblocks"])
     assert client.get_class_list("blocks", "code") == [FencedCodeBlock, RawFencedCodeBlock]
+
+
+def test_load_plugins_overrides_old_page_plugins():
+    client = Client('')
+
+    class MyPageOld(Page):
+        pass
+
+    class MyPageNew(Page):
+        pass
+
+    client.load_plugin({"page": MyPageOld})
+    assert client.get_class_list("page") == [Page, MyPageOld]
+
+    # simulates what "load_plugins" does to replace the old plugins
+    client.notion_classes = client.get_default_classes()
+
+    client.load_plugin({"page": MyPageNew})
+    assert client.get_class_list("page") == [Page, MyPageNew]
