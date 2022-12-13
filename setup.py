@@ -11,7 +11,7 @@ description = 'Notion to YAML'
 
 setup(
     name='n2y',
-    version='0.6.8',
+    version='0.7.2',
     description=description,
     long_description=description,
     long_description_content_type='text/x-rst',
@@ -38,7 +38,8 @@ setup(
             'check-manifest',
         ]
     },
-    data_files=[],
+    include_package_data=True,
+    package_data={'n2y': ['data/mermaid_err.png']},
     entry_points={
         'console_scripts': [
             'n2y = n2y.main:cli_main',

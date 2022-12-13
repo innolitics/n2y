@@ -359,22 +359,22 @@ class Client:
             raise HTTPResponseError(error.response)
         return response.json()
 
-    def download_file(self, url, page):
+    def download_file(self, url, page, block_id):
         """
         Download a file from a given URL into the MEDIA_ROOT.
 
-        Preserve the file extension from the URL, but use the name of the parent
-        page followed by an md5 hash.
+        Preserve the file extension from the URL, but use the
+        id of the block followed by an md5 hash.
         """
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
         request_stream = requests.get(url, stream=True)
-        return self.save_file(request_stream.content, page, extension)
+        return self.save_file(request_stream.content, page, extension, block_id)
 
-    def save_file(self, content, page, extension):
-        page_id_chars = strip_hyphens(page.notion_id)
+    def save_file(self, content, page, extension, block_id):
+        block_id_chars = strip_hyphens(block_id)
         page_title = sanitize_filename(page.title.to_plain_text())
-        relative_filepath = f"{page_title}-{page_id_chars[:11]}{extension}"
+        relative_filepath = f"{page_title}-{block_id_chars[:11]}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
         with open(full_filepath, 'wb') as temp_file:

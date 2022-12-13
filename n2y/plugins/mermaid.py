@@ -1,8 +1,9 @@
-import logging
 import os
-import subprocess
-import tempfile
 import json
+import logging
+import tempfile
+import subprocess
+from pathlib import Path
 
 from pandoc.types import Para, Image
 
@@ -64,8 +65,14 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                 '-o', temp_filepath,
             ], capture_output=True, input=diagram_as_bytes, check=True)
             with open(temp_filepath, 'rb') as temp_file:
-                content = temp_file.read(4096)
-                url = self.client.save_file(content, self.page, '.png')
+                content = temp_file.read()
+                root = Path(__file__).resolve().parent.parent
+                with open(root/'data'/'mermaid_err.png', 'rb') as err_img:
+                    if content == err_img.read():
+                        raise NotImplementedError(
+                            'Syntax Error In Graph'
+                        )
+                url = self.client.save_file(content, self.page, '.png', self.notion_id)
             return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
         except subprocess.CalledProcessError as exc:
             # as of now, mmdc does not ever return a non-zero error code, so
@@ -77,6 +84,12 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
             logger.error(msg, self.notion_url, exc.returncode, exc.stderr)
         except subprocess.SubprocessError:
             msg = "Unable to convert mermaid diagram (%s) into an image"
+            logger.exception(msg, self.notion_url)
+        except NotImplementedError:
+            msg = (
+                "Unable to convert mermaid diagram (%s) into"
+                " an image due to a syntax error in the graph"
+            )
             logger.exception(msg, self.notion_url)
         except FileNotFoundError:
             msg = (

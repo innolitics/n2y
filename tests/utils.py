@@ -13,7 +13,6 @@ except ImportError:
 # will need to be used to create them.
 NOTION_ACCESS_TOKEN = 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r'
 
-
 yaml_frontmatter_regexp = re.compile(r'^---$(.*)^---$', re.MULTILINE | re.DOTALL)
 
 

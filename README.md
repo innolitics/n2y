@@ -330,6 +330,22 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.7.2
+
+- Fix bug in mermaid by fixing error image file path.
+
+### v0.7.1
+
+- Handle graphical syntax errors in mermaid plugin and update end to end test.
+
+### v0.7.0
+
+- Fix bug by adding block id to save file function in mermaid plugin and getting tests to pass.
+
+### v0.6.9
+
+- Fix bug by naming files by the block id instead of the page id.
+
 ### v0.6.8
 
 - Fix bug by conditionally deleting the id property of property types when copying database children.
