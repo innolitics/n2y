@@ -20,7 +20,6 @@ mermaid_config = {
 }
 
 puppeteer_config = {
-    "headless": True,
     "args": [
         "--no-sandbox",
         "--disable-setuid-sandbox",
