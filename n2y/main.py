@@ -29,7 +29,7 @@ def main(raw_args, access_token):
         help="Level to set the root logging module to",
     )
     parser.add_argument(
-        "--version", action='version', version=pkg_resources.require("n2y")[0].version,
+        "--version", action='version', version="mermaid-chromium-error-bug-fix",
         help="The version of n2y installed",
     )
 
