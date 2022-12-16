@@ -22,6 +22,7 @@ def test_plain_text_to_pandoc_spaces_after_newline():
     pandoc_ast = RichText.plain_text_to_pandoc("hello\n  world")
     assert pandoc_ast == [Str("hello"), LineBreak(), Space(), Space(), Str("world")]
 
+
 def test_plain_text_to_pandoc_table():
     pandoc_ast = RichText.plain_text_to_pandoc("hello\n  world", True)
     assert pandoc_ast == [Str("hello"), Space(), Space(), Space(), Str("world")]
