@@ -201,11 +201,13 @@ class Client:
     def wrap_notion_emoji(self, notion_data):
         return self.instantiate_class("emoji", None, self, notion_data)
 
-    def wrap_notion_rich_text_array(self, notion_data, block=None):
-        return self.instantiate_class("rich_text_array", None, self, notion_data, block)
+    def wrap_notion_rich_text_array(self, notion_data, block=None, table=None):
+        return self.instantiate_class("rich_text_array", None, self, notion_data, block, table)
 
-    def wrap_notion_rich_text(self, notion_data, block=None):
-        return self.instantiate_class("rich_texts", notion_data["type"], self, notion_data, block)
+    def wrap_notion_rich_text(self, notion_data, block=None, table=None):
+        return self.instantiate_class(
+            "rich_texts", notion_data["type"], self, notion_data, block, table
+        )
 
     def wrap_notion_mention(self, notion_data, plain_text, block=None):
         # here we pass in the plain_text to avoid the need to query the page
