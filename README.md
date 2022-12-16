@@ -330,6 +330,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.7.3
+
+- Fix bug by filtering LineBreak class from table cells.
+
 ### v0.7.2
 
 - Fix bug in mermaid by fixing error image file path.
