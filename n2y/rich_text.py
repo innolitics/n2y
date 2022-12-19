@@ -24,10 +24,9 @@ class RichText:
     a property_value or somewhere else.
     """
 
-    def __init__(self, client, notion_data, block=None, table=False):
+    def __init__(self, client, notion_data, block=None ):
         self.client = client
         self.block = block
-        self.table = table
 
         self.plain_text = notion_data['plain_text']
         self.href = notion_data.get('href', None)
@@ -48,7 +47,7 @@ class RichText:
         return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
 
     @classmethod
-    def plain_text_to_pandoc(klass, plain_text, table=False):
+    def plain_text_to_pandoc(klass, plain_text):
         ast = []
         match = re.findall(r"( +)|(\xa0+)|(\S+)|(\n+)|(\t+)", plain_text)
         for m in match:
@@ -60,10 +59,7 @@ class RichText:
             if word:
                 ast.append(Str(word))
             for _ in range(len(newline)):
-                if table:
-                    ast.append(Space())
-                else:
-                    ast.append(LineBreak())
+                ast.append(LineBreak())
             for _ in range(len(tab) * 4):  # 4 spaces per tab
                 ast.append(Space())
         return ast
@@ -112,8 +108,8 @@ class RichText:
 
 
 class MentionRichText(RichText):
-    def __init__(self, client, notion_data, block=None, table=False):
-        super().__init__(client, notion_data, block, table)
+    def __init__(self, client, notion_data, block=None):
+        super().__init__(client, notion_data, block)
         self.mention = client.wrap_notion_mention(
             notion_data['mention'], notion_data["plain_text"], block,
         )
@@ -126,8 +122,8 @@ class MentionRichText(RichText):
 
 
 class EquationRichText(RichText):
-    def __init__(self, client, notion_data, block=None, table=False):
-        super().__init__(client, notion_data, block, table)
+    def __init__(self, client, notion_data, block=None):
+        super().__init__(client, notion_data, block)
         self.expression = notion_data['equation']['expression']
 
     def to_pandoc(self):
@@ -143,12 +139,12 @@ class TextRichText(RichText):
         notion_data = mock_rich_text(string)
         return klass(client, notion_data, block)
 
-    def __init__(self, client, notion_data, block=None, table=False):
-        super().__init__(client, notion_data, block, table)
+    def __init__(self, client, notion_data, block=None):
+        super().__init__(client, notion_data, block)
 
     def to_pandoc(self):
         if not self.code:
-            plain_text_ast = self.plain_text_to_pandoc(self.plain_text, self.table)
+            plain_text_ast = self.plain_text_to_pandoc(self.plain_text)
             annotated_ast = self.annotate_pandoc_ast(plain_text_ast)
         else:
             code_ast = [Code(("", [], []), self.plain_text)]
@@ -183,13 +179,12 @@ class RichTextArray:
     be bolded, and the third would contain " the hot dog.".
     """
 
-    def __init__(self, client, notion_data, block=None, table=None):
+    def __init__(self, client, notion_data, block=None):
         self.client = client
         self.block = block
-        self.table = table
 
         assert isinstance(notion_data, list)
-        self.items = [client.wrap_notion_rich_text(i, block, table) for i in notion_data]
+        self.items = [client.wrap_notion_rich_text(i, block) for i in notion_data]
 
     def __len__(self):
         return len(self.items)
