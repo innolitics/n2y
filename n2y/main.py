@@ -25,6 +25,13 @@ def main(raw_args, access_token):
     )
     parser.add_argument("config", help="The path to the config file")
     parser.add_argument(
+        '--max_retries', '-m', default=5,
+        help=(
+            'The maximum amount of times an API request will be retried after being rate '
+            'limited. This argument must be an integer greater than or equal to 5'
+        )
+    )
+    parser.add_argument(
         "--verbosity", '-v', default='INFO',
         help="Level to set the root logging module to",
     )
@@ -48,7 +55,12 @@ def main(raw_args, access_token):
     if config is None:
         return 2
 
-    client = notion.Client(access_token, config["media_root"], config["media_url"])
+    client = notion.Client(
+        access_token,
+        config["media_root"],
+        config["media_url"],
+        max_retries=args.max_retries
+    )
 
     error_occurred = False
     for export in config['exports']:
