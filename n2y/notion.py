@@ -2,7 +2,6 @@ import json
 import logging
 import requests
 import functools
-import traceback
 import importlib.util
 from time import sleep
 from os import path, makedirs
@@ -119,11 +118,11 @@ class Client:
     @property
     def retry_api_calls(self):
         return self.max_retries > self.retry_count
-    
+
     @property
     def max_retries(self):
         return self._max_retries
-    
+
     @max_retries.setter
     def max_retries(self, val):
         if int(val) > 5:
