@@ -57,7 +57,9 @@ def retry_api_call(api_call):
                 'retry_api_call must be a n2y.notion `Client` object'
             )
         try:
-            return api_call(*args, **kwargs)
+            response = api_call(*args, **kwargs)
+            client.retry_count = 0
+            return response
         except APIResponseError as err:
             can_retry = 'retry-after' in err.headers
             if can_retry and client.retry_api_calls:
