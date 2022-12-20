@@ -5,8 +5,8 @@ from urllib.parse import urljoin
 from pandoc.types import (
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
-    Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan, Space,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
+    Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
 )
 
 
@@ -401,27 +401,20 @@ class RowBlock(Block):
         ]
 
     def to_pandoc(self):
-        cells = []
-        for cell in self.cells:
-            pandoc = cell.to_pandoc()
-            for i, n in enumerate(pandoc):
-                if isinstance(n, LineBreak):
-                    pandoc[i] = Space()
-            cells.append(
-                Cell(
-                    ('', [], []),
-                    AlignDefault(),
-                    RowSpan(1),
-                    ColSpan(1),
-                    [Plain(pandoc)]
-                )
-            )
+        cells = [Cell(
+            ('', [], []),
+            AlignDefault(),
+            RowSpan(1),
+            ColSpan(1),
+            [Plain(cell.to_pandoc())]
+        ) for cell in self.cells]
         return Row(('', [], []), cells)
 
 
 class ColumnListBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
+
     def to_pandoc(self):
         cells = []
         if self.children:
