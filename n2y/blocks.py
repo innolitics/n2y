@@ -396,7 +396,7 @@ class RowBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.cells = [
-            client.wrap_notion_rich_text_array(nc, self)
+            client.wrap_notion_rich_text_array(nc, self, True)
             for nc in self.notion_type_data["cells"]
         ]
 
@@ -422,7 +422,6 @@ class RowBlock(Block):
 class ColumnListBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-
     def to_pandoc(self):
         cells = []
         if self.children:

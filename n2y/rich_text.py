@@ -24,7 +24,7 @@ class RichText:
     a property_value or somewhere else.
     """
 
-    def __init__(self, client, notion_data, block=None):
+    def __init__(self, client, notion_data, block=None ):
         self.client = client
         self.block = block
 
