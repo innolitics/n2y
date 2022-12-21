@@ -10,6 +10,9 @@ from n2y.errors import PandocASTParseError
 
 
 logger = logging.getLogger(__name__)
+# see https://pandoc.org/MANUAL.html#exit-codes
+PANDOC_PARSE_ERROR = 64
+DEFAULT_MAX_RETRIES = 5
 
 
 def process_notion_date(notion_date):
@@ -32,10 +35,6 @@ def processed_date_to_plain_text(processed_date):
         return f'{processed_date[0]} to {processed_date[1]}'
     else:
         return processed_date
-
-
-# see https://pandoc.org/MANUAL.html#exit-codes
-PANDOC_PARSE_ERROR = 64
 
 
 def pandoc_ast_to_markdown(pandoc_ast):

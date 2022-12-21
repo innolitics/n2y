@@ -18,9 +18,9 @@ from n2y.blocks import DEFAULT_BLOCKS
 from n2y.mentions import DEFAULT_MENTIONS
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
-from n2y.utils import sanitize_filename, strip_hyphens
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
+from n2y.utils import sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -97,7 +97,7 @@ class Client:
         media_root='.',
         media_url='',
         plugins=None,
-        max_retries=5,
+        max_retries=DEFAULT_MAX_RETRIES,
     ):
         self.access_token = access_token
         self.media_root = media_root
@@ -128,7 +128,7 @@ class Client:
     
     @max_retries.setter
     def max_retries(self, val):
-        if int(val) > 5:
+        if int(val) > DEFAULT_MAX_RETRIES:
             raise NotImplementedError('max_retries must be an integer no larger than 5')
         else:
             self._max_retries = int(val)
