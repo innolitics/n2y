@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-
+from math import isclose
+from datetime import datetime, timezone, timedelta
 from n2y.utils import fromisoformat, id_from_share_link
+from n2y.notion import retry_api_call, Client
+from n2y.errors import APIResponseError
 
 
 def test_fromisoformat_datetime():
@@ -43,3 +45,69 @@ def test_page_id_from_share_link():
     page_id = '42361d2334624e949d9b7e94d30c988b'
     share_link = f'https://www.notion.so/innolitics/SaMD-DHF-Template-{page_id}'
     assert id_from_share_link(share_link) == page_id
+
+
+def test_retry_api_call_no_error():
+    @retry_api_call
+    def tester(client):
+        assert client.max_retries == 5
+        assert client.retry_count == 0
+        assert client.retry_api_calls
+        return 5
+    client = Client('')
+    assert tester(client) == 5
+
+
+def test_retry_api_call_errors():
+    class Resp():
+        def __init__(self, time):
+            self.headers = {'retry-after': time}
+            self.text = ''
+            self.status_code = 439
+
+    @retry_api_call
+    def tester(client, time):
+        seconds = timedelta.total_seconds(datetime.now() - time)
+        if client.retry_count == 0:
+            raise APIResponseError(Resp(5), '', 439)
+        elif client.retry_count == 1:
+            assert isclose(5, seconds, abs_tol=1)
+            raise APIResponseError(Resp(7), '', 439)
+        elif client.retry_count == 2:
+            assert isclose(12, seconds, abs_tol=1)
+            raise APIResponseError(Resp(2), '', 439)
+        elif client.retry_count == 3:
+            assert isclose(14, seconds, abs_tol=1)
+            return 5
+    client = Client('')
+    assert tester(client, datetime.now()) == 5
+
+
+def test_retry_api_call_max_errors():
+    class Resp():
+        def __init__(self, time):
+            self.headers = {'retry-after': time}
+            self.text = ''
+            self.status_code = 439
+
+    @retry_api_call
+    def tester(client, time):
+        seconds = timedelta.total_seconds(datetime.now() - time)
+        if client.retry_count == 0:
+            raise APIResponseError(Resp(5), '', 439)
+        elif client.retry_count == 1:
+            assert isclose(5, seconds, abs_tol=1)
+            raise APIResponseError(Resp(7), '', 439)
+        elif client.retry_count == 2:
+            assert isclose(12, seconds, abs_tol=1)
+            raise APIResponseError(Resp(2), '', 439)
+        elif client.retry_count == 3:
+            assert isclose(14, seconds, abs_tol=1)
+            raise APIResponseError(Resp(2), '', 439)
+    client = Client('', max_retries=3)
+    try:
+        tester(client, datetime.now())
+    except APIResponseError:
+        assert True
+    else:
+        assert False

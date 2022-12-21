@@ -2,7 +2,6 @@ import json
 import logging
 import requests
 import functools
-import traceback
 import importlib.util
 from time import sleep
 from os import path, makedirs
@@ -66,13 +65,16 @@ def retry_api_call(api_call):
             if can_retry and client.retry_api_calls:
                 client.retry_count += 1
                 retry_after = err.headers['retry-after']
-                logger.warning(
+                logger.info(
                     'Client has been rate limited. This API call '
                     f'will be retried in {retry_after} seconds'
                 )
                 sleep(int(retry_after))
                 return wrapper(*args, **kwargs)
             else:
+                client.retry_api_calls or logger.warning(
+                    'The maximum amount of retries for this function has been reached'
+                )
                 raise err
     return wrapper
 
@@ -121,11 +123,11 @@ class Client:
     @property
     def retry_api_calls(self):
         return self.max_retries > self.retry_count
-    
+
     @property
     def max_retries(self):
         return self._max_retries
-    
+
     @max_retries.setter
     def max_retries(self, val):
         if int(val) > DEFAULT_MAX_RETRIES:
