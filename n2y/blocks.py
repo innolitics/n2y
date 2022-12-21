@@ -3,10 +3,10 @@ from itertools import groupby
 from urllib.parse import urljoin
 
 from pandoc.types import (
-    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
+    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Space,
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
 
 
@@ -396,18 +396,26 @@ class RowBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.cells = [
-            client.wrap_notion_rich_text_array(nc, self, True)
+            client.wrap_notion_rich_text_array(nc, self)
             for nc in self.notion_type_data["cells"]
         ]
 
     def to_pandoc(self):
-        cells = [Cell(
-            ('', [], []),
-            AlignDefault(),
-            RowSpan(1),
-            ColSpan(1),
-            [Plain(cell.to_pandoc())]
-        ) for cell in self.cells]
+        cells = []
+        for cell in self.cells:
+            pandoc = cell.to_pandoc()
+            for i, n in enumerate(pandoc):
+                if isinstance(n, LineBreak):
+                    pandoc[i] = Space()
+            cells.append(
+                Cell(
+                    ('', [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain(pandoc)]
+                )
+            )
         return Row(('', [], []), cells)
 
 
