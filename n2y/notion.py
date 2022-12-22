@@ -3,6 +3,7 @@ import logging
 import requests
 import functools
 import importlib.util
+from datetime import datetime, timedelta
 from time import sleep
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
@@ -64,12 +65,12 @@ def retry_api_call(api_call):
             can_retry = 'retry-after' in err.headers
             if can_retry and client.retry_api_calls:
                 client.retry_count += 1
-                retry_after = err.headers['retry-after']
+                retry_after = float(err.headers['retry-after'])
                 logger.info(
                     'Client has been rate limited. This API call '
                     f'will be retried in {retry_after} seconds'
                 )
-                sleep(int(retry_after))
+                sleep(retry_after)
                 return wrapper(*args, **kwargs)
             else:
                 client.retry_api_calls or logger.warning(
