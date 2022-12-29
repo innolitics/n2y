@@ -613,13 +613,16 @@ def test_column_block():
         mock_get_child_notion_blocks.return_value = children
         n2y_block = generate_block(column_block)
     pandoc_ast = n2y_block.to_pandoc()
-    assert pandoc_ast == Cell(
+    assert pandoc_ast == [Row(
         ('', [], []),
-        AlignDefault(),
-        RowSpan(1),
-        ColSpan(1),
-        [Para([Str('child')])],
-    )
+        [Cell(
+            ('', [], []),
+            AlignDefault(),
+            RowSpan(1),
+            ColSpan(1),
+            [Plain([Str('child')])]
+        )]
+    )]
 
 
 @mock.patch("n2y.notion.Client.get_child_notion_blocks")
@@ -641,15 +644,35 @@ def test_column_list_block(mock_get_child_notion_blocks):
         ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str("child2")])]
     )
     assert pandoc_ast == Table(
-        ("", [], []),
+        ('', [], []),
         Caption(None, []),
         [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
-        TableHead(("", [], []), []),
-        [
-            TableBody(
-                ("", [], []), RowHeadColumns(0), [], [Row(("", [], []), [cell1, cell2])]
-            )
-        ],
-        TableFoot(("", [], []), []),
+        TableHead(('', [], []), []),
+        [TableBody(
+            ('', [], []),
+            RowHeadColumns(0),
+            [],
+            [Row(
+                ('', [], []),
+                [Cell(
+                    ('', [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain([Str('child1')])]
+                )]
+            ),
+            Row(
+                ('', [], []),
+                [Cell(
+                    ('', [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain([Str('child2')])]
+                )]
+            )]
+        )],
+        TableFoot(('', [], []), [])
     )
-    assert markdown == "|        |        |\n|--------|--------|\n| child1 | child2 |\n"
+    assert markdown == '|        |     |\n|--------|-----|\n| child1 |     |\n| child2 |     |\n'
