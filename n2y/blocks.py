@@ -431,31 +431,10 @@ class ColumnListBlock(Block):
         super().__init__(client, notion_data, page, get_children)
 
     def to_pandoc(self):
-        deep_cell_list = []
         rows = []
         if self.children:
-            deep_cell_list = self.children_to_pandoc()
-        lengths = [len(cells) for cells in deep_cell_list]
-        max_len = max(lengths)
-        for i in range(0, max_len - 1):
-            cells = []
-            for cell_list in deep_cell_list:
-                if i <= len(cell_list) - 1:
-                    cells.append(cell_list[i])
-                else:
-                    cells.append(
-                        Cell(
-                            ('', [], []),
-                            AlignDefault(),
-                            RowSpan(1),
-                            ColSpan(1),
-                            [Plain([Space()])]
-                        )
-                    )
-            rows.append(
-                Row(('', [], []), cells)
-            )
-        colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(len(deep_cell_list))]
+            rows = self.children_to_pandoc()
+        colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(len(rows))]
         table = Table(
             ('', [], []),
             Caption(None, []),
@@ -468,36 +447,28 @@ class ColumnListBlock(Block):
             )],
             TableFoot(('', [], []), [])
         )
-        print()
-        print()
         print(table)
-        print()
-        print()
         return table
 
 
 class ColumnBlock(Block):
     def to_pandoc(self):
         pandoc = self.children_to_pandoc()
-        print('Children:',[child.children for child in self.children])
-        print()
-        print('PANDOC:',pandoc)
         for i, n in enumerate(pandoc):
-            print('N:', n)
-            args = n.__dict__['_args'][0]
-            args = self.filter_linebreaks(args)
-            pandoc[i] = Cell(
-                ('', [], []),
-                AlignDefault(),
-                RowSpan(1),
-                ColSpan(1),
-                [Plain(args)]
-            )
-        return pandoc
+            if isinstance(n, Para):
+                args = n.__dict__['_args'][0]
+                args = self.filter_linebreaks(args)
+                pandoc[i] = Cell(
+                    ('', [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain(args)]
+                )
+        return [Row(('', [], []), pandoc)]
 
     def filter_linebreaks(self, ast_list):
         for i, ast in enumerate(ast_list):
-            print('AST:', ast)
             args = ast.__dict__['_args']
             if len(args) and isinstance(args[0], list):
                 self.filter_linebreaks(args[0])
