@@ -4,6 +4,7 @@ import requests
 import functools
 import importlib.util
 from time import sleep
+import yaml
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
 
@@ -100,7 +101,9 @@ class Client:
         media_url='',
         plugins=None,
         max_retries=DEFAULT_MAX_RETRIES,
+        render_config = None
     ):
+        self.render_config = render_config
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
@@ -116,6 +119,7 @@ class Client:
 
         self.databases_cache = {}
         self.pages_cache = {}
+        self.yaml_cache = {}
 
         self.load_plugins(plugins)
         self.plugin_data = {}
@@ -632,3 +636,17 @@ class Client:
             if type(page) == cls:
                 return True
         return False
+
+    def cache_yaml(self, data_filename, database_id, data_string):
+        data_name, _ = path.splitext(path.basename(data_filename))
+        if data_name in self.yaml_cache:
+            raise ValueError('There is already data attached to the key "{}"'.format(data_name))
+        try:
+            yaml_data = yaml.load(data_string, Loader=yaml.SafeLoader)
+            self.yaml_cache[data_name] = {
+                'id': database_id,
+                'data': yaml_data
+            }
+        except yaml.YAMLError as e:
+            raise ValueError('"{}" contains invalid YAML: {}'.format(data_name, e))
+        return data_name
