@@ -36,6 +36,10 @@ def main(raw_args, access_token):
         help="Level to set the root logging module to",
     )
     parser.add_argument(
+        "--render-config",
+        help="yaml file that configures jinja for the \"render.py\" plugin if it's active"
+        )
+    parser.add_argument(
         "--version", action='version', version=pkg_resources.require("n2y")[0].version,
         help="The version of n2y installed",
     )
@@ -59,7 +63,8 @@ def main(raw_args, access_token):
         access_token,
         config["media_root"],
         config["media_url"],
-        max_retries=args.max_retries
+        max_retries=args.max_retries,
+        render_config=args.render_config
     )
 
     error_occurred = False
@@ -114,6 +119,7 @@ def _export_node_from_config(client, export):
                 notion_sorts=export["notion_sorts"],
                 property_map=export["property_map"],
             )
+            client.cache_yaml(export['output'], export['id'], result)
             with open(export["output"], "w") as f:
                 f.write(result)
         elif node_type == "database_as_files":
