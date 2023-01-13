@@ -19,13 +19,7 @@ mermaid_config = {
     }
 }
 
-puppeteer_config = {
-    "headless": True,
-    "args": [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-    ]
-}
+puppeteer_config = {"args": ["--no-sandbox"]}
 
 
 class MermaidFencedCodeBlock(FencedCodeBlock):
