@@ -57,12 +57,14 @@ def test_retry_api_call_no_error():
         assert client.retry_count == 0
         assert client.retry_api_calls
         return 5
+
     client = Client('')
     assert tester(client) == 5
 
 
 def test_retry_api_call_errors():
     status_code = 439
+
     @retry_api_call
     def tester(client, time):
         seconds = timedelta.total_seconds(datetime.now() - time)
@@ -77,11 +79,13 @@ def test_retry_api_call_errors():
         elif client.retry_count == 3:
             assert isclose(0.51, seconds, abs_tol=0.1)
             return True
+
     assert tester(Client(''), datetime.now())
 
 
 def test_retry_api_call_max_errors():
     status_code = 439
+
     @retry_api_call
     def tester(client, time):
         seconds = timedelta.total_seconds(datetime.now() - time)
@@ -96,22 +100,27 @@ def test_retry_api_call_max_errors():
         elif client.retry_count == 3:
             assert isclose(0.51, seconds, abs_tol=0.1)
             raise APIResponseError(MockResponse(0.2, status_code), '', status_code)
+
     with raises(APIResponseError):
         tester(Client('', max_retries=3), datetime.now())
 
+
 def test_retry_api_call_multiple_calls():
     status_code = 439
+
     @retry_api_call
     def test_1(client):
         if client.retry_count == 0:
             raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
         elif client.retry_count == 1:
             return True
+
     @retry_api_call
     def test_2(client):
         if client.retry_count == 0:
             return True
         return False
+
     client = Client('')
     assert test_1(client)
     assert test_2(client)

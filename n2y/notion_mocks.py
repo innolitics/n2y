@@ -232,6 +232,7 @@ def mock_database(title='Mock Database', extra_properties={}):
         'url': f'https://www.notion.so/{hyphenated_title}-{notion_id}',
     }
 
+
 class MockResponse():
     def __init__(self, time, code):
         self.headers = {'retry-after': time}

@@ -3,7 +3,6 @@ import logging
 import requests
 import functools
 import importlib.util
-from datetime import datetime, timedelta
 from time import sleep
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
