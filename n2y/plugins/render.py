@@ -1,12 +1,23 @@
+import re
+import logging
 import collections
 from importlib import import_module
 
 import jinja2
+import pandoc
 from jinja2.environment import TemplateStream
+from pandoc.types import RawBlock, Format, CodeBlock
+
+
+from n2y.blocks import FencedCodeBlock
+from n2y.errors import UseNextClass
+
+
+logger = logging.getLogger(__name__)
 
 
 class FirstPassOutput:
-  
+
     def __init__(self, lines=None):
         self._second_pass_is_requested = False
         self.is_second_pass = lines is not None
@@ -137,3 +148,46 @@ def _generate_output_lines(environment, source_line_list):
     for post_process_filter in post_process_filters:
         output_generator = (x for x in post_process_filter(output_generator))
     return output_generator
+
+
+class RawFencedCodeBlock(FencedCodeBlock):
+    """
+    Adds support for raw codeblocks.
+
+    Any code block whose caption begins with "{=language}" will be made into a
+    raw block for pandoc to parse. This is useful if you need to drop into Raw
+    HTML or other formats.
+
+    See https://pandoc.org/MANUAL.html#generic-raw-attribute
+    """
+    trigger_regex = re.compile(r'^\{template\}')
+
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        result = self.caption.matches(self.trigger_regex)
+        if not result or self.client.render_config == None:
+            raise UseNextClass()
+
+    def to_pandoc(self):
+        pandoc_language = self.notion_to_pandoc_highlight_languages.get(
+            self.language, self.language,
+        )
+        if pandoc_language not in self.pandoc_highlight_languages:
+            if pandoc_language != "plain text":
+                msg = 'Dropping syntax highlighting for unsupported language "%s" (%s)'
+                logger.warning(msg, pandoc_language, self.notion_url)
+            language = []
+        else:
+            language = [pandoc_language]
+        return self._render(CodeBlock(('', language, []), self.rich_text.to_plain_text()))
+    
+    def _render(self, ast):
+        markdown = pandoc.write(ast)
+        
+
+
+notion_classes = {
+    "blocks": {
+        "code": RawFencedCodeBlock,
+    }
+}
