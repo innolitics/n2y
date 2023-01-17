@@ -179,16 +179,11 @@ def test_all_blocks_page_to_markdown(tmpdir):
     lines = document.split("\n")
     metadata = parse_yaml_front_matter(document)
     assert metadata["title"] == "All Blocks Test Page"
-    column_string = (
-        '<table><tbody><tr class="odd"><td><p>Column 1</p><table>'
-        '<tbody><tr class="odd"><td><p>Column 1.1</p></td><td><p>Column 1.2</p></td></tr>'
-        "</tbody></table></td><td><p>Column 2</p></td></tr></tbody></table>"
-    )
     column_strings_in_lines = [
-        "<td><p>Column 1</p>" in lines,
-        "<td><p>Column 1.1</p></td>" in lines,
-        "<td><p>Column 1.2</p></td>" in lines,
-        "<td><p>Column 2</p></td>" in lines,
+        "Column 1" in lines,
+        "Column 1.1" in lines,
+        "Column 1.2" in lines,
+        "Column 2" in lines,
     ]
 
     assert "Text block" in lines
@@ -208,8 +203,8 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "``` javascript\nCode Block\n```" in document
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
-
-    assert all(column_strings_in_lines) or (column_string in lines)
+    print(lines)
+    assert all(column_strings_in_lines)
     assert "Mention: Simple Test Page" in lines
     assert "Simple Test Page" in lines  # from the LinkToPageBlock
     assert "Mention: Simple Test Database" in lines

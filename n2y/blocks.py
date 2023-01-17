@@ -431,51 +431,15 @@ class ColumnListBlock(Block):
         super().__init__(client, notion_data, page, get_children)
 
     def to_pandoc(self):
-        rows = []
+        pandoc = []
         if self.children:
-            rows = self.children_to_pandoc()
-        colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(len(rows))]
-        table = Table(
-            ('', [], []),
-            Caption(None, []),
-            colspec,
-            TableHead(('', [], []), []),
-            [TableBody(
-                ('', [], []),
-                RowHeadColumns(0), [],
-                rows
-            )],
-            TableFoot(('', [], []), [])
-        )
-        print(table)
-        return table
+            pandoc = self.children_to_pandoc()
+        return pandoc
 
 
 class ColumnBlock(Block):
     def to_pandoc(self):
-        pandoc = self.children_to_pandoc()
-        for i, n in enumerate(pandoc):
-            if isinstance(n, Para):
-                args = n.__dict__['_args'][0]
-                args = self.filter_linebreaks(args)
-                pandoc[i] = Cell(
-                    ('', [], []),
-                    AlignDefault(),
-                    RowSpan(1),
-                    ColSpan(1),
-                    [Plain(args)]
-                )
-        return [Row(('', [], []), pandoc)]
-
-    def filter_linebreaks(self, ast_list):
-        for i, ast in enumerate(ast_list):
-            args = ast.__dict__['_args']
-            if len(args) and isinstance(args[0], list):
-                self.filter_linebreaks(args[0])
-            else:
-                if isinstance(ast, LineBreak):
-                    ast_list[i] = Space()
-        return ast_list
+        return self.children_to_pandoc()
 
 
 class ToggleBlock(Block):
