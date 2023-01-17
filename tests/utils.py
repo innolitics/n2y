@@ -12,6 +12,8 @@ except ImportError:
 # the Innolitics' 1password "Everyone" vault. If new test pages are added, this
 # will need to be used to create them.
 NOTION_ACCESS_TOKEN = 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r'
+# see https://pandoc.org/MANUAL.html#exit-codes
+PANDOC_PARSE_ERROR = 64
 
 yaml_frontmatter_regexp = re.compile(r'^---$(.*)^---$', re.MULTILINE | re.DOTALL)
 
