@@ -3,10 +3,10 @@ from itertools import groupby
 from urllib.parse import urljoin
 
 from pandoc.types import (
-    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal,
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath,
+    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Space,
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
 
 
@@ -48,7 +48,6 @@ class Block:
         self.archived = notion_data['archived']
         self.notion_type = notion_data['type']
         self.notion_data = notion_data
-
         if get_children:
             self.get_children()
         else:
@@ -396,19 +395,35 @@ class RowBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.cells = [
-            client.wrap_notion_rich_text_array(nc, self, True)
+            client.wrap_notion_rich_text_array(nc, self)
             for nc in self.notion_type_data["cells"]
         ]
 
     def to_pandoc(self):
-        cells = [Cell(
-            ('', [], []),
-            AlignDefault(),
-            RowSpan(1),
-            ColSpan(1),
-            [Plain(cell.to_pandoc())]
-        ) for cell in self.cells]
+        cells = []
+        for cell in self.cells:
+            pandoc = cell.to_pandoc()
+            pandoc = self.filter_linebreaks(pandoc)
+            cells.append(
+                Cell(
+                    ('', [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain(pandoc)]
+                )
+            )
         return Row(('', [], []), cells)
+
+    def filter_linebreaks(self, ast_list):
+        for i, ast in enumerate(ast_list):
+            args = ast.__dict__['_args']
+            if len(args) and isinstance(args[0], list):
+                self.filter_linebreaks(args[0])
+            else:
+                if isinstance(ast, LineBreak):
+                    ast_list[i] = Space()
+        return ast_list
 
 
 class ColumnListBlock(Block):
@@ -416,33 +431,15 @@ class ColumnListBlock(Block):
         super().__init__(client, notion_data, page, get_children)
 
     def to_pandoc(self):
-        cells = []
+        pandoc = []
         if self.children:
-            cells = self.children_to_pandoc()
-        colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(len(cells))]
-        table = Table(
-            ('', [], []),
-            Caption(None, []),
-            colspec,
-            TableHead(('', [], []), []),
-            [TableBody(
-                ('', [], []),
-                RowHeadColumns(0), [],
-                [Row(('', [], []), cells)])],
-            TableFoot(('', [], []), [])
-        )
-        return table
+            pandoc = self.children_to_pandoc()
+        return pandoc
 
 
 class ColumnBlock(Block):
     def to_pandoc(self):
-        return Cell(
-            ('', [], []),
-            AlignDefault(),
-            RowSpan(1),
-            ColSpan(1),
-            self.children_to_pandoc()
-        )
+        return self.children_to_pandoc()
 
 
 class ToggleBlock(Block):

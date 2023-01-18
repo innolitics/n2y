@@ -613,43 +613,20 @@ def test_column_block():
         mock_get_child_notion_blocks.return_value = children
         n2y_block = generate_block(column_block)
     pandoc_ast = n2y_block.to_pandoc()
-    assert pandoc_ast == Cell(
-        ('', [], []),
-        AlignDefault(),
-        RowSpan(1),
-        ColSpan(1),
-        [Para([Str('child')])],
-    )
+    assert pandoc_ast == [Para([Str('child')])]
 
 
 @mock.patch("n2y.notion.Client.get_child_notion_blocks")
 def test_column_list_block(mock_get_child_notion_blocks):
     column_list_block = mock_block("column_list", {}, True)
     column1, column2 = mock_block("column", {}, True), mock_block("column", {}, True)
-    para1, para2 = mock_paragraph_block([("child1", [])]), mock_paragraph_block(
-        [("child2", [])]
+    para1, para2 = mock_paragraph_block([["child1"]]), mock_paragraph_block(
+        [["child2"]]
     )
     # Return [column1, column2] for the column list get_child_notion_blocks call
     # and [para1] and [para2] for the get_child_notion_blocks calls of the
     # respective column blocks
     mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
     pandoc_ast, markdown = process_block(column_list_block)
-    cell1 = Cell(
-        ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str("child1")])]
-    )
-    cell2 = Cell(
-        ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Para([Str("child2")])]
-    )
-    assert pandoc_ast == Table(
-        ("", [], []),
-        Caption(None, []),
-        [(AlignDefault(), ColWidthDefault()), (AlignDefault(), ColWidthDefault())],
-        TableHead(("", [], []), []),
-        [
-            TableBody(
-                ("", [], []), RowHeadColumns(0), [], [Row(("", [], []), [cell1, cell2])]
-            )
-        ],
-        TableFoot(("", [], []), []),
-    )
-    assert markdown == "|        |        |\n|--------|--------|\n| child1 | child2 |\n"
+    assert pandoc_ast == [Para([Str('child1')]), Para([Str('child2')])]
+    assert markdown == 'child1\n\nchild2\n'
