@@ -1,4 +1,5 @@
 import re
+import uuid
 import logging
 import collections
 from importlib import import_module
@@ -82,32 +83,31 @@ def join_to(foreign_keys, table, primary_key='id'):
     return joined
 
 
-def render_template_to_file(config, template_filename, context, output_file, loaders=None):
-    generator = generate_template_output(config, template_filename, context, loaders=loaders)
+def render_template_to_file(config, template_markdown, context, output_file, loaders=None):
+    generator = generate_template_output(config, template_markdown, context, loaders=loaders)
     TemplateStream(generator).dump(output_file)
 
 
-def render_template_to_string(config, template_filename, context, loaders=None):
-    return ''.join(generate_template_output(config, template_filename, context, loaders=loaders))
+# def render_template_to_string(config, template_filename, context, loaders=None):
+#     return ''.join(generate_template_output(config, template_filename, context, loaders=loaders))
 
 
-def generate_template_output(config, template_filename, context, loaders=None):
+def generate_template_output(config, template_markdown, context, loaders=None):
     environment = _create_jinja_environment(config, loaders)
     first_pass_output = FirstPassOutput()
     environment.globals['first_pass_output'] = first_pass_output
-    output_line_list = generate_template_output_lines(environment, template_filename, context)
+    output_line_list = generate_template_output_lines(environment, template_markdown, context)
     if first_pass_output.second_pass_is_requested:
         jinja2.clear_caches()
         first_pass_output_filled = FirstPassOutput(output_line_list)
         second_pass_environment = _create_jinja_environment(config, loaders)
         second_pass_environment.globals['first_pass_output'] = first_pass_output_filled
-        output_line_list = generate_template_output_lines(second_pass_environment, template_filename, context)
+        output_line_list = generate_template_output_lines(second_pass_environment, template_markdown, context)
     return (line for line in output_line_list)
 
 
-def generate_template_output_lines(environment, template_filename, context):
-    template = environment.get_template(template_filename)
-    source_line_list = _generate_source_line_list(template, context)
+def generate_template_output_lines(environment, template_markdown, context):
+    source_line_list = _generate_source_line_list(template_markdown, context)
     return [line for line in _generate_output_lines(environment, source_line_list)]
 
 
@@ -167,6 +167,10 @@ class RawFencedCodeBlock(FencedCodeBlock):
         result = self.caption.matches(self.trigger_regex)
         if not result or self.client.render_config == None:
             raise UseNextClass()
+        if self.client.render_config is None:
+            raise NotImplementedError(
+                'The "render-config" argument must be set to use the "render" plugin'
+            )
 
     def to_pandoc(self):
         pandoc_language = self.notion_to_pandoc_highlight_languages.get(
@@ -183,7 +187,16 @@ class RawFencedCodeBlock(FencedCodeBlock):
     
     def _render(self, ast):
         markdown = pandoc.write(ast)
-        
+        context = self.client.context_from_yaml_cache()
+        config = self.client.render_config
+        tempfile_name = f'{str(uuid.uuid4())}.md'
+        tempfile = open(tempfile_name, 'x')
+        tempfile.close()
+        render_template_to_file(config, markdown, context, tempfile_name)
+        with open(tempfile_name, 'r') as file:
+            ast = pandoc.read(file.read())
+        return ast
+
 
 
 notion_classes = {

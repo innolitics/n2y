@@ -312,3 +312,16 @@ def test_comment():
     comments = Client(NOTION_ACCESS_TOKEN).get_comments(block_with_comments_id)
     assert comments[0].rich_text.to_plain_text() == "Test Comment"
     assert comments[1].rich_text.to_plain_text() == "Test Comment 2"
+
+def test_render_plugin(tmpdir):
+    def _run_n2y(temp_dir, config):
+        config_path = os.path.join(temp_dir, "config.yaml")
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)
+        old_cwd = os.getcwd()
+        os.chdir(temp_dir)
+        try:
+            status = main([config_path], NOTION_ACCESS_TOKEN)
+        finally:
+            os.chdir(old_cwd)
+        return status
