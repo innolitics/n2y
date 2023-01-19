@@ -20,7 +20,7 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
+from n2y.utils import load_yaml, sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -641,12 +641,15 @@ class Client:
         data_name, _ = path.splitext(path.basename(data_filename))
         if data_name in self.yaml_cache:
             raise ValueError('There is already data attached to the key "{}"'.format(data_name))
-        try:
-            yaml_data = yaml.load(data_string, Loader=yaml.SafeLoader)
-            self.yaml_cache[data_name] = {
-                'id': database_id,
-                'data': yaml_data
-            }
-        except yaml.YAMLError as e:
-            raise ValueError('"{}" contains invalid YAML: {}'.format(data_name, e))
+        yaml_data = load_yaml(data_string)
+        self.yaml_cache[data_name] = {
+            'id': database_id,
+            'data': yaml_data
+        }
         return data_name
+
+    def context_from_yaml_cache(self):
+        context = {}
+        for data_name in self.yaml_cache:
+            context[data_name] = self.yaml_cache[data_name]['data']
+        return context

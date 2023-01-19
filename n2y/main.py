@@ -6,7 +6,7 @@ import pkg_resources
 
 from n2y import notion
 from n2y.config import load_config
-from n2y.utils import share_link_from_id, DEFAULT_MAX_RETRIES
+from n2y.utils import load_yaml, share_link_from_id, DEFAULT_MAX_RETRIES
 from n2y.export import export_page, database_to_yaml, database_to_markdown_files
 
 logger = None
@@ -25,6 +25,10 @@ def main(raw_args, access_token):
     )
     parser.add_argument("config", help="The path to the config file")
     parser.add_argument(
+        "--render-config",
+        help="yaml file that configures jinja for the \"render.py\" plugin if it's active"
+        )
+    parser.add_argument(
         '--max_retries', '-m', default=DEFAULT_MAX_RETRIES,
         help=(
             'The maximum amount of times an API request will be retried after being rate '
@@ -35,10 +39,6 @@ def main(raw_args, access_token):
         "--verbosity", '-v', default='INFO',
         help="Level to set the root logging module to",
     )
-    parser.add_argument(
-        "--render-config",
-        help="yaml file that configures jinja for the \"render.py\" plugin if it's active"
-        )
     parser.add_argument(
         "--version", action='version', version=pkg_resources.require("n2y")[0].version,
         help="The version of n2y installed",
@@ -55,6 +55,13 @@ def main(raw_args, access_token):
         logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
+    if args.render_config is None:
+        render_config = args.render_config
+    else:
+        with open(args.render_config) as data_file:
+            data_string = data_file.read()
+        render_config = load_yaml(data_string)
+
     config = load_config(args.config)
     if config is None:
         return 2
@@ -64,7 +71,7 @@ def main(raw_args, access_token):
         config["media_root"],
         config["media_url"],
         max_retries=args.max_retries,
-        render_config=args.render_config
+        render_config=render_config
     )
 
     error_occurred = False

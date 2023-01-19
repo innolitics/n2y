@@ -136,3 +136,9 @@ def share_link_from_id(id):
 
 def strip_hyphens(string):
     return string.replace("-", "")
+
+def load_yaml(data):
+    try:
+        return yaml.load(data, Loader=yaml.SafeLoader)
+    except yaml.YAMLError as e:
+        raise ValueError('"{}" contains invalid YAML: {}'.format(data, e))
