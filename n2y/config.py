@@ -38,7 +38,6 @@ def load_config(path):
 
     defaults_copy = copy.deepcopy(DEFAULTS)
     config = {**defaults_copy, **config}
-
     merged_exports = merge_config(
         config.get("exports", []),
         EXPORT_DEFAULTS,

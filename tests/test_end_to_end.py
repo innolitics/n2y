@@ -320,3 +320,70 @@ def test_can_pull_all_relations(tmpdir):
         page
     )
     assert len(uuids) == 31
+
+def test_render_plugin(tmpdir):
+    def _run_n2y(temp_dir, config, render_config):
+        config_path = os.path.join(temp_dir, "config.yaml")
+        render_config_path = os.path.join(temp_dir, "render_config.yaml")
+        with open(config_path, "w") as f:
+            yaml.dump(config, f)
+        with open(render_config_path, "w") as f:
+            yaml.dump(render_config, f)
+        old_cwd = os.getcwd()
+        os.chdir(temp_dir)
+        try:
+            status = main([config_path, "--render-config", render_config_path], NOTION_ACCESS_TOKEN)
+        finally:
+            os.chdir(old_cwd)
+        return status
+    config = {
+        "exports": [
+            {
+                "id": "67e43fe467174002b166fd4536ff35f0",
+                "node_type": "database_as_yaml",
+                "output": "System_Items.yml",
+            },
+            {
+                "id": "a7169f72ff994a988e067287af5f557b",
+                "node_type": "database_as_files",
+                "filename_property": "Name",
+                "output": "files",
+                "plugins": [
+                    "n2y.plugins.render",
+                    "n2y.plugins.deepheaders",
+                    "n2y.plugins.removecallouts",
+                    "n2y.plugins.rawcodeblocks",
+                    "n2y.plugins.mermaid",
+                    "n2y.plugins.footnotes",
+                    "n2y.plugins.expandlinktopages",
+                ]
+            }
+        ]
+    }
+    render_config = {
+        "md_extensions": [
+            "jinja2.ext.do"
+            ]
+    }
+    status = _run_n2y(tmpdir, config, render_config)
+    assert status == 0
+    with open(str(tmpdir / "files" / "Template_Test_Page.md"), "r") as f:
+        markdown = f.read()
+    target_markdown = """---
+Name: Template Test Page
+Tags:
+- Test
+---
+This is a test page
+
+On this page we will test the ability to render jinja templates
+
+    ## [['blue']] is a color
+
+    ## [['pink']] is a color
+
+    ## [['red']] is a color
+"""
+    assert markdown == target_markdown
+
+

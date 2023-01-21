@@ -1,13 +1,13 @@
 import re
+import os
 import uuid
 import logging
-import collections
 from importlib import import_module
 
-import jinja2
 import pandoc
+import jinja2
+from pandoc.types import CodeBlock
 from jinja2.environment import TemplateStream
-from pandoc.types import RawBlock, Format, CodeBlock
 
 
 from n2y.blocks import FencedCodeBlock
@@ -83,31 +83,28 @@ def join_to(foreign_keys, table, primary_key='id'):
     return joined
 
 
-def render_template_to_file(config, template_markdown, context, output_file, loaders=None):
-    generator = generate_template_output(config, template_markdown, context, loaders=loaders)
+def render_template_to_file(config, template_filename, context, output_file, loaders=None):
+    generator = generate_template_output(config, template_filename, context, loaders=loaders)
     TemplateStream(generator).dump(output_file)
 
 
-# def render_template_to_string(config, template_filename, context, loaders=None):
-#     return ''.join(generate_template_output(config, template_filename, context, loaders=loaders))
-
-
-def generate_template_output(config, template_markdown, context, loaders=None):
+def generate_template_output(config, template_filename, context, loaders=None):
     environment = _create_jinja_environment(config, loaders)
     first_pass_output = FirstPassOutput()
     environment.globals['first_pass_output'] = first_pass_output
-    output_line_list = generate_template_output_lines(environment, template_markdown, context)
+    output_line_list = generate_template_output_lines(environment, template_filename, context)
     if first_pass_output.second_pass_is_requested:
         jinja2.clear_caches()
         first_pass_output_filled = FirstPassOutput(output_line_list)
         second_pass_environment = _create_jinja_environment(config, loaders)
         second_pass_environment.globals['first_pass_output'] = first_pass_output_filled
-        output_line_list = generate_template_output_lines(second_pass_environment, template_markdown, context)
+        output_line_list = generate_template_output_lines(second_pass_environment, template_filename, context)
     return (line for line in output_line_list)
 
 
-def generate_template_output_lines(environment, template_markdown, context):
-    source_line_list = _generate_source_line_list(template_markdown, context)
+def generate_template_output_lines(environment, template_filename, context):
+    template = environment.get_template(template_filename)
+    source_line_list = _generate_source_line_list(template, context)
     return [line for line in _generate_output_lines(environment, source_line_list)]
 
 
@@ -186,16 +183,23 @@ class RawFencedCodeBlock(FencedCodeBlock):
         return self._render(CodeBlock(('', language, []), self.rich_text.to_plain_text()))
     
     def _render(self, ast):
-        markdown = pandoc.write(ast)
         context = self.client.context_from_yaml_cache()
         config = self.client.render_config
-        tempfile_name = f'{str(uuid.uuid4())}.md'
-        tempfile = open(tempfile_name, 'x')
-        tempfile.close()
-        render_template_to_file(config, markdown, context, tempfile_name)
-        with open(tempfile_name, 'r') as file:
-            ast = pandoc.read(file.read())
-        return ast
+        try:
+            id = str(uuid.uuid4())
+            output_name = f'{id}-output.md'
+            template_name = f'{id}-template.md'
+            open(output_name, 'x').close()
+            with open(template_name, 'x') as file:
+                file.write(pandoc.write(ast))
+            render_template_to_file(config, template_name, context, output_name)
+            with open(output_name, 'r') as file:
+                rendered_ast = pandoc.read(file.read())
+            return rendered_ast[1][0]
+        finally:
+            os.remove(output_name)
+            os.remove(template_name)
+
 
 
 
