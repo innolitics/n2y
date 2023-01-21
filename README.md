@@ -243,6 +243,10 @@ Most of the Notion blocks can generate their pandoc AST from _only_ their own da
 
 N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
 
+### Render
+
+When CodeBlocks are captioned "{template}", the block is rendered as jinja using yaml data previously cached by n2y
+
 ### Deep Headers
 
 Notion only support three levels of headers, but sometimes this is not enough. This plugin enables support for h4 and h5 headers in the documents exported from Notion. Any Notion h3 whose text begins with the characters "= " is converted to an h4, and any h3 that begins with "== " is converted to an h5, and so on.
@@ -329,6 +333,11 @@ Here are some features we're planning to add in the future:
 - Add more examples to the documentation
 
 ## Changelog
+
+### v0.7.5
+
+- Flatten Column List Blocks
+- Add render plugin to render jinja in code blocks
 
 ### v0.7.4
 
