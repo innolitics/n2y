@@ -11,7 +11,7 @@ description = 'Notion to YAML'
 
 setup(
     name='n2y',
-    version='0.7.4',
+    version='0.7.5',
     description=description,
     long_description=description,
     long_description_content_type='text/x-rst',
@@ -30,7 +30,7 @@ setup(
     ],
     keywords='notion documentation yaml markdown',
     packages=find_packages(exclude=['tests']),
-    install_requires=['pyyaml', 'requests', 'pandoc'],
+    install_requires=['pyyaml', 'requests', 'pandoc', 'jinja2'],
     extras_require={
         'dev': [
             'pytest',
