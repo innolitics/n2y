@@ -4,7 +4,6 @@ import requests
 import functools
 import importlib.util
 from time import sleep
-import yaml
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
 
@@ -101,7 +100,7 @@ class Client:
         media_url='',
         plugins=None,
         max_retries=DEFAULT_MAX_RETRIES,
-        render_config = None
+        render_config=None
     ):
         self.render_config = render_config
         self.access_token = access_token

@@ -2,7 +2,6 @@ from datetime import datetime
 import logging
 import yaml
 import re
-import os
 
 import pandoc
 from pandoc.types import Str, Space
@@ -136,6 +135,7 @@ def share_link_from_id(id):
 
 def strip_hyphens(string):
     return string.replace("-", "")
+
 
 def load_yaml(data):
     try:
