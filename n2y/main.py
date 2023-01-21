@@ -86,26 +86,7 @@ def main(raw_args, access_token):
 
 def _export_node_from_config(client, export):
     node_type = export["node_type"]
-    if node_type == "page":
-        page = client.get_page(export['id'])
-        if page is None:
-            msg = (
-                "Unable to find page with id '%s' (%s). "
-                "Perhaps the integration doesn't have permission to access this page?"
-            )
-            logger.error(msg, export['id'], share_link_from_id(export['id']))
-            return False
-        result = export_page(
-            page,
-            export["pandoc_format"],
-            export["pandoc_options"],
-            export["id_property"],
-            export["url_property"],
-            export["property_map"],
-        )
-        with open(export["output"], "w") as f:
-            f.write(result)
-    else:
+    if node_type != "page":
         database = client.get_database(export['id'])
         if database is None:
             msg = (
@@ -145,6 +126,25 @@ def _export_node_from_config(client, export):
         else:
             logger.error("Unknown node_type '%s'", node_type)
             return False
+    else:
+        page = client.get_page(export['id'])
+        if page is None:
+            msg = (
+                "Unable to find page with id '%s' (%s). "
+                "Perhaps the integration doesn't have permission to access this page?"
+            )
+            logger.error(msg, export['id'], share_link_from_id(export['id']))
+            return False
+        result = export_page(
+            page,
+            export["pandoc_format"],
+            export["pandoc_options"],
+            export["id_property"],
+            export["url_property"],
+            export["property_map"],
+        )
+        with open(export["output"], "w") as f:
+            f.write(result)
     return True
 
 
