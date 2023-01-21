@@ -313,6 +313,7 @@ def test_comment():
     assert comments[0].rich_text.to_plain_text() == "Test Comment"
     assert comments[1].rich_text.to_plain_text() == "Test Comment 2"
 
+
 def test_render_plugin(tmpdir):
     def _run_n2y(temp_dir, config, render_config):
         config_path = os.path.join(temp_dir, "config.yaml")
@@ -355,7 +356,7 @@ def test_render_plugin(tmpdir):
     render_config = {
         "md_extensions": [
             "jinja2.ext.do"
-            ]
+        ]
     }
     status = _run_n2y(tmpdir, config, render_config)
     assert status == 0
@@ -377,5 +378,3 @@ On this page we will test the ability to render jinja templates
     ## [['red']] is a color
 """
     assert markdown == target_markdown
-
-

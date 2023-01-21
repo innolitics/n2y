@@ -98,7 +98,9 @@ def generate_template_output(config, template_filename, context, loaders=None):
         first_pass_output_filled = FirstPassOutput(output_line_list)
         second_pass_environment = _create_jinja_environment(config, loaders)
         second_pass_environment.globals['first_pass_output'] = first_pass_output_filled
-        output_line_list = generate_template_output_lines(second_pass_environment, template_filename, context)
+        output_line_list = generate_template_output_lines(
+            second_pass_environment, template_filename, context
+        )
     return (line for line in output_line_list)
 
 
@@ -162,7 +164,7 @@ class RawFencedCodeBlock(FencedCodeBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         result = self.caption.matches(self.trigger_regex)
-        if not result or self.client.render_config == None:
+        if not result or self.client.render_config is None:
             raise UseNextClass()
         if self.client.render_config is None:
             raise NotImplementedError(
@@ -181,7 +183,7 @@ class RawFencedCodeBlock(FencedCodeBlock):
         else:
             language = [pandoc_language]
         return self._render(CodeBlock(('', language, []), self.rich_text.to_plain_text()))
-    
+
     def _render(self, ast):
         context = self.client.context_from_yaml_cache()
         config = self.client.render_config
@@ -199,8 +201,6 @@ class RawFencedCodeBlock(FencedCodeBlock):
         finally:
             os.remove(output_name)
             os.remove(template_name)
-
-
 
 
 notion_classes = {
