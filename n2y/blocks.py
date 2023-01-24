@@ -63,7 +63,6 @@ class Block:
         raise NotImplementedError()
 
     def children_to_pandoc(self):
-        assert self.has_children
         pandoc_ast = []
         for block_type, blocks in groupby(self.children, lambda c: type(c)):
             if issubclass(block_type, ListItemBlock):
