@@ -312,3 +312,13 @@ def test_comment():
     comments = Client(NOTION_ACCESS_TOKEN).get_comments(block_with_comments_id)
     assert comments[0].rich_text.to_plain_text() == "Test Comment"
     assert comments[1].rich_text.to_plain_text() == "Test Comment 2"
+
+
+def test_can_pull_all_relations(tmpdir):
+    object_id = "e611d7fdd4604d1192637a25bc9f5339"
+    page = run_n2y_page(tmpdir, object_id)
+    uuids = re.findall(
+        '[^\"][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[^\"]',
+        page
+    )
+    assert len(uuids) == 31

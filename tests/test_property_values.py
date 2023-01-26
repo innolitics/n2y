@@ -10,7 +10,7 @@ from n2y.notion_mocks import (
 
 def process_property_value(notion_data):
     client = notion.Client('')
-    property_value = client.wrap_notion_property_value(notion_data)
+    property_value = client.wrap_notion_property_value(notion_data, None)
     return property_value.to_value()
 
 

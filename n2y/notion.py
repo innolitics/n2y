@@ -271,8 +271,14 @@ class Client:
     def wrap_notion_property(self, notion_data):
         return self.instantiate_class("properties", notion_data["type"], self, notion_data)
 
-    def wrap_notion_property_value(self, notion_data):
-        return self.instantiate_class("property_values", notion_data["type"], self, notion_data)
+    def wrap_notion_property_value(self, notion_data, page):
+        return self.instantiate_class(
+            "property_values",
+            notion_data["type"],
+            self,
+            notion_data,
+            page
+        )
 
     def get_page_or_database(self, object_id):
         """
