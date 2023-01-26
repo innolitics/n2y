@@ -55,9 +55,13 @@ class Database:
             if tupled_sort not in self._filtered_children[tupled_filter]:
                 self._filtered_children[tupled_filter][tupled_sort] = \
                     self.client.get_database_pages(self.notion_id, filter, sort)
-            return self._filtered_children[tupled_filter][tupled_sort]
+            children = self._filtered_children[tupled_filter][tupled_sort]
         else:
-            return self.children
+            children = self.children
+        for child in children:
+            if not self.client.page_class_is_in_use(child):
+                child = self.client._wrap_notion_page(child.notion_data)
+        return children
 
     def _tuplize(self, item):
         if callable(getattr(item, "items", None)):

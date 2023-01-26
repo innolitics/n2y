@@ -28,6 +28,21 @@ def run_n2y(temp_dir, config):
         os.chdir(old_cwd)
     return status
 
+def run_n2y_custom(temp_dir, config, render_config=None):
+    config_path = os.path.join(temp_dir, "config.yaml")
+    render_config_path = os.path.join(temp_dir, "render_config.yaml")
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
+    with open(render_config_path, "w") as f:
+        yaml.dump(render_config, f)
+    old_cwd = os.getcwd()
+    os.chdir(temp_dir)
+    try:
+        status = main([config_path, "--render-config", render_config_path], NOTION_ACCESS_TOKEN)
+    finally:
+        os.chdir(old_cwd)
+    return status
+
 
 def run_n2y_page(temp_dir, page_id, **export_config_keys):
     config = {
@@ -203,7 +218,6 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "``` javascript\nCode Block\n```" in document
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
-    print(lines)
     assert all(column_strings_in_lines)
     assert "Mention: Simple Test Page" in lines
     assert "Simple Test Page" in lines  # from the LinkToPageBlock
@@ -214,7 +228,6 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "<https://innolitics.com>" in lines
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
-    print(lines)
     # the word "caption" is bolded
     assert "![Image **caption**](media/All_Blocks_Test_Page-5f1b0813453.jpeg)" in lines
 
