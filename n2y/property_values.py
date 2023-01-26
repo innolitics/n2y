@@ -8,21 +8,22 @@ logger = logging.getLogger(__name__)
 
 
 class PropertyValue:
-    def __init__(self, client, notion_data):
+    def __init__(self, client, notion_data, page):
         self.client = client
         self.notion_property_id = notion_data.get(
             'id', None)  # will be none for rollup array values
         self.notion_type = notion_data['type']
+        self.page = page
 
     def to_value(self):
         raise NotImplementedError()
 
 
 class TitlePropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
+    def __init__(self, client, notion_data, page):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
-        super().__init__(client, notion_data)
+        super().__init__(client, notion_data, page)
         self.rich_text = client.wrap_notion_rich_text_array(notion_data['title'])
 
     def to_value(self):
@@ -35,10 +36,10 @@ class TitlePropertyValue(PropertyValue):
 
 
 class TextPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
+    def __init__(self, client, notion_data, page):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
-        super().__init__(client, notion_data)
+        super().__init__(client, notion_data, page)
         self.rich_text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
 
     def to_value(self):
@@ -46,8 +47,8 @@ class TextPropertyValue(PropertyValue):
 
 
 class NumberPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.number = notion_data['number']
 
     def to_value(self):
@@ -55,8 +56,8 @@ class NumberPropertyValue(PropertyValue):
 
 
 class SelectPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         notion_select = notion_data['select']
         if notion_select is not None:
             self.notion_option_id = notion_select['id']
@@ -74,8 +75,8 @@ class SelectPropertyValue(PropertyValue):
 
 
 class MultiSelectPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.options = [MultiSelectOption(self.client, no) for no in notion_data['multi_select']]
 
     def to_value(self):
@@ -93,9 +94,9 @@ class MultiSelectOption:
 
 
 class DatePropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
+    def __init__(self, client, notion_data, page):
         # TODO: handle timezones
-        super().__init__(client, notion_data)
+        super().__init__(client, notion_data, page)
         self.value = process_notion_date(notion_data['date'])
 
     def to_value(self):
@@ -106,8 +107,8 @@ class DatePropertyValue(PropertyValue):
 
 
 class PeoplePropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.people = [client.wrap_notion_user(nu) for nu in notion_data['people']]
 
     def to_value(self):
@@ -115,8 +116,8 @@ class PeoplePropertyValue(PropertyValue):
 
 
 class FilesPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.files = [client.wrap_notion_file(nf) for nf in notion_data['files']]
 
     def to_value(self):
@@ -124,8 +125,8 @@ class FilesPropertyValue(PropertyValue):
 
 
 class CheckboxPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.checkbox = notion_data['checkbox']
 
     def to_value(self):
@@ -133,8 +134,8 @@ class CheckboxPropertyValue(PropertyValue):
 
 
 class UrlPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.url = notion_data['url']
 
     def to_value(self):
@@ -142,8 +143,8 @@ class UrlPropertyValue(PropertyValue):
 
 
 class EmailPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.email = notion_data['email']
 
     def to_value(self):
@@ -151,8 +152,8 @@ class EmailPropertyValue(PropertyValue):
 
 
 class PhoneNumberPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.phone_number = notion_data['phone_number']
 
     def to_value(self):
@@ -160,8 +161,8 @@ class PhoneNumberPropertyValue(PropertyValue):
 
 
 class FormulaPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         # TODO: set other attributes
         notion_formula = notion_data["formula"]
         if notion_formula["type"] == "date":
@@ -174,10 +175,10 @@ class FormulaPropertyValue(PropertyValue):
 
 
 class RelationPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
+    def __init__(self, client, notion_data, page):
         # TODO: handle the case when there are more than 25 pages in the relation
         # See https://developers.notion.com/reference/retrieve-a-page-property
-        super().__init__(client, notion_data)
+        super().__init__(client, notion_data, page)
         self.ids = [related["id"] for related in notion_data["relation"]]
 
     def to_value(self):
@@ -185,10 +186,10 @@ class RelationPropertyValue(PropertyValue):
 
 
 class RollupPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
+    def __init__(self, client, notion_data, page):
         # TODO: handle the case when the rollup needs to be paginated
         # See https://developers.notion.com/reference/retrieve-a-page-property
-        super().__init__(client, notion_data)
+        super().__init__(client, notion_data, page)
         notion_rollup = notion_data["rollup"]
         self.rollup_type = notion_rollup["type"]
         self.function = notion_rollup["function"]
@@ -200,7 +201,7 @@ class RollupPropertyValue(PropertyValue):
             self.value = notion_rollup['number']
         elif self.rollup_type == "array":
             self.value = [
-                self.client.wrap_notion_property_value(pv)
+                self.client.wrap_notion_property_value(pv, page)
                 for pv in notion_rollup['array']
             ]
         else:
@@ -222,8 +223,8 @@ class RollupPropertyValue(PropertyValue):
 
 
 class CreatedTimePropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.created_time = fromisoformat(notion_data['created_time'])
 
     def to_value(self):
@@ -231,8 +232,8 @@ class CreatedTimePropertyValue(PropertyValue):
 
 
 class CreatedByPropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.created_by = client.wrap_notion_user(notion_data['created_by'])
 
     def to_value(self):
@@ -240,8 +241,8 @@ class CreatedByPropertyValue(PropertyValue):
 
 
 class LastEditedTimePropertyValue(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
 
     def to_value(self):
@@ -249,8 +250,8 @@ class LastEditedTimePropertyValue(PropertyValue):
 
 
 class LastEditedBy(PropertyValue):
-    def __init__(self, client, notion_data):
-        super().__init__(client, notion_data)
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
         self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
 
     def to_value(self):

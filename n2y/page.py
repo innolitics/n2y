@@ -25,7 +25,7 @@ class Page:
         self.cover = notion_data['cover'] and client.wrap_notion_file(notion_data['cover'])
         self.archived = notion_data['archived']
         self.properties = {
-            k: client.wrap_notion_property_value(npv)
+            k: client.wrap_notion_property_value(npv, self)
             for k, npv in notion_data['properties'].items()
         }
         self.notion_parent = notion_data['parent']
