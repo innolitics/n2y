@@ -176,10 +176,15 @@ class FormulaPropertyValue(PropertyValue):
 
 class RelationPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
-        # TODO: handle the case when there are more than 25 pages in the relation
-        # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data, page)
-        self.ids = [related["id"] for related in notion_data["relation"]]
+        if "has_more" not in notion_data or not notion_data["has_more"]:
+            self.ids = [related["id"] for related in notion_data["relation"]]
+        else:
+            url = f"{client.base_url}pages/{page.notion_id}/properties/{self.notion_property_id}"
+            self.ids = [
+                r["relation"]["id"] for r in
+                client._paginated_request(client._get_url, url, {})
+            ]
 
     def to_value(self):
         return self.ids
