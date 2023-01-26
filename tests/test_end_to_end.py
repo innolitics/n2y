@@ -28,6 +28,21 @@ def run_n2y(temp_dir, config):
         os.chdir(old_cwd)
     return status
 
+def run_n2y_custom(temp_dir, config, render_config=None):
+    config_path = os.path.join(temp_dir, "config.yaml")
+    render_config_path = os.path.join(temp_dir, "render_config.yaml")
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
+    with open(render_config_path, "w") as f:
+        yaml.dump(render_config, f)
+    old_cwd = os.getcwd()
+    os.chdir(temp_dir)
+    try:
+        status = main([config_path, "--render-config", render_config_path], NOTION_ACCESS_TOKEN)
+    finally:
+        os.chdir(old_cwd)
+    return status
+
 
 def run_n2y_page(temp_dir, page_id, **export_config_keys):
     config = {
