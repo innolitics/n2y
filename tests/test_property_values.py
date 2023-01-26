@@ -2,7 +2,7 @@ import pytest
 from n2y import notion
 
 from n2y.notion_mocks import (
-    mock_formula_property_value, mock_person_user,
+    mock_formula_property_value, mock_person_user, mock_relation_value,
     mock_rich_text, mock_property_value, mock_rich_text_array,
     mock_rollup_property_value, mock_select_option, mock_user,
 )
@@ -151,6 +151,24 @@ def test_formula_date_empty():
 def test_formula_date_start_only():
     notion_data = mock_formula_property_value('date', {'start': '2022-05-11'})
     assert process_property_value(notion_data) == '2022-05-11'
+
+
+def test_relationship_empty():
+    notion_data = mock_property_value('relation', [])
+    assert process_property_value(notion_data) == []
+
+
+def test_relationship_single():
+    item = mock_relation_value()
+    notion_data = mock_property_value('relation', [item])
+    assert process_property_value(notion_data) == [item["id"]]
+
+
+def test_relationship_double():
+    item1 = mock_relation_value()
+    item2 = mock_relation_value()
+    notion_data = mock_property_value('relation', [item1, item2])
+    assert process_property_value(notion_data) == [item1["id"], item2["id"]]
 
 
 def test_rollup_date_empty():
