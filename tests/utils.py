@@ -85,8 +85,10 @@ def render_from_string(
 
     return render_template_to_string(config, template_name, context, loaders=loaders)
 
+
 def render_template_to_string(config, template_filename, context, loaders=None):
     return ''.join(generate_template_output(config, template_filename, context, loaders=loaders))
+
 
 def invert_dependencies(objects, id_key, dependencies_key):
     # TODO: add docstring
