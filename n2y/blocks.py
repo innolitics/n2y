@@ -70,8 +70,6 @@ class Block:
             elif block_type == ChildPageBlock:
                 for b in blocks:
                     result = b.to_pandoc()
-                    title = result[0][0]['title'][0]
-                    pandoc_ast.append(Header(1, ('', [], []), [Str(title)]))
                     pandoc_ast.extend(result[1])
             else:
                 for b in blocks:
