@@ -28,6 +28,7 @@ def run_n2y(temp_dir, config):
         os.chdir(old_cwd)
     return status
 
+
 def run_n2y_custom(temp_dir, config, render_config=None):
     config_path = os.path.join(temp_dir, "config.yaml")
     render_config_path = os.path.join(temp_dir, "render_config.yaml")
