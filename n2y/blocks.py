@@ -70,7 +70,9 @@ class Block:
             else:
                 for b in blocks:
                     result = b.to_pandoc()
-                    if isinstance(result, list):
+                    if block_type == ChildPageBlock:
+                        pandoc_ast.extend(result[1])
+                    elif isinstance(result, list):
                         # a few blocks return lists of nodes
                         pandoc_ast.extend(result)
                     elif result is not None:
