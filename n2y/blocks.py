@@ -67,14 +67,12 @@ class Block:
         for block_type, blocks in groupby(self.children, lambda c: type(c)):
             if issubclass(block_type, ListItemBlock):
                 pandoc_ast.append(block_type.list_to_pandoc(blocks))
-            elif block_type == ChildPageBlock:
-                for b in blocks:
-                    result = b.to_pandoc()
-                    pandoc_ast.extend(result[1])
             else:
                 for b in blocks:
                     result = b.to_pandoc()
-                    if isinstance(result, list):
+                    if block_type == ChildPageBlock:
+                        pandoc_ast.extend(result[1])
+                    elif isinstance(result, list):
                         # a few blocks return lists of nodes
                         pandoc_ast.extend(result)
                     elif result is not None:
