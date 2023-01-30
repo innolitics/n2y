@@ -47,6 +47,19 @@ def run_n2y_page(temp_dir, page_id, **export_config_keys):
     return page_as_markdown
 
 
+def run_n2y_custom(temp_dir, config):
+    config_path = os.path.join(temp_dir, "config.yaml")
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
+    old_cwd = os.getcwd()
+    os.chdir(temp_dir)
+    try:
+        status = main([config_path], NOTION_ACCESS_TOKEN)
+    finally:
+        os.chdir(old_cwd)
+    return status
+
+
 def run_n2y_database_as_yaml(temp_dir, database_id, **export_config_keys):
     config = {
         "exports": [
@@ -323,20 +336,6 @@ def test_can_pull_all_relations(tmpdir):
 
 
 def test_render_plugin(tmpdir):
-    def _run_n2y(temp_dir, config, render_config):
-        config_path = os.path.join(temp_dir, "config.yaml")
-        render_config_path = os.path.join(temp_dir, "render_config.yaml")
-        with open(config_path, "w") as f:
-            yaml.dump(config, f)
-        with open(render_config_path, "w") as f:
-            yaml.dump(render_config, f)
-        old_cwd = os.getcwd()
-        os.chdir(temp_dir)
-        try:
-            status = main([config_path, "--render-config", render_config_path], NOTION_ACCESS_TOKEN)
-        finally:
-            os.chdir(old_cwd)
-        return status
     config = {
         "exports": [
             {
@@ -361,12 +360,7 @@ def test_render_plugin(tmpdir):
             }
         ]
     }
-    render_config = {
-        "md_extensions": [
-            "jinja2.ext.do"
-        ]
-    }
-    status = _run_n2y(tmpdir, config, render_config)
+    status = run_n2y_custom(tmpdir, config)
     assert status == 0
     with open(str(tmpdir / "files" / "Template_Test_Page.md"), "r") as f:
         markdown = f.read()

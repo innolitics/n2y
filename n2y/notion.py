@@ -100,9 +100,7 @@ class Client:
         media_url='',
         plugins=None,
         max_retries=DEFAULT_MAX_RETRIES,
-        render_config=None
     ):
-        self.render_config = render_config
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url

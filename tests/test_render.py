@@ -1,8 +1,8 @@
 from jinja2 import TemplateSyntaxError
 from pytest import raises
 
-from n2y.plugins.render import invert_dependencies, join_to
-from tests.utils import render_from_string
+from n2y.plugins.render import join_to
+from tests.utils import render_from_string, invert_dependencies
 
 
 def test_invert_dependencies_single():

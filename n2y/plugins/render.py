@@ -2,6 +2,7 @@ import re
 import os
 import uuid
 import logging
+from pathlib import Path
 from importlib import import_module
 
 import pandoc
@@ -12,6 +13,7 @@ from jinja2.environment import TemplateStream
 
 from n2y.blocks import FencedCodeBlock
 from n2y.errors import UseNextClass
+from n2y.utils import load_yaml
 
 
 logger = logging.getLogger(__name__)
@@ -164,12 +166,12 @@ class RawFencedCodeBlock(FencedCodeBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         result = self.caption.matches(self.trigger_regex)
-        if not result or self.client.render_config is None:
+        root = Path(__file__).resolve().parent.parent
+        with open(root/'data'/'config.yml') as data_file:
+            data_string = data_file.read()
+        self.render_config = load_yaml(data_string)
+        if not result:
             raise UseNextClass()
-        if self.client.render_config is None:
-            raise NotImplementedError(
-                'The "render-config" argument must be set to use the "render" plugin'
-            )
 
     def to_pandoc(self):
         pandoc_language = self.notion_to_pandoc_highlight_languages.get(
@@ -186,11 +188,11 @@ class RawFencedCodeBlock(FencedCodeBlock):
 
     def _render(self, ast):
         context = self.client.context_from_yaml_cache()
-        config = self.client.render_config
+        config = self.render_config
         try:
-            id = str(uuid.uuid4())
-            output_name = f'{id}-output.md'
-            template_name = f'{id}-template.md'
+            file_id = str(uuid.uuid4())
+            output_name = f'{file_id}-output.md'
+            template_name = f'{file_id}-template.md'
             open(output_name, 'x').close()
             with open(template_name, 'x') as file:
                 file.write(pandoc.write(ast))

@@ -39,7 +39,7 @@ setup(
         ]
     },
     include_package_data=True,
-    package_data={'n2y': ['data/mermaid_err.png']},
+    package_data={'n2y': ['data/mermaid_err.png', 'data/config.yml']},
     entry_points={
         'console_scripts': [
             'n2y = n2y.main:cli_main',
