@@ -25,10 +25,6 @@ def main(raw_args, access_token):
     )
     parser.add_argument("config", help="The path to the config file")
     parser.add_argument(
-        "--render-config",
-        help="yaml file that configures jinja for the \"render.py\" plugin if it's active"
-    )
-    parser.add_argument(
         '--max_retries', '-m', default=DEFAULT_MAX_RETRIES,
         help=(
             'The maximum amount of times an API request will be retried after being rate '
@@ -63,6 +59,7 @@ def main(raw_args, access_token):
         access_token,
         config["media_root"],
         config["media_url"],
+        exports=config["exports"],
         max_retries=args.max_retries,
     )
 
@@ -118,7 +115,6 @@ def _export_node_from_config(client, export):
                 notion_sorts=export["notion_sorts"],
                 property_map=export["property_map"],
             )
-            client.cache_yaml(export['output'], export['id'], result)
             with open(export["output"], "w") as f:
                 f.write(result)
         elif node_type == "database_as_files":

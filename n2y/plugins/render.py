@@ -2,7 +2,6 @@ import re
 import os
 import uuid
 import logging
-from pathlib import Path
 from importlib import import_module
 
 import pandoc
@@ -166,12 +165,10 @@ class RawFencedCodeBlock(FencedCodeBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         result = self.caption.matches(self.trigger_regex)
-        root = Path(__file__).resolve().parent.parent
-        with open(root/'data'/'config.yml') as data_file:
-            data_string = data_file.read()
-        self.render_config = load_yaml(data_string)
         if not result:
             raise UseNextClass()
+        if 'render_context' not in client.plugin_data:
+            self._store_data(client.exports)
 
     def to_pandoc(self):
         pandoc_language = self.notion_to_pandoc_highlight_languages.get(
@@ -179,7 +176,7 @@ class RawFencedCodeBlock(FencedCodeBlock):
         )
         if pandoc_language not in self.pandoc_highlight_languages:
             if pandoc_language != "plain text":
-                msg = 'Dropping syntax highlighting for unsupported language "%s" (%s)'
+                msg = ' for unsupported language "%s" (%s)'
                 logger.warning(msg, pandoc_language, self.notion_url)
             language = []
         else:
@@ -187,8 +184,8 @@ class RawFencedCodeBlock(FencedCodeBlock):
         return self._render(CodeBlock(('', language, []), self.rich_text.to_plain_text()))
 
     def _render(self, ast):
-        context = self.client.context_from_yaml_cache()
-        config = self.render_config
+        context = self.client.plugin_data['render_context']
+        config = {'md_extensions': ['jinja2.ext.do']}
         try:
             file_id = str(uuid.uuid4())
             output_name = f'{file_id}-output.md'
@@ -203,6 +200,22 @@ class RawFencedCodeBlock(FencedCodeBlock):
         finally:
             os.remove(output_name)
             os.remove(template_name)
+
+    def _store_data(self, exports):
+        self.client.plugin_data['render_context'] = {}
+        render_context = self.client.plugin_data['render_context']
+        for export in exports:
+            data_filename = export['output']
+            if export['node_type'] == 'database_as_yaml':
+                data_name, _ = os.path.splitext(os.path.basename(data_filename))
+                with open(data_filename, "r") as f:
+                    data_string = f.read()
+                if data_name in render_context:
+                    raise ValueError(
+                        'There is already data attached to the key "{}"'.format(data_name)
+                    )
+                yaml_data = load_yaml(data_string)
+                render_context[data_name] = yaml_data
 
 
 notion_classes = {

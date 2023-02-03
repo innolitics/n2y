@@ -19,7 +19,7 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import load_yaml, sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
+from n2y.utils import sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -99,6 +99,7 @@ class Client:
         media_root='.',
         media_url='',
         plugins=None,
+        exports=None,
         max_retries=DEFAULT_MAX_RETRIES,
     ):
         self.access_token = access_token
@@ -106,6 +107,7 @@ class Client:
         self.media_url = media_url
         self.max_retries = max_retries
         self.retry_count = 0
+        self.exports = exports
 
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
@@ -116,7 +118,6 @@ class Client:
 
         self.databases_cache = {}
         self.pages_cache = {}
-        self.yaml_cache = {}
 
         self.load_plugins(plugins)
         self.plugin_data = {}
@@ -633,20 +634,3 @@ class Client:
             if type(page) == cls:
                 return True
         return False
-
-    def cache_yaml(self, data_filename, database_id, data_string):
-        data_name, _ = path.splitext(path.basename(data_filename))
-        if data_name in self.yaml_cache:
-            raise ValueError('There is already data attached to the key "{}"'.format(data_name))
-        yaml_data = load_yaml(data_string)
-        self.yaml_cache[data_name] = {
-            'id': database_id,
-            'data': yaml_data
-        }
-        return data_name
-
-    def context_from_yaml_cache(self):
-        context = {}
-        for data_name in self.yaml_cache:
-            context[data_name] = self.yaml_cache[data_name]['data']
-        return context
