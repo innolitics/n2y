@@ -17,6 +17,28 @@ PANDOC_PARSE_ERROR = 64
 
 yaml_frontmatter_regexp = re.compile(r'^---$(.*)^---$', re.MULTILINE | re.DOTALL)
 
+block_colors = {
+    "default",
+    "gray",
+    "brown",
+    "orange",
+    "yellow",
+    "green",
+    "blue",
+    "purple",
+    "pink",
+    "red",
+    "gray_background",
+    "brown_background",
+    "orange_background",
+    "yellow_background",
+    "green_background",
+    "blue_background",
+    "purple_background",
+    "pink_background",
+    "red_background",
+}
+
 
 def parse_yaml_front_matter(content):
     match = yaml_frontmatter_regexp.match(content)
