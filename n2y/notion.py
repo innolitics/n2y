@@ -323,8 +323,10 @@ class Client:
         """
         Retrieve the page if its not in the cache.
         """
-        if page_id in self.pages_cache and self.page_class_is_in_use(self.pages_cache[page_id]):
+        if page_id in self.pages_cache:
             page = self.pages_cache[page_id]
+            if not self.page_class_is_in_use(page):
+                page = self.instantiate_class("page", None, self, page.notion_data)
         else:
             try:
                 notion_page = self.get_notion_page(page_id)
