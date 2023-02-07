@@ -67,12 +67,12 @@ def process_block(notion_block, plugins=None):
     return pandoc_ast, markdown
 
 
-def process_parent_block(notion_block, child_notion_blocks):
+def process_parent_block(notion_block, child_notion_blocks, plugins=None):
     with mock.patch.object(
         Client, "get_child_notion_blocks"
     ) as mock_get_child_notion_blocks:
         mock_get_child_notion_blocks.return_value = child_notion_blocks
-        n2y_block = generate_block(notion_block)
+        n2y_block = generate_block(notion_block, plugins)
     pandoc_ast = n2y_block.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     return pandoc_ast, markdown
