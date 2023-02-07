@@ -277,6 +277,10 @@ When this plugin is enabled, any "link to page" block (which can be created usin
 
 Note that any link to a page that the integration doesn't have access to will be skipped entirely (Notion returns an "Unsupported Block" in this case).
 
+### Hidden Jinja Toggles
+
+When this plugin is enabled, any "blue" colored toggle block will have it's children directly rendered. The text on the toggle itself will be ignored.
+
 ## Architecture
 
 An n2y run is divided into four stages:
