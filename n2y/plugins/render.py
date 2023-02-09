@@ -204,10 +204,13 @@ class RawFencedCodeBlock(FencedCodeBlock):
     def _store_data(self, exports):
         self.client.plugin_data['render_context'] = {}
         render_context = self.client.plugin_data['render_context']
+        necessary_names = ['Glossary', 'Documents', 'References']
         for export in exports:
             data_filename = export['output']
             if export['node_type'] == 'database_as_yaml':
                 data_name, _ = os.path.splitext(os.path.basename(data_filename))
+                if data_name in necessary_names:
+                    necessary_names.remove(data_name)
                 with open(data_filename, "r") as f:
                     data_string = f.read()
                 if data_name in render_context:
@@ -216,6 +219,8 @@ class RawFencedCodeBlock(FencedCodeBlock):
                     )
                 yaml_data = load_yaml(data_string)
                 render_context[data_name] = yaml_data
+        for name in necessary_names:
+            render_context[name] = {}
 
 
 notion_classes = {
