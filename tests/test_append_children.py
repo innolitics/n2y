@@ -30,8 +30,6 @@ def test_append_child_page_or_database():
     original = client.get_page_or_database(original_id)
     child_database = original.block.children[-1].notion_data
     child_page = original.block.children[-2].notion_data
-    print(child_page)
-    print(child_database)
     creation_response = client.append_child_notion_blocks(
         destination_id, [child_database, child_page]
     )

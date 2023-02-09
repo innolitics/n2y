@@ -203,7 +203,6 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "``` javascript\nCode Block\n```" in document
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
-    print(lines)
     assert all(column_strings_in_lines)
     assert "Mention: Simple Test Page" in lines
     assert "Simple Test Page" in lines  # from the LinkToPageBlock
@@ -214,7 +213,6 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "<https://innolitics.com>" in lines
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
-    print(lines)
     # the word "caption" is bolded
     assert "![Image **caption**](media/All_Blocks_Test_Page-5f1b0813453.jpeg)" in lines
 

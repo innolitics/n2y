@@ -227,7 +227,9 @@ class Client:
         replace our existing page instance, along with it's content or other
         state that has been added to it.
         """
-        if notion_data["id"] in self.pages_cache:
+        if notion_data["id"] in self.pages_cache and self.page_class_is_in_use(
+            self.pages_cache[notion_data["id"]]
+        ):
             return self.pages_cache[notion_data["id"]]
         else:
             page = self.instantiate_class("page", None, self, notion_data)
@@ -329,15 +331,20 @@ class Client:
         """
         if page_id in self.pages_cache:
             page = self.pages_cache[page_id]
+            if not self.page_class_is_in_use(page):
+                page = self.instantiate_class("page", None, self, page.notion_data)
         else:
             try:
-                notion_page = self._get_url(f"{self.base_url}pages/{page_id}")
+                notion_page = self.get_notion_page(page_id)
             except ObjectNotFound:
                 self.pages_cache[page_id] = None
                 return
             # _wrap_notion_page will add the page to the cache
             page = self._wrap_notion_page(notion_page)
         return page
+
+    def get_notion_page(self, page_id):
+        return self._get_url(f"{self.base_url}pages/{page_id}")
 
     def get_block(self, block_id, page, get_children=True):
         notion_block = self.get_notion_block(block_id)
@@ -617,3 +624,11 @@ class Client:
             f"{self.base_url}blocks/{block_id}", headers=headers
         )
         return self._parse_response(response)
+
+    def page_class_is_in_use(self, page):
+        if page is None:
+            return True
+        for cls in self.notion_classes['page']:
+            if type(page) == cls:
+                return True
+        return False
