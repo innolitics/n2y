@@ -59,7 +59,8 @@ def main(raw_args, access_token):
         access_token,
         config["media_root"],
         config["media_url"],
-        max_retries=args.max_retries
+        exports=config["exports"],
+        max_retries=args.max_retries,
     )
 
     error_occurred = False

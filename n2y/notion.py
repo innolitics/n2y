@@ -99,6 +99,7 @@ class Client:
         media_root='.',
         media_url='',
         plugins=None,
+        exports=None,
         max_retries=DEFAULT_MAX_RETRIES,
     ):
         self.access_token = access_token
@@ -106,6 +107,7 @@ class Client:
         self.media_url = media_url
         self.max_retries = max_retries
         self.retry_count = 0
+        self.exports = exports
 
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {
