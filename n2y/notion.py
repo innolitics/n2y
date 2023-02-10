@@ -628,9 +628,6 @@ class Client:
         return self._parse_response(response)
 
     def page_class_is_in_use(self, page):
-        if page is None:
+        if page is None or self.notion_classes['page'][-1] == type(page):
             return True
-        for cls in self.notion_classes['page']:
-            if type(page) == cls:
-                return True
         return False
