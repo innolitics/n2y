@@ -188,8 +188,6 @@ class JinjaRenderPage(Page):
         self.client.plugin_data['render_context'] = {}
         render_context = self.client.plugin_data['render_context']
         default_data = ['Glossary', 'Documents', 'References']
-        for name in default_data:
-            render_context[name] = {}
         for export in exports:
             data_filename = export['output']
             if export['node_type'] == 'database_as_yaml':
