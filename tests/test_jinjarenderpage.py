@@ -1,7 +1,7 @@
 from jinja2 import TemplateSyntaxError
 from pytest import raises
 
-from n2y.plugins.render import join_to
+from n2y.plugins.jinjarenderpage import join_to
 from tests.utils import render_from_string, invert_dependencies
 
 

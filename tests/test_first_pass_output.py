@@ -1,5 +1,5 @@
 import pytest
-from n2y.plugins.render import FirstPassOutput
+from n2y.plugins.jinjarenderpage import FirstPassOutput
 
 
 class TestFirstPassOutput:
