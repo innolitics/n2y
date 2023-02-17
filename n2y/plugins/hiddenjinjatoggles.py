@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class HiddenJinjaToggleBlock(ToggleBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        if self.notion_type_data["color"] != "blue":
+        if self.notion_type_data["color"] != "blue_background":
             raise UseNextClass()
 
     def to_pandoc(self):
