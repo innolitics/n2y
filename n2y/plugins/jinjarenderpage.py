@@ -6,13 +6,9 @@ from importlib import import_module
 
 import pandoc
 import jinja2
-from pandoc.types import RawBlock, Format, Pandoc, Meta, MetaString
-from jinja2.environment import TemplateStream
+from pandoc.types import Pandoc, Meta, MetaString
 
-from n2y.plugins.rawcodeblocks import RawFencedCodeBlock
 from n2y.page import Page
-from n2y.blocks import FencedCodeBlock
-from n2y.errors import UseNextClass
 from n2y.utils import load_yaml
 
 
@@ -157,15 +153,6 @@ class JinjaRenderPage(Page):
             self._store_data(client.exports)
 
     def to_pandoc(self):
-        children = self.block.children
-        for child in children:
-            if isinstance(child, FencedCodeBlock):
-                child = RawFencedCodeBlock(
-                    child.client,
-                    child.notion_data,
-                    self
-                )
-        self.block.children =  children
         children = self.block.children_to_pandoc()
         return self._render(Pandoc(Meta({'title': MetaString(self.block.title)}), children))
 
