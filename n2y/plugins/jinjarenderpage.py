@@ -158,16 +158,24 @@ class JinjaRenderPage(Page):
 
     def _render(self, ast):
         context = self.client.plugin_data['render_context']
-
         config = {'md_extensions': ['jinja2.ext.do']}
+        parent_id = self.notion_parent['database_id'].replace('-', '')
+        pandoc_format = 'gfm'
+        pandoc_options = []
+        for export in self.client.exports:
+            if export['id'] == parent_id:
+                pandoc_format = export['pandoc_format']
+                pandoc_options = export['pandoc_options']
         try:
             file_id = str(uuid.uuid4())
             template_name = f'{file_id}-template.md'
             with open(template_name, 'w') as file:
-                file.write(pandoc.write(ast))
+                file.write(pandoc.write(ast, format=pandoc_format, options=pandoc_options))
             output_string = render_template_to_file(config, template_name, context)
             rendered_ast = pandoc.read(output_string)
             return rendered_ast
+        except Exception as err:
+            pass
         finally:
             os.remove(template_name)
 
