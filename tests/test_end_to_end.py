@@ -349,7 +349,7 @@ def test_render_plugin(tmpdir):
                 "filename_property": "Name",
                 "output": "files",
                 "plugins": [
-                    "n2y.plugins.render",
+                    "n2y.plugins.jinjarenderpage",
                     "n2y.plugins.deepheaders",
                     "n2y.plugins.removecallouts",
                     "n2y.plugins.rawcodeblocks",

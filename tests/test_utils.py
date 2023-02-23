@@ -63,7 +63,7 @@ def test_retry_api_call_no_error():
 
 
 def test_retry_api_call_errors():
-    status_code = 439
+    status_code = 429
 
     @retry_api_call
     def tester(client, time):
@@ -84,7 +84,7 @@ def test_retry_api_call_errors():
 
 
 def test_retry_api_call_max_errors():
-    status_code = 439
+    status_code = 429
 
     @retry_api_call
     def tester(client, time):
@@ -106,7 +106,7 @@ def test_retry_api_call_max_errors():
 
 
 def test_retry_api_call_multiple_calls():
-    status_code = 439
+    status_code = 429
 
     @retry_api_call
     def test_1(client):

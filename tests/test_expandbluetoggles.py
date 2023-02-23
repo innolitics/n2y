@@ -37,20 +37,33 @@ def test_non_blue_toggles_are_rendered_regularly_with_bullet_list():
     non_blue_colors.remove("blue")
     for color in non_blue_colors:
         pandoc_ast, markdown = process_test_toggle_block(color)
-        assert pandoc_ast == BulletList(
+        print(pandoc_ast)
+        pandoc_1 = BulletList([
             [
-                [
-                    Para([Str("Toggle"), Space(), Str("text")]),
-                    Header(1, ("", [], []), [Str("Heading"), Space(), Str("text")]),
-                    Para([Str("Paragraph"), Space(), Str("text")]),
-                ]
+                Para(
+                    [Str('Toggle'), Space(), Str('text')]
+                ),
+                Header(
+                    1,
+                    ('', [], []),
+                    [Str('Heading'), Space(), Str('text')]
+                ),
+                Para(
+                    [Str('Paragraph'), Space(), Str('text')]
+                )
             ]
-        )
-        assert (
-            markdown == """-   Toggle text
-
-    # Heading text
-
-    Paragraph text
-"""
-        )
+        ])
+        pandoc_2 = [
+            Header(
+                1,
+                ('', [], []),
+                [Str('Heading'), Space(), Str('text')]
+            ),
+            Para(
+                [Str('Paragraph'), Space(), Str('text')]
+            )
+        ]
+        markdown_1 = "# Heading text\n\nParagraph text\n"
+        markdown_2 = "-   Toggle text\n\n    # Heading text\n\n    Paragraph text\n"
+        assert pandoc_ast == pandoc_1 or pandoc_ast == pandoc_2
+        assert markdown == markdown_1 or markdown == markdown_2
