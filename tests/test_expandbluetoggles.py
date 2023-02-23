@@ -15,11 +15,11 @@ def process_test_toggle_block(color):
         mock_block("heading_1", {"rich_text": [mock_rich_text("Heading text")]}),
         mock_paragraph_block([("Paragraph text", [])]),
     ]
-    return process_parent_block(parent, children, ["n2y.plugins.hiddenjinjatoggles"])
+    return process_parent_block(parent, children, ["n2y.plugins.expandbluetoggles"])
 
 
 def test_only_children_of_blue_toggles_are_rendered():
-    pandoc_ast, markdown = process_test_toggle_block("blue")
+    pandoc_ast, markdown = process_test_toggle_block("blue_background")
     assert pandoc_ast == [
         Header(1, ("", [], []), [Str("Heading"), Space(), Str("text")]),
         Para([Str("Paragraph"), Space(), Str("text")]),

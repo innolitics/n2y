@@ -9,7 +9,7 @@ import jinja2
 from pandoc.types import Pandoc, Meta, MetaString
 
 from n2y.page import Page
-from n2y.utils import load_yaml
+from n2y.utils import load_yaml, strip_hyphens
 
 
 logger = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ class JinjaRenderPage(Page):
     def _render(self, ast):
         context = self.client.plugin_data['render_context']
         config = {'md_extensions': ['jinja2.ext.do']}
-        parent_id = self.notion_parent['database_id'].replace('-', '')
+        parent_id = strip_hyphens(self.notion_parent['database_id'])
         pandoc_format = 'gfm'
         pandoc_options = []
         for export in self.client.exports:
