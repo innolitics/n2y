@@ -1,7 +1,7 @@
-import re
 import os
 import uuid
 import logging
+import traceback
 from importlib import import_module
 
 import pandoc
@@ -96,7 +96,11 @@ def generate_template_output(config, template_filename, context, loaders=None):
         first_pass_output_filled = FirstPassOutput(output_string.splitlines(keepends=True))
         second_pass_environment = _create_jinja_environment(config, loaders)
         second_pass_environment.globals['first_pass_output'] = first_pass_output_filled
-        output_string = generate_template_output_string(second_pass_environment, template_filename, context)
+        output_string = generate_template_output_string(
+            second_pass_environment,
+            template_filename,
+            context
+        )
     return output_string
 
 
@@ -174,8 +178,14 @@ class JinjaRenderPage(Page):
             output_string = render_template_to_file(config, template_name, context)
             rendered_ast = pandoc.read(output_string)
             return rendered_ast
-        except Exception as err:
-            pass
+        except Exception:
+            parent_id = self.notion_parent['database_id']
+            parent = self.client.get_database(parent_id)
+            parent_title = parent.title.to_plain_text()
+            title = self.title.to_plain_text()
+            logger.error(
+                f'Error on page {title} in the {parent_title} database:\n{traceback.format_exc()}'
+            )
         finally:
             os.remove(template_name)
 
