@@ -61,15 +61,17 @@ def retry_api_call(api_call):
             client.retry_count = 0
             return response
         except APIResponseError as err:
-            can_retry = 'retry-after' in err.headers
-            if can_retry and client.retry_api_calls:
+            should_retry = err.status in [409, 429, 500, 504]
+            timeout_time = 'retry-after' in err.headers
+            if should_retry and client.retry_api_calls:
                 client.retry_count += 1
-                retry_after = float(err.headers['retry-after'])
-                logger.info(
-                    'Client has been rate limited. This API call '
-                    f'will be retried in {retry_after} seconds'
-                )
-                sleep(retry_after)
+                if timeout_time:
+                    retry_after = float(err.headers['retry-after'])
+                    logger.info(
+                        'Client has been rate limited. This API call '
+                        f'will be retried in {retry_after} seconds'
+                    )
+                    sleep(retry_after)
                 return wrapper(*args, **kwargs)
             else:
                 client.retry_api_calls or logger.warning(

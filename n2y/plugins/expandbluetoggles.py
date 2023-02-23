@@ -9,10 +9,10 @@ plugin_data_key = "n2y.plugins.hiddenjinjatoggles"
 logger = logging.getLogger(__name__)
 
 
-class HiddenJinjaToggleBlock(ToggleBlock):
+class ExpandBlueToggleBlock(ToggleBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        if self.notion_type_data["color"] != "blue":
+        if self.notion_type_data["color"] != "blue_background":
             raise UseNextClass()
 
     def to_pandoc(self):
@@ -20,5 +20,5 @@ class HiddenJinjaToggleBlock(ToggleBlock):
 
 
 notion_classes = {
-    "blocks": {"toggle": HiddenJinjaToggleBlock},
+    "blocks": {"toggle": ExpandBlueToggleBlock},
 }

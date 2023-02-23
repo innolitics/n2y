@@ -9,7 +9,7 @@ try:
 except ImportError:
     from yaml import Loader
 
-from n2y.plugins.render import generate_template_output
+from n2y.plugins.jinjarenderpage import generate_template_output
 
 
 # Some end-to-end tests are run against a throw-away Notion account with a few

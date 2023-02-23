@@ -1,18 +1,15 @@
-import re
 import os
 import uuid
 import logging
+import traceback
 from importlib import import_module
 
 import pandoc
 import jinja2
-from pandoc.types import CodeBlock
-from jinja2.environment import TemplateStream
+from pandoc.types import Pandoc, Meta, MetaString
 
-
-from n2y.blocks import FencedCodeBlock
-from n2y.errors import UseNextClass
-from n2y.utils import load_yaml
+from n2y.page import Page
+from n2y.utils import load_yaml, strip_hyphens
 
 
 logger = logging.getLogger(__name__)
@@ -84,31 +81,33 @@ def join_to(foreign_keys, table, primary_key='id'):
     return joined
 
 
-def render_template_to_file(config, template_filename, context, output_file, loaders=None):
-    generator = generate_template_output(config, template_filename, context, loaders=loaders)
-    TemplateStream(generator).dump(output_file)
+def render_template_to_file(config, template_filename, context, loaders=None):
+    output_string = generate_template_output(config, template_filename, context, loaders=loaders)
+    return output_string
 
 
 def generate_template_output(config, template_filename, context, loaders=None):
     environment = _create_jinja_environment(config, loaders)
     first_pass_output = FirstPassOutput()
     environment.globals['first_pass_output'] = first_pass_output
-    output_line_list = generate_template_output_lines(environment, template_filename, context)
+    output_string = generate_template_output_string(environment, template_filename, context)
     if first_pass_output.second_pass_is_requested:
         jinja2.clear_caches()
-        first_pass_output_filled = FirstPassOutput(output_line_list)
+        first_pass_output_filled = FirstPassOutput(output_string.splitlines(keepends=True))
         second_pass_environment = _create_jinja_environment(config, loaders)
         second_pass_environment.globals['first_pass_output'] = first_pass_output_filled
-        output_line_list = generate_template_output_lines(
-            second_pass_environment, template_filename, context
+        output_string = generate_template_output_string(
+            second_pass_environment,
+            template_filename,
+            context
         )
-    return (line for line in output_line_list)
+    return output_string
 
 
-def generate_template_output_lines(environment, template_filename, context):
+def generate_template_output_string(environment, template_filename, context):
     template = environment.get_template(template_filename)
-    source_line_list = _generate_source_line_list(template, context)
-    return [line for line in _generate_output_lines(environment, source_line_list)]
+    source_string = _generate_source_string(template, context)
+    return source_string
 
 
 def _create_jinja_environment(config, loaders=None):
@@ -133,24 +132,15 @@ def _create_loader(loaders=None):
     return jinja2.ChoiceLoader(loaders)
 
 
-def _generate_source_line_list(template, context):
-    generator = template.generate(**context)
-    source = ''.join(generator)
-    # template generator usually loses trailing new line.
+def _generate_source_string(template, context):
+    source = template.render(**context)
+    # template output_string usually loses trailing new line.
     if source and source[-1] != '\n':
         source += '\n'
-    return source.splitlines(keepends=True)
+    return source
 
 
-def _generate_output_lines(environment, source_line_list):
-    output_generator = (line for line in source_line_list)
-    post_process_filters = post_processing_filter_list(environment)
-    for post_process_filter in post_process_filters:
-        output_generator = (x for x in post_process_filter(output_generator))
-    return output_generator
-
-
-class RawFencedCodeBlock(FencedCodeBlock):
+class JinjaRenderPage(Page):
     """
     Adds support for raw codeblocks.
 
@@ -160,57 +150,55 @@ class RawFencedCodeBlock(FencedCodeBlock):
 
     See https://pandoc.org/MANUAL.html#generic-raw-attribute
     """
-    trigger_regex = re.compile(r'^\{template\}')
 
-    def __init__(self, client, notion_data, page, get_children=True):
-        super().__init__(client, notion_data, page, get_children)
-        result = self.caption.matches(self.trigger_regex)
-        if not result:
-            raise UseNextClass()
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
         if 'render_context' not in client.plugin_data:
             self._store_data(client.exports)
 
     def to_pandoc(self):
-        pandoc_language = self.notion_to_pandoc_highlight_languages.get(
-            self.language, self.language,
-        )
-        if pandoc_language not in self.pandoc_highlight_languages:
-            if pandoc_language != "plain text":
-                msg = ' for unsupported language "%s" (%s)'
-                logger.warning(msg, pandoc_language, self.notion_url)
-            language = []
-        else:
-            language = [pandoc_language]
-        return self._render(CodeBlock(('', language, []), self.rich_text.to_plain_text()))
+        children = self.block.children_to_pandoc()
+        return self._render(Pandoc(Meta({'title': MetaString(self.block.title)}), children))
 
     def _render(self, ast):
         context = self.client.plugin_data['render_context']
         config = {'md_extensions': ['jinja2.ext.do']}
+        parent_id = strip_hyphens(self.notion_parent['database_id'])
+        pandoc_format = 'gfm'
+        pandoc_options = []
+        for export in self.client.exports:
+            if export['id'] == parent_id:
+                pandoc_format = export['pandoc_format']
+                pandoc_options = export['pandoc_options']
         try:
             file_id = str(uuid.uuid4())
-            output_name = f'{file_id}-output.md'
             template_name = f'{file_id}-template.md'
-            open(output_name, 'x').close()
-            with open(template_name, 'x') as file:
-                file.write(pandoc.write(ast))
-            render_template_to_file(config, template_name, context, output_name)
-            with open(output_name, 'r') as file:
-                rendered_ast = pandoc.read(file.read())
-            return rendered_ast[1][0]
+            with open(template_name, 'w') as file:
+                file.write(pandoc.write(ast, format=pandoc_format, options=pandoc_options))
+            output_string = render_template_to_file(config, template_name, context)
+            rendered_ast = pandoc.read(output_string)
+            return rendered_ast
+        except Exception:
+            parent_id = self.notion_parent['database_id']
+            parent = self.client.get_database(parent_id)
+            parent_title = parent.title.to_plain_text()
+            title = self.title.to_plain_text()
+            logger.error(
+                f'Error on page {title} in the {parent_title} database:\n{traceback.format_exc()}'
+            )
         finally:
-            os.remove(output_name)
             os.remove(template_name)
 
     def _store_data(self, exports):
         self.client.plugin_data['render_context'] = {}
         render_context = self.client.plugin_data['render_context']
-        necessary_names = ['Glossary', 'Documents', 'References']
+        default_data = ['Glossary', 'Documents', 'References']
         for export in exports:
             data_filename = export['output']
             if export['node_type'] == 'database_as_yaml':
                 data_name, _ = os.path.splitext(os.path.basename(data_filename))
-                if data_name in necessary_names:
-                    necessary_names.remove(data_name)
+                if data_name in default_data:
+                    default_data.remove(data_name)
                 with open(data_filename, "r") as f:
                     data_string = f.read()
                 if data_name in render_context:
@@ -219,12 +207,10 @@ class RawFencedCodeBlock(FencedCodeBlock):
                     )
                 yaml_data = load_yaml(data_string)
                 render_context[data_name] = yaml_data
-        for name in necessary_names:
+        for name in default_data:
             render_context[name] = {}
 
 
 notion_classes = {
-    "blocks": {
-        "code": RawFencedCodeBlock,
-    }
+    "page": JinjaRenderPage
 }
