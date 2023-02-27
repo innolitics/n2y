@@ -1,7 +1,6 @@
 import os
 import uuid
 import logging
-import traceback
 from importlib import import_module
 
 import pandoc

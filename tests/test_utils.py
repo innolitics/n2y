@@ -53,7 +53,7 @@ def test_page_id_from_share_link():
 def test_retry_api_call_no_error():
     @retry_api_call
     def tester(client):
-        assert client.max_retries == 5
+        assert client.max_retries == 3
         assert client.retry_count == 0
         assert client.retry_api_calls
         return 5

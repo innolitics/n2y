@@ -341,7 +341,7 @@ Here are some features we're planning to add in the future:
 ### v0.7.5
 
 - Flatten Column List Blocks
-- Add render plugin to render jinja in code blocks
+- Add `jinjarenderpage` plugin to render jinja in code blocks
 
 ### v0.7.4
 

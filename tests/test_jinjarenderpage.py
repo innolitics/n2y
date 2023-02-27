@@ -6,7 +6,7 @@ from n2y.blocks import ChildPageBlock
 from n2y.plugins.rawcodeblocks import RawFencedCodeBlock
 from tests.utils import render_from_string, invert_dependencies
 from n2y.plugins.jinjarenderpage import join_to, JinjaRenderPage
-from n2y.notion_mocks import mock_page, mock_rich_text_array, mock_block, mock_id, mock_database
+from n2y.notion_mocks import mock_page, mock_rich_text_array, mock_block, mock_database
 
 
 def test_invert_dependencies_single():
@@ -54,6 +54,7 @@ def test_undefined():
     with raises(TemplateSyntaxError):
         input_string = "{% huhwhat 'hotel', 'california' %}"
         render_from_string(input_string)
+
 
 def test_jinja_syntax_err():
     client = Client('', exports=[])
