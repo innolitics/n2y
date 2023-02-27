@@ -13,7 +13,7 @@ from n2y.errors import PandocASTParseError
 logger = logging.getLogger(__name__)
 # see https://pandoc.org/MANUAL.html#exit-codes
 PANDOC_PARSE_ERROR = 64
-DEFAULT_MAX_RETRIES = 5
+DEFAULT_MAX_RETRIES = 3
 
 
 def process_notion_date(notion_date):

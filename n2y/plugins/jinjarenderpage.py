@@ -142,13 +142,10 @@ def _generate_source_string(template, context):
 
 class JinjaRenderPage(Page):
     """
-    Adds support for raw codeblocks.
+    Renders jinja inside code blocks in page to git flavored markdown.
 
-    Any code block whose caption begins with "{=language}" will be made into a
-    raw block for pandoc to parse. This is useful if you need to drop into Raw
-    HTML or other formats.
-
-    See https://pandoc.org/MANUAL.html#generic-raw-attribute
+    Any code block populated by jinja will be rendered into git flavored
+    markdown.
     """
 
     def __init__(self, client, notion_data):
@@ -178,14 +175,15 @@ class JinjaRenderPage(Page):
             output_string = render_template_to_file(config, template_name, context)
             rendered_ast = pandoc.read(output_string)
             return rendered_ast
-        except Exception:
+        except Exception as err:
             parent_id = self.notion_parent['database_id']
             parent = self.client.get_database(parent_id)
             parent_title = parent.title.to_plain_text()
             title = self.title.to_plain_text()
             logger.error(
-                f'Error on page {title} in the {parent_title} database:\n{traceback.format_exc()}'
+                f'Error on page titled {title} in the {parent_title} database'
             )
+            raise err
         finally:
             os.remove(template_name)
 
