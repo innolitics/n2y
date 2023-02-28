@@ -2,7 +2,7 @@ from math import isclose
 from pytest import raises
 from datetime import datetime, timezone, timedelta
 
-from n2y.utils import fromisoformat, id_from_share_link
+from n2y.utils import fromisoformat, id_from_share_link, DEFAULT_MAX_RETRIES
 from n2y.notion import retry_api_call, Client
 from n2y.errors import APIResponseError
 from n2y.notion_mocks import MockResponse
@@ -53,7 +53,7 @@ def test_page_id_from_share_link():
 def test_retry_api_call_no_error():
     @retry_api_call
     def tester(client):
-        assert client.max_retries == 3
+        assert client.max_retries == DEFAULT_MAX_RETRIES
         assert client.retry_count == 0
         assert client.retry_api_calls
         return 5
