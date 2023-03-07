@@ -223,8 +223,5 @@ class RichTextArray:
                         self.items.pop(0)
 
     def prepend(self, string):
-        if len(self.items) > 0:
-            self.items[0].plain_text = string + self.items[0].plain_text
-        else:
-            rich_text = TextRichText.from_plain_text(self.client, string)
-            self.items.append(rich_text)
+        rich_text = TextRichText.from_plain_text(self.client, string)
+        self.items.insert(0, rich_text)
