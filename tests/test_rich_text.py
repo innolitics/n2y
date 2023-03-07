@@ -6,7 +6,7 @@ from pandoc.types import (
 from n2y.notion import Client
 from n2y.rich_text import RichTextArray, MentionRichText
 from n2y.mentions import PageMention
-from n2y.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text
+from n2y.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text, mock_id
 
 
 def process_rich_text_array(notion_data):
@@ -196,8 +196,8 @@ def test_link_inline():
 def test_prepend():
     client = Client('', exports=[])
     plain_data = mock_rich_text_array('plain text')
-    mention_data = {'type': 'page', 'page': {'id': '404e3003-6b8f-4f80-9bf0-8e510edf2068'}}
-    mention_text = 'HFE/UE Report'
+    mention_data = {'type': 'page', 'page': {'id': mock_id()}}
+    mention_text = 'Test Page'
     mention_block = PageMention(client, mention_data, mention_text)
     mention_rich_text = MentionRichText(
         client,
@@ -224,5 +224,5 @@ def test_prepend():
     equation = RichTextArray(client, equation_data)
     mention.items.append(mention_rich_text)
     assert plain.to_pandoc() == [Str('plain'), Space(), Str('text')]
-    assert mention.to_pandoc() == [Str('HFE/UE'), Space(), Str('Report')]
+    assert mention.to_pandoc() == [Str('Test'), Space(), Str('Page')]
     assert equation.to_pandoc() == [Math(InlineMath(), equation_text)]
