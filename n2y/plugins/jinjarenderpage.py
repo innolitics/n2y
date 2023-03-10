@@ -170,9 +170,18 @@ class JinjaRenderPage(Page):
             file_id = str(uuid.uuid4())
             template_name = f'{file_id}-template.md'
             with open(template_name, 'w') as file:
-                file.write(pandoc.write(ast, format=pandoc_format, options=pandoc_options))
+                markdown = pandoc.write(
+                    ast,
+                    format=pandoc_format,
+                    options=pandoc_options
+                )
+                file.write(markdown)
             output_string = render_template_to_file(config, template_name, context)
-            rendered_ast = pandoc.read(output_string)
+            rendered_ast = pandoc.read(
+                output_string,
+                format=pandoc_format,
+                options=pandoc_options
+            )
             return rendered_ast
         except Exception as err:
             parent_id = self.notion_parent['database_id']

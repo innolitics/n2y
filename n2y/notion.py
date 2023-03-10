@@ -61,7 +61,7 @@ def retry_api_call(api_call):
             client.retry_count = 0
             return response
         except APIResponseError as err:
-            should_retry = err.status in [409, 429, 500, 504]
+            should_retry = err.status in [409, 429, 500, 502, 504]
             timeout_time = 'retry-after' in err.headers
             if should_retry and client.retry_api_calls:
                 client.retry_count += 1
