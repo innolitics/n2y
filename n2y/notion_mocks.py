@@ -23,15 +23,18 @@ def mock_rich_text_array(text_blocks_descriptors):
         return [mock_rich_text(*desc) for desc in text_blocks_descriptors]
 
 
-def mock_rich_text(text, annotations=None, href=None, mention=None, link=None):
+def mock_rich_text(text, annotations=None, href=None, mention=None, link=None, equation=None):
     if annotations is None:
         annotations = []
-    if mention is None:
-        rich_text_type = 'text'
-        content = {'content': text, 'link': link}
-    else:
+    if mention:
         rich_text_type = 'mention'
         content = mention
+    elif equation:
+        rich_text_type = 'equation'
+        content = equation
+    else:
+        rich_text_type = 'text'
+        content = {'content': text, 'link': link}
     return {
         'type': rich_text_type,
         'annotations': mock_annotations(annotations),

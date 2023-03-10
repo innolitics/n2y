@@ -37,7 +37,6 @@ def test_non_blue_toggles_are_rendered_regularly_with_bullet_list():
     non_blue_colors.remove("blue")
     for color in non_blue_colors:
         pandoc_ast, markdown = process_test_toggle_block(color)
-        print(pandoc_ast)
         pandoc_1 = BulletList([
             [
                 Para(

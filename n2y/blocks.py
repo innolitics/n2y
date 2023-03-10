@@ -171,7 +171,6 @@ class ToDoListItemBlock(BulletedListItemBlock):
         super().__init__(client, notion_data, page, get_children)
         self.checked = self.notion_type_data['checked']
 
-        # TODO: Move this into the "to_pandoc" stage
         box = '☒ ' if self.checked else '☐ '
         self.rich_text.prepend(box)
 

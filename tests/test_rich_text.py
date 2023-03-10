@@ -4,7 +4,9 @@ from pandoc.types import (
 )
 
 from n2y.notion import Client
-from n2y.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text
+from n2y.rich_text import RichTextArray, MentionRichText
+from n2y.mentions import PageMention
+from n2y.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text, mock_id
 
 
 def process_rich_text_array(notion_data):
@@ -189,3 +191,38 @@ def test_link_inline():
     ]
     assert markdown == 'This is a [**link**](https://example.com).'
     assert plain_text == 'This is a link.'
+
+
+def test_prepend():
+    client = Client('', exports=[])
+    plain_data = mock_rich_text_array('plain text')
+    mention_data = {'type': 'page', 'page': {'id': mock_id()}}
+    mention_text = 'Test Page'
+    mention_block = PageMention(client, mention_data, mention_text)
+    mention_rich_text = MentionRichText(
+        client,
+        mock_rich_text(
+            mention_text,
+            None,
+            None,
+            mention_data
+        ),
+        None,
+        mention_block
+    )
+    equation_text = 'e=mc^2'
+    equation_data = mock_rich_text_array([[
+        equation_text,
+        None,
+        None,
+        None,
+        None,
+        {'expression': equation_text}
+    ]])
+    plain = RichTextArray(client, plain_data)
+    mention = RichTextArray(client, [])
+    equation = RichTextArray(client, equation_data)
+    mention.items.append(mention_rich_text)
+    assert plain.to_pandoc() == [Str('plain'), Space(), Str('text')]
+    assert mention.to_pandoc() == [Str('Test'), Space(), Str('Page')]
+    assert equation.to_pandoc() == [Math(InlineMath(), equation_text)]

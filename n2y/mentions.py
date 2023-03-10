@@ -1,6 +1,6 @@
 from pandoc.types import Str
 from n2y.blocks import RowBlock
-
+from n2y.rich_text import RichText
 from n2y.utils import process_notion_date, processed_date_to_plain_text
 
 
@@ -18,7 +18,9 @@ class UserMention(Mention):
         self.user = client.wrap_notion_user(notion_data["user"])
 
     def to_pandoc(self):
-        return [Str(self.user.name)] if self.user.name else []
+        return RichText.plain_text_to_pandoc(
+            self.user.name
+        )if self.user.name else []
 
 
 class PageMention(Mention):
@@ -36,7 +38,7 @@ class PageMention(Mention):
     def to_pandoc(self):
         # TODO: if the page is being exported too, then make this a relative
         # URL to that page
-        return [Str(self.plain_text)]
+        return RichText.plain_text_to_pandoc(self.plain_text)
 
 
 class DatabaseMention(Mention):
@@ -45,7 +47,7 @@ class DatabaseMention(Mention):
         self.notion_database_id = notion_data["database"]["id"]
 
     def to_pandoc(self):
-        return [Str(self.plain_text)]
+        return RichText.plain_text_to_pandoc(self.plain_text)
 
 
 class DateMention(Mention):
