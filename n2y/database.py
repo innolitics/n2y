@@ -58,9 +58,9 @@ class Database:
             children = self._filtered_children[tupled_filter][tupled_sort]
         else:
             children = self.children
-        for child in children:
+        for i, child in enumerate(children):
             if not self.client.page_class_is_in_use(child):
-                child = self.client._wrap_notion_page(child.notion_data)
+                children[i] = self.client._wrap_notion_page(child.notion_data)
         return children
 
     def _tuplize(self, item):
