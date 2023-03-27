@@ -47,36 +47,30 @@ logger = logging.getLogger(__name__)
 # TODO: Rename this file `client.py`
 
 
-def retry_api_call(api_call):
+def retry_api_call(api_call, max_retries=DEFAULT_MAX_RETRIES):
     @functools.wraps(api_call)
-    def wrapper(*args, **kwargs):
-        client = args[0]
-        if not isinstance(client, Client):
-            raise NotImplementedError(
-                'The first argument of functions wrapped by '
-                'retry_api_call must be a n2y.notion `Client` object'
-            )
+    def wrapper(*args, **kwargs, retry_count=0):
         try:
-            response = api_call(*args, **kwargs)
-            client.retry_count = 0
-            return response
+            return api_call(*args, **kwargs)
         except (APIResponseError, HTTPResponseError) as err:
             should_retry = err.status in [409, 429, 500, 502, 504]
-            timeout_time = 'retry-after' in err.headers
-            if should_retry and client.retry_api_calls:
-                client.retry_count += 1
+            if not should_retry:
+                raise err
+            elif retry_count < max_retries:
+                retry_count += 1
+                timeout_time = 'retry-after' in err.headers
                 if timeout_time:
                     retry_after = float(err.headers['retry-after'])
                     logger.info(
                         'Client has been rate limited. This API call '
                         f'will be retried in {retry_after} seconds'
                     )
-                    sleep(retry_after)
-                return wrapper(*args, **kwargs)
+                else:
+                    retry_after = 2
+                sleep(retry_after)
+                return wrapper(*args, **kwargs, retry_count=retry_count)
             else:
-                client.retry_api_calls or logger.warning(
-                    'The maximum amount of retries for this function has been reached'
-                )
+                logger.warning('Finished %s retries', max_retries)
                 raise err
     return wrapper
 
@@ -364,10 +358,12 @@ class Client:
         child_notion_blocks = self.get_child_notion_blocks(block_id)
         return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
+    @retry_api_call
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"
         return self._paginated_request(self._get_url, url, {})
 
+    @retry_api_call
     def get_comments(self, block_id):
         url = f"{self.base_url}comments"
         comments = self._paginated_request(self._get_url, url, {"block_id": block_id})

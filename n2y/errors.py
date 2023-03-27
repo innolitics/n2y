@@ -98,6 +98,9 @@ class APIErrorCode(str, Enum):
     This can occur when the time to respond to a request takes longer than 60 seconds,
     the maximum request timeout."""
 
+    GatewayTimeoutError = "gateway_timeout"
+    """Notion timed out while attempting to complete this request. Please try again later."""
+
 
 class APIResponseError(HTTPResponseError):
     """An error raised by Notion API."""
