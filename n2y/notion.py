@@ -1,9 +1,7 @@
 import json
 import logging
 import requests
-import functools
 import importlib.util
-from time import sleep
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
 
@@ -12,6 +10,7 @@ from n2y.file import File
 from n2y.page import Page
 from n2y.emoji import Emoji
 from n2y.comment import Comment
+from n2y.main import max_retries
 from n2y.database import Database
 from n2y.blocks import DEFAULT_BLOCKS
 from n2y.mentions import DEFAULT_MENTIONS
@@ -19,7 +18,7 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
+from n2y.utils import sanitize_filename, strip_hyphens, retry_api_call, DEFAULT_MAX_RETRIES
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -47,34 +46,6 @@ logger = logging.getLogger(__name__)
 # TODO: Rename this file `client.py`
 
 
-def retry_api_call(api_call, max_retries=DEFAULT_MAX_RETRIES):
-    @functools.wraps(api_call)
-    def wrapper(*args, **kwargs, retry_count=0):
-        try:
-            return api_call(*args, **kwargs)
-        except (APIResponseError, HTTPResponseError) as err:
-            should_retry = err.status in [409, 429, 500, 502, 504]
-            if not should_retry:
-                raise err
-            elif retry_count < max_retries:
-                retry_count += 1
-                timeout_time = 'retry-after' in err.headers
-                if timeout_time:
-                    retry_after = float(err.headers['retry-after'])
-                    logger.info(
-                        'Client has been rate limited. This API call '
-                        f'will be retried in {retry_after} seconds'
-                    )
-                else:
-                    retry_after = 2
-                sleep(retry_after)
-                return wrapper(*args, **kwargs, retry_count=retry_count)
-            else:
-                logger.warning('Finished %s retries', max_retries)
-                raise err
-    return wrapper
-
-
 class Client:
     """
     An instance of the client class has a few purposes:
@@ -96,13 +67,10 @@ class Client:
         media_url='',
         plugins=None,
         exports=None,
-        max_retries=DEFAULT_MAX_RETRIES,
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
-        self.max_retries = max_retries
-        self.retry_count = 0
         self.exports = exports
 
         self.base_url = "https://api.notion.com/v1/"
@@ -117,21 +85,6 @@ class Client:
 
         self.load_plugins(plugins)
         self.plugin_data = {}
-
-    @property
-    def retry_api_calls(self):
-        return self.max_retries > self.retry_count
-
-    @property
-    def max_retries(self):
-        return self._max_retries
-
-    @max_retries.setter
-    def max_retries(self, val):
-        if int(val) > DEFAULT_MAX_RETRIES:
-            raise NotImplementedError('max_retries must be an integer no larger than 5')
-        else:
-            self._max_retries = int(val)
 
     def get_default_classes(self):
         notion_classes = {}
@@ -314,6 +267,7 @@ class Client:
         notion_pages = self.get_database_notion_pages(database_id, filter, sorts)
         return [self._wrap_notion_page(np) for np in notion_pages]
 
+    @retry_api_call(max_retries)
     def get_database_notion_pages(self, database_id, filter, sorts):
         url = f"{self.base_url}databases/{database_id}/query"
         request_data = {}
@@ -348,7 +302,7 @@ class Client:
         notion_block = self.get_notion_block(block_id)
         return self.wrap_notion_block(notion_block, page, get_children)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def get_notion_block(self, block_id):
         url = f"{self.base_url}blocks/{block_id}"
         response = requests.get(url, headers=self.headers)
@@ -358,12 +312,12 @@ class Client:
         child_notion_blocks = self.get_child_notion_blocks(block_id)
         return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"
         return self._paginated_request(self._get_url, url, {})
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def get_comments(self, block_id):
         url = f"{self.base_url}comments"
         comments = self._paginated_request(self._get_url, url, {"block_id": block_id})
@@ -376,26 +330,26 @@ class Client:
         notion_property = self.get_notion_page_property(page_id, property_id)
         return self.wrap_notion_property(notion_property)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def get_notion_page_property(self, page_id, property_id):
         url = f"{self.base_url}pages/{page_id}/properties/{property_id}"
         response = requests.get(url, headers=self.headers)
         return self._parse_response(response)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def create_notion_page(self, page_data):
         creation_url = f'{self.base_url}pages'
         response = requests.post(creation_url, headers=self.headers, json=page_data)
         return self._parse_response(response)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def _get_url(self, url, params=None):
         if params is None:
             params = {}
         response = requests.get(url, headers=self.headers, params=params)
         return self._parse_response(response)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def _post_url(self, url, data=None):
         if data is None:
             data = {}
@@ -432,7 +386,7 @@ class Client:
             raise HTTPResponseError(error.response)
         return response.json()
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def download_file(self, url, page, block_id):
         """
         Download a file from a given URL into the MEDIA_ROOT.
@@ -495,7 +449,7 @@ class Client:
                             del item['id']
             self.create_notion_page(page)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def append_child_notion_blocks(self, block_id, children):
         '''
         Appends each datapoint of a list of notion_data as children to the block specified by id.
@@ -591,7 +545,7 @@ class Client:
                 )
         return children_appended
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def create_notion_comment(self, page_id, text_blocks_descriptors):
         data = {
             "rich_text": mock_rich_text_array(text_blocks_descriptors),
@@ -607,7 +561,7 @@ class Client:
         )
         return self._parse_response(response)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def create_notion_database(self, notion_data):
         response = requests.post(
             f'{self.base_url}databases',
@@ -615,7 +569,7 @@ class Client:
             json=notion_data)
         return self._parse_response(response)
 
-    @retry_api_call
+    @retry_api_call(max_retries)
     def delete_notion_block(self, notion_block):
         block_id = notion_block['id']
         headers = {**self.headers}
