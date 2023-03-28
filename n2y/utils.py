@@ -148,6 +148,7 @@ def load_yaml(data):
 
 def retry_api_call(max_retries):
     retry_api_call.retry_count = 0
+
     def outer_wrapper(api_call):
         @functools.wraps(api_call)
         def wrapper(*args, **kwargs):

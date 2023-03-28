@@ -18,7 +18,7 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import sanitize_filename, strip_hyphens, retry_api_call, DEFAULT_MAX_RETRIES
+from n2y.utils import sanitize_filename, strip_hyphens, retry_api_call
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -136,7 +136,9 @@ class Client:
                     f'override the base class "{base_class.__name__}"',
                 )
 
-    def _organize_notion_classes(self, default_object_types, notion_object, object_type, plugin_class):
+    def _organize_notion_classes(
+        self, default_object_types, notion_object, object_type, plugin_class
+    ):
         if object_type in default_object_types:
             class_being_replaced = default_object_types[object_type]
             # assumes all of the default classes have a single parent class
@@ -444,7 +446,7 @@ class Client:
                     page['properties'][key]
                 )
             self.create_notion_page(page)
-    
+
     def _edit_notion_child_property(self, prop):
         del prop['id']
         prop_type = prop['type']
@@ -476,12 +478,18 @@ class Client:
         object_is_page = lambda child: child['object'] == 'page'
         for i, child in enumerate(children):
             if object_is_database(child) or type_is_database(child):
-                children_appended = self._append_blocks(block_id, children, children_appended, previous_i, i)
-                child_database = self._copy_notion_database_child_database(parent, parent_type, child)
+                children_appended = self._append_blocks(
+                    block_id, children, children_appended, previous_i, i
+                )
+                child_database = self._copy_notion_database_child_database(
+                    parent, parent_type, child
+                )
                 children_appended.append(child_database)
                 previous_i = i + 1
             elif object_is_page(child) or type_is_page(child):
-                children_appended = self._append_blocks(block_id, children, children_appended, previous_i, i)
+                children_appended = self._append_blocks(
+                    block_id, children, children_appended, previous_i, i
+                )
                 child_page = self._copy_notion_database_child_page(parent, parent_type, child)
                 children_appended.append(child_page)
                 previous_i = i + 1
