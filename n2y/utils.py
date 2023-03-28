@@ -9,7 +9,7 @@ import pandoc
 from pandoc.types import Str, Space
 from plumbum import ProcessExecutionError
 
-from n2y.errors import APIResponseError, HTTPResponseError, PandocASTParseError
+from n2y.errors import HTTPResponseError, PandocASTParseError
 
 
 logger = logging.getLogger(__name__)
