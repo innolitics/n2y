@@ -101,6 +101,12 @@ class APIErrorCode(str, Enum):
     GatewayTimeoutError = "gateway_timeout"
     """Notion timed out while attempting to complete this request. Please try again later."""
 
+    MissingVersion = "missing_version"
+    """The request is missing the required Notion-Version header"""
+
+    DatabaseConnectionUnavailable = "database_connection_unavailable"
+    """Notion's database is unavailable or in an unqueryable state. Try again later."""
+
 
 class APIResponseError(HTTPResponseError):
     """An error raised by Notion API."""
