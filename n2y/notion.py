@@ -120,19 +120,9 @@ class Client:
 
         if notion_object_has_types and isinstance(object_types, dict):
             for object_type, plugin_class in object_types.items():
-                if object_type in default_object_types:
-                    class_being_replaced = default_object_types[object_type]
-                    # assumes all of the default classes have a single parent class
-                    base_class = class_being_replaced.__bases__[0]
-                    if issubclass(plugin_class, base_class):
-                        self.notion_classes[notion_object][object_type].append(plugin_class)
-                    else:
-                        raise PluginError(
-                            f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
-                            f'override the base class "{base_class.__name__}"',
-                        )
-                else:
-                    raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
+                self._organize_notion_classes(
+                    default_object_types, notion_object, object_type, plugin_class
+                )
         elif notion_object_has_types and not isinstance(object_types, dict):
             raise PluginError(f'Expecting dict for "{notion_object}", found "{type(object_types)}"')
         else:
@@ -145,6 +135,21 @@ class Client:
                     f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
                     f'override the base class "{base_class.__name__}"',
                 )
+
+    def _organize_notion_classes(self, default_object_types, notion_object, object_type, plugin_class):
+        if object_type in default_object_types:
+            class_being_replaced = default_object_types[object_type]
+            # assumes all of the default classes have a single parent class
+            base_class = class_being_replaced.__bases__[0]
+            if issubclass(plugin_class, base_class):
+                self.notion_classes[notion_object][object_type].append(plugin_class)
+            else:
+                raise PluginError(
+                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                    f'override the base class "{base_class.__name__}"',
+                )
+        else:
+            raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
 
     def get_class_list(self, notion_object, object_type=None):
         if object_type is None:
@@ -435,19 +440,24 @@ class Client:
                 'database_id': destination['id']
             }
             for key in page['properties'].keys():
-                prop = page['properties'][key]
-                del prop['id']
-                prop_type = prop['type']
-                del prop['type']
-                prop_type_info = prop[prop_type]
-                if isinstance(prop_type_info, dict):
-                    if 'id' in prop_type_info:
-                        del prop_type_info['id']
-                elif isinstance(prop_type_info, list) and prop_type != 'relation':
-                    for item in prop_type_info:
-                        if 'id' in item:
-                            del item['id']
+                page['properties'][key] = self._edit_notion_child_property(
+                    page['properties'][key]
+                )
             self.create_notion_page(page)
+    
+    def _edit_notion_child_property(self, prop):
+        del prop['id']
+        prop_type = prop['type']
+        del prop['type']
+        prop_type_info = prop[prop_type]
+        if isinstance(prop_type_info, dict):
+            if 'id' in prop_type_info:
+                del prop_type_info['id']
+        elif isinstance(prop_type_info, list) and prop_type != 'relation':
+            for item in prop_type_info:
+                if 'id' in item:
+                    del item['id']
+        return prop
 
     @retry_api_call(max_retries)
     def append_child_notion_blocks(self, block_id, children):
@@ -456,26 +466,7 @@ class Client:
         Please note that not all block types are allowed to have children, so this method only works
         for those that are.
         '''
-        def append_blocks(i1, i2, blocks, list):
-            max_new_blocks = 100
-            if i1 < i2:
-                child_list = blocks[i1:i2]
-                length = len(child_list)
-                for i in range(0, length, max_new_blocks):
-                    portion_index_stop = i + max_new_blocks
-                    if portion_index_stop < length:
-                        portion = child_list[i:portion_index_stop]
-                    else:
-                        portion = child_list[i:]
-                    response = requests.patch(
-                        f"{self.base_url}blocks/{block_id}/children",
-                        json={"children": portion}, headers=self.headers
-                    )
-                    appension_return = self._parse_response(response)
-                    list.extend(appension_return['results'])
-            return list
-
-        last_i = 0
+        previous_i = 0
         children_appended = []
         parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
         parent_type = parent.notion_data["object"]
@@ -483,67 +474,100 @@ class Client:
         object_is_database = lambda child: child['object'] == 'database'
         type_is_page = lambda child: 'type' in child and child['type'] == 'child_page'
         object_is_page = lambda child: child['object'] == 'page'
+        for i, child in enumerate(children):
+            if object_is_database(child) or type_is_database(child):
+                children_appended = self._append_blocks(block_id, children, children_appended, previous_i, i)
+                child_database = self._copy_notion_database_child_database(parent, parent_type, child)
+                children_appended.append(child_database)
+                previous_i = i + 1
+            elif object_is_page(child) or type_is_page(child):
+                children_appended = self._append_blocks(block_id, children, children_appended, previous_i, i)
+                child_page = self._copy_notion_database_child_page(parent, parent_type, child)
+                children_appended.append(child_page)
+                previous_i = i + 1
+            elif i == len(children) - 1:
+                children_appended = self._append_blocks(
+                    block_id, children, children_appended, previous_i, len(children)
+                )
+        return children_appended
+
+    def _append_blocks(self, block_id, full_child_data_list, appension_history_list, i1=0, i2=0):
+        max_new_blocks = 100
+        if i1 < i2:
+            child_data_list = full_child_data_list[i1:i2]
+            length = len(child_data_list)
+            for i in range(0, length, max_new_blocks):
+                portion_index_stop = i + max_new_blocks
+                if portion_index_stop < length:
+                    portion = child_data_list[i:portion_index_stop]
+                else:
+                    portion = child_data_list[i:]
+                response = requests.patch(
+                    f"{self.base_url}blocks/{block_id}/children",
+                    json={"children": portion}, headers=self.headers
+                )
+                appension_return = self._parse_response(response)
+                appension_history_list.extend(appension_return['results'])
+        return appension_history_list
+
+    def _copy_notion_database_child_page(self, parent, parent_type, child_notion_data):
         bad_keys = [
             'last_edited_by',
             'created_time',
             'last_edited_time',
             'created_by'
         ]
-        for i, child in enumerate(children):
-            if object_is_database(child) or type_is_database(child):
-                children_appended = append_blocks(last_i, i, children, children_appended)
-                if parent_type == 'block':
-                    logger.warning((
-                        'Skipping database with block type parent as '
-                        'appension is currently unsupported by Notion API'
-                    ))
-                    child_database = {}
-                else:
-                    database = self.get_database(child['id'])
-                    child = {
-                        key: value
-                        for (key, value) in
-                        database.notion_data.items()
-                        if key not in bad_keys
-                    }
-                    child['parent'] = {
-                        'type': f'{parent_type}_id',
-                        f'{parent_type}_id': parent.notion_id
-                    }
-                    child_database = self.create_notion_database(child)
-                    if database.children:
-                        notion_children = [child.notion_data for child in database.children]
-                        self.copy_notion_database_children(notion_children, child_database)
-                children_appended.append(child_database)
-                last_i = i + 1
-            elif object_is_page(child) or type_is_page(child):
-                children_appended = append_blocks(last_i, i, children, children_appended)
-                if parent_type == 'block':
-                    logger.warning((
-                        'Skipping page with block type parent as '
-                        'appension is currently unsupported by Notion API'
-                    ))
-                    child_page = {}
-                else:
-                    page = self.get_page(child['id'])
-                    child = {
-                        key: value
-                        for (key, value) in
-                        page.notion_data.items()
-                        if key not in bad_keys
-                    }
-                    child['parent'] = {
-                        'type': f'{parent_type}_id',
-                        f'{parent_type}_id': parent.notion_id
-                    }
-                    child_page = self.create_notion_page(child)
-                children_appended.append(child_page)
-                last_i = i + 1
-            elif i == len(children) - 1:
-                children_appended = append_blocks(
-                    last_i, len(children), children, children_appended
-                )
-        return children_appended
+        if parent_type == 'block':
+            logger.warning((
+                'Skipping page with block type parent as '
+                'appension is currently unsupported by Notion API'
+            ))
+            child_page = {}
+        else:
+            page = self.get_page(child_notion_data['id'])
+            child_page_data = {
+                key: value
+                for (key, value) in
+                page.notion_data.items()
+                if key not in bad_keys
+            }
+            child_page_data['parent'] = {
+                'type': f'{parent_type}_id',
+                f'{parent_type}_id': parent.notion_id
+            }
+            child_page = self.create_notion_page(child_page_data)
+        return child_page
+
+    def _copy_notion_database_child_database(self, parent, parent_type, child_notion_data):
+        bad_keys = [
+            'last_edited_by',
+            'created_time',
+            'last_edited_time',
+            'created_by'
+        ]
+        if parent_type == 'block':
+            logger.warning((
+                'Skipping database with block type parent as '
+                'appension is currently unsupported by Notion API'
+            ))
+            child_database = {}
+        else:
+            database = self.get_database(child_notion_data['id'])
+            child_database_data = {
+                key: value
+                for (key, value) in
+                database.notion_data.items()
+                if key not in bad_keys
+            }
+            child_database_data['parent'] = {
+                'type': f'{parent_type}_id',
+                f'{parent_type}_id': parent.notion_id
+            }
+            child_database = self.create_notion_database(child_database_data)
+            if database.children:
+                notion_children = [child.notion_data for child in database.children]
+                self.copy_notion_database_children(notion_children, child_database)
+        return child_database
 
     @retry_api_call(max_retries)
     def create_notion_comment(self, page_id, text_blocks_descriptors):
