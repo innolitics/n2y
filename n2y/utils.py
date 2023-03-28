@@ -9,7 +9,7 @@ import pandoc
 from pandoc.types import Str, Space
 from plumbum import ProcessExecutionError
 
-from n2y.errors import APIResponseError, PandocASTParseError
+from n2y.errors import APIResponseError, HTTPResponseError, PandocASTParseError
 
 
 logger = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ def retry_api_call(max_retries):
         def wrapper(*args, **kwargs):
             try:
                 return api_call(*args, **kwargs)
-            except APIResponseError as err:
+            except HTTPResponseError as err:
                 should_retry = err.status in [409, 429, 500, 502, 504]
                 if not should_retry:
                     raise err
