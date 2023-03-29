@@ -1,15 +1,13 @@
 import re
 import yaml
 import logging
-import functools
-from time import sleep
 from datetime import datetime
 
 import pandoc
 from pandoc.types import Str, Space
 from plumbum import ProcessExecutionError
 
-from n2y.errors import HTTPResponseError, PandocASTParseError
+from n2y.errors import PandocASTParseError
 
 
 logger = logging.getLogger(__name__)
@@ -144,36 +142,3 @@ def load_yaml(data):
         return yaml.load(data, Loader=yaml.SafeLoader)
     except yaml.YAMLError as e:
         raise ValueError('"{}" contains invalid YAML: {}'.format(data, e))
-
-
-def retry_api_call(max_retries):
-    retry_api_call.retry_count = 0
-
-    def outer_wrapper(api_call):
-        @functools.wraps(api_call)
-        def wrapper(*args, **kwargs):
-            try:
-                return api_call(*args, **kwargs)
-            except HTTPResponseError as err:
-                should_retry = err.status in [409, 429, 500, 502, 504]
-                if not should_retry:
-                    raise err
-                elif retry_api_call.retry_count < max_retries:
-                    if 'retry-after' in err.headers:
-                        retry_after = float(err.headers['retry-after'])
-                        logger.info(
-                            'Client has been rate limited. This API call '
-                            f'will be retried in {retry_after} seconds'
-                        )
-                    else:
-                        retry_after = 2
-                    sleep(retry_after)
-                    retry_api_call.retry_count += 1
-                    return wrapper(*args, **kwargs)
-                else:
-                    logger.warning('Finished %s retries', max_retries)
-                    raise err
-            finally:
-                retry_api_call.retry_count = 0
-        return wrapper
-    return outer_wrapper

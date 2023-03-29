@@ -10,7 +10,15 @@ from n2y.utils import share_link_from_id, DEFAULT_MAX_RETRIES
 from n2y.export import export_page, database_to_yaml, database_to_markdown_files
 
 logger = None
-max_retries = DEFAULT_MAX_RETRIES
+
+
+def int_under_6(x):
+    x = int(x)
+    if x < 6:
+        raise argparse.ArgumentTypeError(
+            f'max_retries must be less than or equal to {DEFAULT_MAX_RETRIES}'
+        )
+    return x
 
 
 def cli_main():
@@ -26,10 +34,10 @@ def main(raw_args, access_token):
     )
     parser.add_argument("config", help="The path to the config file")
     parser.add_argument(
-        '--max_retries', '-m', default=DEFAULT_MAX_RETRIES,
+        '--max_retries', '-m', default=DEFAULT_MAX_RETRIES, type=int_under_6,
         help=(
             'The maximum amount of times an API request will be retried after being rate '
-            'limited. This argument must be an integer greater than or equal to 5'
+            'limited. This argument must be an integer less than or equal to {DEFAULT_MAX_RETRIES}'
         )
     )
     parser.add_argument(
@@ -42,8 +50,6 @@ def main(raw_args, access_token):
     )
 
     args = parser.parse_args(raw_args)
-    global max_retries
-    max_retries = args.max_retries
 
     logging_level = logging.__dict__[args.verbosity]
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
@@ -64,6 +70,7 @@ def main(raw_args, access_token):
         config["media_root"],
         config["media_url"],
         exports=config["exports"],
+        max_retries=args.max_retries
     )
 
     error_occurred = False
