@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 from n2y.errors import APIResponseError
 from n2y.notion_mocks import MockResponse
 from n2y.notion import retry_api_call, Client
-from n2y.utils import fromisoformat, id_from_share_link, DEFAULT_MAX_RETRIES
+from n2y.utils import fromisoformat, id_from_share_link
 
 
 def test_fromisoformat_datetime():
