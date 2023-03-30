@@ -98,6 +98,15 @@ class APIErrorCode(str, Enum):
     This can occur when the time to respond to a request takes longer than 60 seconds,
     the maximum request timeout."""
 
+    GatewayTimeoutError = "gateway_timeout"
+    """Notion timed out while attempting to complete this request. Please try again later."""
+
+    MissingVersion = "missing_version"
+    """The request is missing the required Notion-Version header"""
+
+    DatabaseConnectionUnavailable = "database_connection_unavailable"
+    """Notion's database is unavailable or in an unqueryable state. Try again later."""
+
 
 class APIResponseError(HTTPResponseError):
     """An error raised by Notion API."""

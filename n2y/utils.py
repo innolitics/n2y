@@ -1,7 +1,7 @@
-from datetime import datetime
-import logging
-import yaml
 import re
+import yaml
+import logging
+from datetime import datetime
 
 import pandoc
 from pandoc.types import Str, Space
