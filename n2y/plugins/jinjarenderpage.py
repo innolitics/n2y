@@ -80,6 +80,24 @@ def join_to(foreign_keys, table, primary_key='id'):
     return joined
 
 
+def fuzzy_in(left, right):
+    """
+    Used to compare markdown strings which may have been modified using pandoc's smart extension.
+    
+    See https://pandoc.org/MANUAL.html#extension-smart
+    """
+    return _canonicalize_markdown(left) in _canonicalize_markdown(right)
+
+
+def _canonicalize_markdown(markdown):
+    markdown = markdown.replace('\u201D', '"').replace('\u201C', '"')
+    markdown = markdown.replace('\u2019', "'").replace('\u2018', "'")
+    markdown = markdown.replace('\u2013', '-').replace('\u2014', '-')
+    markdown = markdown.replace('\u2026', '...')
+    markdown = markdown.replace('\u00A0', ' ')
+    return markdown
+
+
 def render_template_to_file(config, template_filename, context, loaders=None):
     output_string = generate_template_output(config, template_filename, context, loaders=loaders)
     return output_string
@@ -119,6 +137,7 @@ def _create_jinja_environment(config, loaders=None):
         extensions=extensions,
     )
     environment.filters['join_to'] = join_to
+    environment.filters['fuzzy_in'] = fuzzy_in
     return environment
 
 

@@ -5,7 +5,7 @@ from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
 from n2y.plugins.rawcodeblocks import RawFencedCodeBlock
 from tests.utils import render_from_string, invert_dependencies
-from n2y.plugins.jinjarenderpage import join_to, JinjaRenderPage
+from n2y.plugins.jinjarenderpage import join_to, fuzzy_in, JinjaRenderPage
 from n2y.notion_mocks import mock_page, mock_rich_text_array, mock_block, mock_database
 
 
@@ -41,6 +41,34 @@ def test_join_to_basic():
     ]
     assert join_to(foreign_keys, table) == [{'id': '1', 'data': 'a'}, None]
     assert join_to(foreign_keys, table, 'data') == [None, None]
+
+
+def test_fuzzy_in_quotes():
+    assert fuzzy_in('a"b', 'a\u201cb')
+    assert fuzzy_in('a\u201cb', 'a"b')
+    assert fuzzy_in('"', '\u201d')
+    assert fuzzy_in('\u201d', '"')
+
+
+def test_fuzzy_in_ellipse():
+    assert fuzzy_in('a\u2026b', 'a...b')
+    assert fuzzy_in('a...b', 'a\u2026b')
+    assert fuzzy_in('\u2026', '...')
+    assert fuzzy_in('...', '\u2026')
+
+
+def test_fuzzy_in_em_dash():
+    assert fuzzy_in('a\u2014b', 'a--b')
+    assert fuzzy_in('a--b', 'a\u2014b')
+    assert fuzzy_in('\u2014', '--')
+    assert fuzzy_in('--', '\u2014')
+
+
+def test_fuzzy_in_en_dash():
+    assert fuzzy_in('a\u2013b', 'a-b')
+    assert fuzzy_in('a-b', 'a\u2013b')
+    assert fuzzy_in('\u2013', '-')
+    assert fuzzy_in('-', '\u2013')
 
 
 def test_render_no_filtering():

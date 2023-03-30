@@ -245,7 +245,9 @@ N2y provides a few builtin plugins. These plugins are all turned off by default.
 
 ### Render
 
-When CodeBlocks are captioned "{template}", the block is rendered as jinja using yaml data previously cached by n2y
+When CodeBlocks are captioned "{template}", the block is rendered as jinja using yaml data previously cached by n2y.
+
+The jinja context has a few special filters available to it. See the code for details.
 
 ### Deep Headers
 
