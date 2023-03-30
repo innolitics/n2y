@@ -352,7 +352,7 @@ class ImageBlock(Block):
         caption = []
         if self.caption:
             caption = self.caption.to_pandoc()
-        return Para([Image(('', [], []), caption, (url, 'fig:title'))])
+        return Para([Image(('', [], []), caption, (url, ''))])
 
 
 class TableBlock(Block):
