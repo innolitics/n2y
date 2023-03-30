@@ -310,9 +310,9 @@ def test_image_internal_with_caption(mock_download):
     mock_download.return_value = "image.png"
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para(
-        [Image(("", [], []), [Str("test"), Space(), Str("image")], ("image.png", ""))]
+        [Image(("", [], []), [Str("test"), Space(), Str("image")], ("image.png", "fig:title"))]
     )
-    assert markdown == "![test image](image.png)\n"
+    assert markdown == "![test image](image.png \"title\")\n"
 
 
 def test_image_external_without_caption():
@@ -329,12 +329,12 @@ def test_image_external_without_caption():
         [
             Image(
                 ("", [], []),
-                [Str("https://example.com/image.png")],
-                ("https://example.com/image.png", ""),
+                [],
+                ("https://example.com/image.png", "fig:title"),
             )
         ]
     )
-    assert markdown == "![](https://example.com/image.png)\n"
+    assert markdown == "![](https://example.com/image.png \"title\")\n"
 
 
 def test_equation_block():
