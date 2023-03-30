@@ -350,9 +350,11 @@ class ImageBlock(Block):
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page, self.notion_id)
         img_alt = [Str(url)]
+        title = ''
         if self.caption:
             img_alt = self.caption.to_pandoc()
-        return Para([Image(('', [], []), img_alt, (url, ''))])
+            title = self.caption.to_plain_text()
+        return Para([Image(('', [], []), img_alt, (url, title))])
 
 
 class TableBlock(Block):
