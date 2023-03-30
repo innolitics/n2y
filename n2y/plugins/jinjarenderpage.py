@@ -83,7 +83,7 @@ def join_to(foreign_keys, table, primary_key='id'):
 def fuzzy_in(left, right):
     """
     Used to compare markdown strings which may have been modified using pandoc's smart extension.
-    
+
     See https://pandoc.org/MANUAL.html#extension-smart
     """
     return _canonicalize_markdown(left) in _canonicalize_markdown(right)
