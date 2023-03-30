@@ -92,7 +92,7 @@ def fuzzy_in(left, right):
 def _canonicalize_markdown(markdown):
     markdown = markdown.replace('\u201D', '"').replace('\u201C', '"')
     markdown = markdown.replace('\u2019', "'").replace('\u2018', "'")
-    markdown = markdown.replace('\u2013', '-').replace('\u2014', '-')
+    markdown = markdown.replace('\u2013', '--').replace('\u2014', '---')
     markdown = markdown.replace('\u2026', '...')
     markdown = markdown.replace('\u00A0', ' ')
     return markdown

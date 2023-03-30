@@ -58,17 +58,17 @@ def test_fuzzy_in_ellipse():
 
 
 def test_fuzzy_in_em_dash():
-    assert fuzzy_in('a\u2014b', 'a--b')
-    assert fuzzy_in('a--b', 'a\u2014b')
-    assert fuzzy_in('\u2014', '--')
-    assert fuzzy_in('--', '\u2014')
+    assert fuzzy_in('a\u2014b', 'a---b')
+    assert fuzzy_in('a---b', 'a\u2014b')
+    assert fuzzy_in('\u2014', '---')
+    assert fuzzy_in('---', '\u2014')
 
 
 def test_fuzzy_in_en_dash():
-    assert fuzzy_in('a\u2013b', 'a-b')
-    assert fuzzy_in('a-b', 'a\u2013b')
-    assert fuzzy_in('\u2013', '-')
-    assert fuzzy_in('-', '\u2013')
+    assert fuzzy_in('a\u2013b', 'a--b')
+    assert fuzzy_in('a--b', 'a\u2013b')
+    assert fuzzy_in('\u2013', '--')
+    assert fuzzy_in('--', '\u2013')
 
 
 def test_render_no_filtering():
