@@ -352,7 +352,9 @@ class ImageBlock(Block):
         caption = []
         if self.caption:
             caption = self.caption.to_pandoc()
-        return Para([Image(('', [], []), caption, (url, 'fig:title'))])
+        # Appending 'fig:title' is a hack to force it to write fig:title
+        # TODO: Upgrade to pandoc 3 and switch to using the Figure node type
+        return Para([Image(('', [], []), caption, (url + ' "fig:title"', ''))])
 
 
 class TableBlock(Block):
