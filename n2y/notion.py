@@ -1,9 +1,7 @@
 import json
 import logging
 import requests
-import functools
 import importlib.util
-from time import sleep
 from os import path, makedirs
 from urllib.parse import urljoin, urlparse
 
@@ -19,13 +17,12 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
+from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
 from n2y.config import merge_default_config
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
 )
-
 
 DEFAULT_NOTION_CLASSES = {
     "page": Page,
@@ -44,40 +41,6 @@ DEFAULT_NOTION_CLASSES = {
 
 
 logger = logging.getLogger(__name__)
-
-# TODO: Rename this file `client.py`
-
-
-def retry_api_call(api_call):
-    retry_api_call.retry_count = 0
-
-    @functools.wraps(api_call)
-    def wrapper(*args, **kwargs):
-        client = args[0]
-        try:
-            return api_call(*args, **kwargs)
-        except HTTPResponseError as err:
-            should_retry = err.status in [409, 429, 500, 502, 504]
-            if not should_retry:
-                raise err
-            elif retry_api_call.retry_count < client.max_retries:
-                if 'retry-after' in err.headers:
-                    retry_after = float(err.headers['retry-after'])
-                    logger.info(
-                        'Client has been rate limited. This API call '
-                        f'will be retried in {retry_after} seconds'
-                    )
-                else:
-                    retry_after = 2
-                sleep(retry_after)
-                retry_api_call.retry_count += 1
-                return wrapper(*args, **kwargs)
-            else:
-                logger.warning('Finished %s retries', client.max_retries)
-                raise err
-        finally:
-            retry_api_call.retry_count = 0
-    return wrapper
 
 
 class Client:
@@ -101,13 +64,11 @@ class Client:
         media_url='',
         plugins=None,
         export_defaults=None,
-        max_retries=DEFAULT_MAX_RETRIES
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
         self.export_defaults = export_defaults or merge_default_config({})
-        self.max_retries = max_retries
 
         self.base_url = "https://api.notion.com/v1/"
         self.headers = {

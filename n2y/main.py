@@ -7,19 +7,10 @@ import yaml
 
 from n2y import notion
 from n2y.config import load_config, merge_default_config
-from n2y.utils import share_link_from_id, DEFAULT_MAX_RETRIES
+from n2y.utils import share_link_from_id
 from n2y.export import export_page, database_to_yaml, database_to_markdown_files
 
 logger = None
-
-
-def int_under_6(x):
-    x = int(x)
-    if x < 6:
-        raise argparse.ArgumentTypeError(
-            f'max_retries must be less than or equal to {DEFAULT_MAX_RETRIES}'
-        )
-    return x
 
 
 def cli_main():
@@ -35,13 +26,6 @@ def main(raw_args, access_token, n2y_cache=None):
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument("config", help="The path to the config file")
-    parser.add_argument(
-        '--max_retries', '-m', default=DEFAULT_MAX_RETRIES, type=int_under_6,
-        help=(
-            'The maximum amount of times an API request will be retried after being rate '
-            'limited. This argument must be an integer less than or equal to {DEFAULT_MAX_RETRIES}'
-        )
-    )
     parser.add_argument(
         "--verbosity", '-v', default='INFO',
         help="Level to set the root logging module to",
@@ -84,7 +68,6 @@ def main(raw_args, access_token, n2y_cache=None):
         config["media_root"],
         config["media_url"],
         export_defaults=export_defaults,
-        max_retries=args.max_retries
     )
 
     error_occurred = False
