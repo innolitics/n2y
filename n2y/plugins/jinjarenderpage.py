@@ -206,12 +206,9 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         try:
             rendered_text = render_from_string(jinja_code, context, jinja_environment)
         except (UndefinedError, TemplateSyntaxError) as e:
-            logger.error(
-                "Error rendering Jinja template on %s [%s]",
-                self.page.title.to_plain_text() if self.page else "unknown",
-                self.notion_url,
-                exc_info=True,
-            )
+            if self.page:
+                e.add_note(f"Error occurred in {self.page.title.to_plain_text()}")
+            e.add_note(f"[{self.notion_url}]")
             raise
 
         # pandoc.read includes Meta data, which isn't relevant here; we just
