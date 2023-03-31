@@ -344,6 +344,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.7.6
+
+- Add requests cache to speed up dev loop
+
 ### v0.7.5
 
 - Flatten Column List Blocks

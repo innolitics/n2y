@@ -62,6 +62,7 @@ def main(raw_args, access_token, n2y_cache=None):
         try:
             import requests_cache
             requests_cache.install_cache(n2y_cache, backend='sqlite', expire_after=-1)
+            logger.info("Using cache at %s", n2y_cache)
         except ImportError:
             logger.warning(
                 "The requests_cache module is not installed. "
