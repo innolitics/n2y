@@ -20,6 +20,7 @@ from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.utils import sanitize_filename, strip_hyphens, DEFAULT_MAX_RETRIES
+from n2y.config import merge_default_config
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -105,7 +106,7 @@ class Client:
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
-        self.export_defaults = export_defaults
+        self.export_defaults = export_defaults or merge_default_config({})
         self.max_retries = max_retries
 
         self.base_url = "https://api.notion.com/v1/"
@@ -298,12 +299,15 @@ class Client:
             database = self.databases_cache[database_id]
         else:
             try:
-                notion_database = self._get_url(f"{self.base_url}databases/{database_id}")
+                notion_database = self.get_notion_database(database_id)
                 database = self._wrap_notion_database(notion_database)
             except ObjectNotFound:
                 database = None
             self.databases_cache[database_id] = database
         return database
+
+    def get_notion_database(self, database_id):
+        return self._get_url(f"{self.base_url}databases/{database_id}")
 
     def get_database_pages(self, database_id, filter=None, sorts=None):
         notion_pages = self.get_database_notion_pages(database_id, filter, sorts)
@@ -507,10 +511,19 @@ class Client:
         children_appended = []
         parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
         parent_type = parent.notion_data["object"]
-        def type_is_database(child): return 'type' in child and child['type'] == 'child_database'
-        def object_is_database(child): return child['object'] == 'database'
-        def type_is_page(child): return 'type' in child and child['type'] == 'child_page'
-        def object_is_page(child): return child['object'] == 'page'
+
+        def type_is_database(child):
+            return 'type' in child and child['type'] == 'child_database'
+
+        def object_is_database(child):
+            return child['object'] == 'database'
+
+        def type_is_page(child):
+            return 'type' in child and child['type'] == 'child_page'
+
+        def object_is_page(child):
+            return child['object'] == 'page'
+
         for i, child in enumerate(children):
             if object_is_database(child) or type_is_database(child):
                 children_appended = self._append_blocks(

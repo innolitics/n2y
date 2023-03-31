@@ -1,11 +1,18 @@
+from unittest.mock import patch
 from jinja2 import TemplateSyntaxError
 from pytest import raises
 
 from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
 from n2y.utils import pandoc_ast_to_markdown
-from n2y.plugins.jinjarenderpage import render_from_string, join_to, fuzzy_in, JinjaFencedCodeBlock, JinjaRenderPage
-from n2y.notion_mocks import mock_database, mock_database_mention, mock_page, mock_rich_text, mock_rich_text_array, mock_block
+from n2y.plugins.jinjarenderpage import (
+    render_from_string, join_to, fuzzy_in,
+    JinjaFencedCodeBlock, JinjaRenderPage,
+)
+from n2y.notion_mocks import (
+    mock_database, mock_database_mention, mock_page, mock_rich_text,
+    mock_rich_text_array, mock_block,
+)
 
 
 def test_join_to_basic():
@@ -131,14 +138,19 @@ def test_jinja_render_with_database():
     client = Client('')
     database_notion_data = mock_database(title='My DB')
     mention_notion_data = mock_database_mention(database_notion_data['id'])
+    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
     caption = [
         mock_rich_text('{jinja=gfm} '),
         mock_rich_text('My DB', mention=mention_notion_data),
     ]
-    jinja_code = "{% for v in databases['My DB'] %}{{v.Name}}{% endfor %}"
-    # TODO: mock out database query
-    # TODO: mock out database data
-    page = process_jinja_block(client, caption, jinja_code)
+    jinja_code = "{% for v in databases['My DB'] %}{{v.title}}{% endfor %}"
+
+    with patch.object(Client, "get_notion_database") as mock_get_notion_database:
+        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+            mock_get_notion_database.return_value = database_notion_data
+            mock_get_database_notion_pages.return_value = database_pages_notion_data
+            page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
+
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert markdown == "ab\n"

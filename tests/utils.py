@@ -1,6 +1,5 @@
 import re
 import yaml
-import collections
 
 try:
     from yaml import CLoader as Loader

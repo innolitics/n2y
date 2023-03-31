@@ -12,7 +12,13 @@ from n2y.utils import pandoc_write_or_log_errors, sanitize_filename
 logger = logging.getLogger(__name__)
 
 
-def _page_properties(page, pandoc_format=None, id_property=None, url_property=None, property_map=None):
+def _page_properties(
+    page,
+    pandoc_format=None,
+    id_property=None,
+    url_property=None,
+    property_map=None,
+):
     if pandoc_format is None:
         pandoc_format = "gfm+tex_math_dollars+raw_attribute"
     if property_map is None:
@@ -88,7 +94,7 @@ def database_to_yaml(
             else:
                 result[content_property] = None
         results.append(result)
-    return yaml.dump(results, sort_keys=False)
+    return results
 
 
 def database_to_markdown_files(

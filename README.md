@@ -344,9 +344,13 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
-### v0.7.6
+### v0.8.0
 
 - Add requests cache to speed up dev loop
+- Update `jinjarenderpage` so that it no pulls databases mentioned in the
+  caption, instead of relying on the exports list. Also, make the
+  jinjacodeblocks support any pandoc format.
+- Make it so that we can render property values into any pandoc format
 
 ### v0.7.5
 

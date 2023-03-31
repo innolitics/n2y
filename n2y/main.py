@@ -3,6 +3,7 @@ import sys
 import logging
 import argparse
 import pkg_resources
+import yaml
 
 from n2y import notion
 from n2y.config import load_config, merge_default_config
@@ -138,6 +139,7 @@ def _export_node_from_config(client, export):
                 notion_sorts=export["notion_sorts"],
                 property_map=export["property_map"],
             )
+            result = yaml.dump(result, sort_keys=False)
             with open(export["output"], "w") as f:
                 f.write(result)
         elif node_type == "database_as_files":

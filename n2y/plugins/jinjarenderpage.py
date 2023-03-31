@@ -145,12 +145,17 @@ class JinjaRenderPage(Page):
         }
 
     def to_pandoc(self):
-        first_pass_output_text = pandoc_ast_to_markdown(super().to_pandoc())
+        first_pass_ast = super().to_pandoc()
         jinja_environment = self.client.plugin_data['jinjarenderpage']['environment']
         first_pass_output = jinja_environment.globals["first_pass_output"]
-        first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
-        jinja2.clear_caches()
-        return super().to_pandoc()
+        if first_pass_output.second_pass_is_requested:
+            first_pass_output_text = pandoc_ast_to_markdown(first_pass_ast)
+            first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
+            jinja2.clear_caches()
+            second_pass_ast = super().to_pandoc()
+            return second_pass_ast
+        else:
+            return first_pass_ast
 
 
 class JinjaFencedCodeBlock(FencedCodeBlock):
@@ -185,7 +190,8 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
 
     def _get_database_ids_from_mentions(self):
         for rich_text in self.caption:
-            if isinstance(rich_text, MentionRichText) and isinstance(rich_text.mention, DatabaseMention):
+            is_mention = isinstance(rich_text, MentionRichText)
+            if is_mention and isinstance(rich_text.mention, DatabaseMention):
                 yield rich_text.mention.notion_database_id
 
     def to_pandoc(self):
