@@ -5,7 +5,7 @@ from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
 from n2y.utils import pandoc_ast_to_markdown
 from n2y.plugins.jinjarenderpage import render_from_string, join_to, fuzzy_in, JinjaFencedCodeBlock, JinjaRenderPage
-from n2y.notion_mocks import mock_page, mock_rich_text_array, mock_block
+from n2y.notion_mocks import mock_database, mock_database_mention, mock_page, mock_rich_text, mock_rich_text_array, mock_block
 
 
 def test_join_to_basic():
@@ -79,7 +79,7 @@ def process_jinja_block(client, caption, jinja_code):
 
 
 def test_jinja_syntax_err():
-    client = Client('', exports=[])
+    client = Client('')
     caption = mock_rich_text_array('{jinja=gfm}')
     jinja_code = "{% huhwhat 'hotel', 'california' %}"
     page = process_jinja_block(client, caption, jinja_code)
@@ -87,8 +87,8 @@ def test_jinja_syntax_err():
         page.to_pandoc()
 
 
-def test_jinja_render():
-    client = Client('', exports=[])
+def test_jinja_render_gfm():
+    client = Client('')
     caption = mock_rich_text_array('{jinja=gfm}')
     jinja_code = "{% for v in ['a', 'b'] %}{{v}}{% endfor %}"
     page = process_jinja_block(client, caption, jinja_code)
@@ -97,11 +97,48 @@ def test_jinja_render():
     assert markdown == "ab\n"
 
 
-def test_jinja_render_with_second_pass():
-    pass
-    # TODO fill this in
+def test_jinja_render_gfm_with_second_pass():
+    client = Client('')
+    caption = mock_rich_text_array('{jinja=gfm}')
+    jinja_code = "a{% for v in first_pass_output.lines %}{{v}}{% endfor %}"
+    page = process_jinja_block(client, caption, jinja_code)
+    pandoc_ast = page.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert markdown == "aa\n"
+
+
+def test_jinja_render_html():
+    client = Client('')
+    caption = mock_rich_text_array('{jinja=html}')
+    jinja_code = (
+        "<table>"
+        "<tr><th>Name</th></tr>"
+        "{% for v in ['a', 'b'] %}<tr><td>{{v}}</td></tr>{% endfor %}"
+        "</table>"
+    )
+    page = process_jinja_block(client, caption, jinja_code)
+    pandoc_ast = page.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert markdown == (
+        "| Name |\n"
+        "|------|\n"
+        "| a    |\n"
+        "| b    |\n"
+    )
 
 
 def test_jinja_render_with_database():
-    pass
-    # TODO fill this in
+    client = Client('')
+    database_notion_data = mock_database(title='My DB')
+    mention_notion_data = mock_database_mention(database_notion_data['id'])
+    caption = [
+        mock_rich_text('{jinja=gfm} '),
+        mock_rich_text('My DB', mention=mention_notion_data),
+    ]
+    jinja_code = "{% for v in databases['My DB'] %}{{v.Name}}{% endfor %}"
+    # TODO: mock out database query
+    # TODO: mock out database data
+    page = process_jinja_block(client, caption, jinja_code)
+    pandoc_ast = page.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert markdown == "ab\n"

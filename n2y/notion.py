@@ -99,13 +99,13 @@ class Client:
         media_root='.',
         media_url='',
         plugins=None,
-        exports=None,
+        export_defaults=None,
         max_retries=DEFAULT_MAX_RETRIES
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
-        self.exports = exports
+        self.export_defaults = export_defaults
         self.max_retries = max_retries
 
         self.base_url = "https://api.notion.com/v1/"
@@ -507,10 +507,10 @@ class Client:
         children_appended = []
         parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
         parent_type = parent.notion_data["object"]
-        type_is_database = lambda child: 'type' in child and child['type'] == 'child_database'
-        object_is_database = lambda child: child['object'] == 'database'
-        type_is_page = lambda child: 'type' in child and child['type'] == 'child_page'
-        object_is_page = lambda child: child['object'] == 'page'
+        def type_is_database(child): return 'type' in child and child['type'] == 'child_database'
+        def object_is_database(child): return child['object'] == 'database'
+        def type_is_page(child): return 'type' in child and child['type'] == 'child_page'
+        def object_is_page(child): return child['object'] == 'page'
         for i, child in enumerate(children):
             if object_is_database(child) or type_is_database(child):
                 children_appended = self._append_blocks(

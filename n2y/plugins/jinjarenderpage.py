@@ -32,9 +32,12 @@ import pandoc
 import jinja2
 from n2y.blocks import FencedCodeBlock
 from n2y.errors import UseNextClass
+from n2y.mentions import DatabaseMention
 
 from n2y.page import Page
+from n2y.rich_text import MentionRichText
 from n2y.utils import pandoc_ast_to_markdown
+from n2y.export import database_to_yaml
 
 
 logger = logging.getLogger(__name__)
@@ -160,14 +163,38 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             self.pandoc_format = result.group(1)
         else:
             raise UseNextClass()
-        # TODO: loop through mentions and find database IDs
-        # TODO: load the databases using the notion client
+        self.databases = {}
+        export_defaults = client.export_defaults
+        for database_id in self._get_database_ids_from_mentions():
+            database = self.client.get_database(database_id)
+            # TODO: Rethink about the database data is accessed from within the
+            # templates; perhaps it should be something more like Django's ORM
+            # where we can filter and sort the databases via the API, instead of
+            # having to pull in ALL of the data first before filtering it.
+            # Such an API would also alleviate the need to pass in the export
+            # defaults and it could provide a mechanism to access the page
+            # content from within the Jinja templates, which isn't possible
+            # right now.
+            self.databases[database.title.to_plain_text()] = database_to_yaml(
+                database=database,
+                pandoc_format=self.pandoc_format,
+                pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
+                id_property=export_defaults["id_property"],
+                url_property=export_defaults["url_property"],
+            )
+
+    def _get_database_ids_from_mentions(self):
+        for rich_text in self.caption:
+            if isinstance(rich_text, MentionRichText) and isinstance(rich_text.mention, DatabaseMention):
+                yield rich_text.mention.notion_database_id
 
     def to_pandoc(self):
         jinja_environment = self.client.plugin_data['jinjarenderpage']['environment']
         jinja_code = self.rich_text.to_plain_text()
-        # TODO: get databases and add to context
-        context = {}
+        context = {
+            "databases": self.databases,
+            "page": self.page.properties_to_values(self.pandoc_format),
+        }
         rendered_text = render_from_string(jinja_code, context, jinja_environment)
 
         # pandoc.read includes Meta data, which isn't relevant here; we just
@@ -175,9 +202,6 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         document_ast = pandoc.read(rendered_text, format=self.pandoc_format)
         children_ast = document_ast[1]
         return children_ast
-
-# TODO: remove data files from the n2y yaml file
-# TODO: make the n2y config file produce docx files directly
 
 
 notion_classes = {

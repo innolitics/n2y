@@ -5,7 +5,7 @@ import argparse
 import pkg_resources
 
 from n2y import notion
-from n2y.config import load_config
+from n2y.config import load_config, merge_default_config
 from n2y.utils import share_link_from_id, DEFAULT_MAX_RETRIES
 from n2y.export import export_page, database_to_yaml, database_to_markdown_files
 
@@ -76,12 +76,13 @@ def main(raw_args, access_token, n2y_cache=None):
     config = load_config(args.config)
     if config is None:
         return 2
+    export_defaults = merge_default_config(config.get("export_defaults", {}))
 
     client = notion.Client(
         access_token,
         config["media_root"],
         config["media_url"],
-        exports=config["exports"],
+        export_defaults=export_defaults,
         max_retries=args.max_retries
     )
 

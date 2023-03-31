@@ -78,11 +78,11 @@ def mock_page_mention():
     }
 
 
-def mock_database_mention():
+def mock_database_mention(id=None):
     return {
         'type': 'database',
         'database': {
-            'id': mock_id(),
+            'id': id or mock_id(),
         },
     }
 
@@ -190,7 +190,9 @@ def mock_page(title="Mock Page", extra_properties=None):
     }
 
 
-def mock_database(title='Mock Database', extra_properties={}):
+def mock_database(title='Mock Database', extra_properties=None):
+    if extra_properties is None:
+        extra_properties = {}
     hyphenated_title = title.replace(" ", "-")
     created_time = datetime.now().isoformat()
     notion_id = mock_id()
@@ -209,20 +211,8 @@ def mock_database(title='Mock Database', extra_properties={}):
         'is_inline': False,
         'archived': False,
         'properties': {
-            'Tags': {
-                'id': mock_id(),
-                'name': 'Tags',
-                'type': 'multi_select',
-                'multi_select': {'options': []}
-            },
-            'Number': {
-                'id': mock_id(),
-                'name': 'Number',
-                'type': 'number',
-                'number': {'format': 'number'}
-            },
             'Name': {
-                'id': 'title',
+                'id': 'title',  # all title properties have id 'title'
                 'name': 'Name',
                 'type': 'title',
                 'title': {}

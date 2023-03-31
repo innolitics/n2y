@@ -78,6 +78,12 @@ def merge_config(config_items, builtin_defaults, defaults):
     return merged_config_items
 
 
+def merge_default_config(defaults):
+    master_defaults_copy = copy.deepcopy(EXPORT_DEFAULTS)
+    defaults_copy = copy.deepcopy(defaults)
+    return {**master_defaults_copy, **defaults_copy}
+
+
 def validate_config(config):
     if "exports" not in config:
         logger.error("Config missing the 'exports' key")
