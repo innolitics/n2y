@@ -30,6 +30,7 @@ import logging
 
 import pandoc
 import jinja2
+from jinja2.exceptions import TemplateSyntaxError, UndefinedError
 from n2y.blocks import FencedCodeBlock
 from n2y.errors import UseNextClass
 from n2y.mentions import DatabaseMention
@@ -202,7 +203,11 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             "databases": self.databases,
             "page": self.page.properties_to_values(self.pandoc_format),
         }
-        rendered_text = render_from_string(jinja_code, context, jinja_environment)
+        try:
+            rendered_text = render_from_string(jinja_code, context, jinja_environment)
+        except (UndefinedError, TemplateSyntaxError) as e:
+            if self.page is not None:
+                e.message += f' {self.page.title} {self.page.notion_url}'
 
         # pandoc.read includes Meta data, which isn't relevant here; we just
         # want the AST for the content
