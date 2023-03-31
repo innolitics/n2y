@@ -134,6 +134,32 @@ def test_simple_database_to_markdown_files(tmpdir):
     assert "content" not in metadata
 
 
+@pytest.mark.xfail(reason="There are still issues with direct docx rendering")
+def test_simple_database_to_docx_files(tmpdir):
+    """
+    The database can be seen here:
+    https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
+    """
+    database_id = "176fa24d4b7f4256877e60a1035b45a4"
+    config = {
+        "exports": [
+            {
+                "id": database_id,
+                "pandoc_format": "docx",
+                "pandoc_options": ["--standalone"],
+                "node_type": "database_as_files",
+                "output": "database",
+                "filename_property": "Name",
+            }
+        ]
+    }
+    status = run_n2y(tmpdir, config)
+    assert status == 0
+    output_directory = os.path.join(tmpdir, "database")
+    generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
+    assert generated_files == {"A.docx", "B.docx", "C.docx"}
+
+
 def test_simple_database_config(tmpdir):
     """
     The database can be seen here:
