@@ -205,7 +205,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         }
         try:
             rendered_text = render_from_string(jinja_code, context, jinja_environment)
-        except (UndefinedError, TemplateSyntaxError) as e:
+        except (UndefinedError, TemplateSyntaxError):
             logger.error(
                 "Error rendering Jinja template on %s [%s]",
                 self.page.title.to_plain_text() if self.page else "unknown",

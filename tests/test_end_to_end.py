@@ -4,6 +4,7 @@ import os
 import re
 from os.path import isfile, join
 from pathlib import Path
+import pytest
 
 import yaml
 try:
