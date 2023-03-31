@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class FirstPassOutput:
-
     def __init__(self, lines=None):
         self._second_pass_is_requested = False
         self.is_second_pass = lines is not None
@@ -43,23 +42,6 @@ class FirstPassOutput:
         if self._source is None:
             self._source = '\n'.join(self.lines)
         return self._source
-
-
-def extract_module_and_class(descriptor):
-    parts = descriptor.split('.')
-    module_name = '.'.join(parts[:-1])
-    class_name = parts[-1]
-    return module_name, class_name
-
-
-def post_processing_filter_list(environment):
-    return getattr(environment, 'rdm_post_process_filters', [])
-
-
-def load_class(class_descriptor):
-    module_name, class_name = extract_module_and_class(class_descriptor)
-    module = import_module(module_name)
-    return getattr(module, class_name)
 
 
 def join_to(foreign_keys, table, primary_key='id'):
@@ -97,20 +79,15 @@ def _canonicalize_markdown(markdown):
     return markdown
 
 
-def render_template_to_file(config, template_filename, context, loaders=None):
-    output_string = generate_template_output(config, template_filename, context, loaders=loaders)
-    return output_string
-
-
-def generate_template_output(config, template_filename, context, loaders=None):
-    environment = _create_jinja_environment(config, loaders)
+def generate_template_output(template_filename, context):
+    environment = _create_jinja_environment()
     first_pass_output = FirstPassOutput()
     environment.globals['first_pass_output'] = first_pass_output
     output_string = generate_template_output_string(environment, template_filename, context)
     if first_pass_output.second_pass_is_requested:
         jinja2.clear_caches()
         first_pass_output_filled = FirstPassOutput(output_string.splitlines(keepends=True))
-        second_pass_environment = _create_jinja_environment(config, loaders)
+        second_pass_environment = _create_jinja_environment()
         second_pass_environment.globals['first_pass_output'] = first_pass_output_filled
         output_string = generate_template_output_string(
             second_pass_environment,
@@ -122,31 +99,17 @@ def generate_template_output(config, template_filename, context, loaders=None):
 
 def generate_template_output_string(environment, template_filename, context):
     template = environment.get_template(template_filename)
-    source_string = _generate_source_string(template, context)
-    return source_string
+    return _generate_source_string(template, context)
 
 
-def _create_jinja_environment(config, loaders=None):
-    extensions = [load_class(ed) for ed in config.get('md_extensions', [])]
-    loader = _create_loader(loaders)
+def _create_jinja_environment():
     environment = jinja2.Environment(
         cache_size=0,
         undefined=jinja2.StrictUndefined,
-        loader=loader,
-        extensions=extensions,
     )
     environment.filters['join_to'] = join_to
     environment.filters['fuzzy_in'] = fuzzy_in
     return environment
-
-
-def _create_loader(loaders=None):
-    if loaders is None:
-        loaders = [
-            jinja2.FileSystemLoader('.'),
-        ]
-
-    return jinja2.ChoiceLoader(loaders)
 
 
 def _generate_source_string(template, context):
@@ -176,7 +139,6 @@ class JinjaRenderPage(Page):
 
     def _render(self, ast):
         context = self.client.plugin_data['render_context']
-        config = {'md_extensions': ['jinja2.ext.do']}
         parent_id = strip_hyphens(self.notion_parent['database_id'])
         pandoc_format = 'gfm'
         pandoc_options = []
@@ -194,7 +156,7 @@ class JinjaRenderPage(Page):
                     options=pandoc_options
                 )
                 file.write(markdown)
-            output_string = render_template_to_file(config, template_name, context)
+            output_string = generate_template_output(template_name, context)
             rendered_ast = pandoc.read(
                 output_string,
                 format=pandoc_format,
