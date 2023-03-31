@@ -122,8 +122,7 @@ def _validate_config_item(config_item):
     if "notion_sorts" in config_item:
         if not _valid_notion_sort(config_item["notion_sorts"]):
             return False
-    # TODO: validate pandoc_formation
-    # TODO: validate pandoc_options
+    # TODO: validate pandoc_format using the `--list-output-types` and `--list-extensions`
     # TODO: property map
     return True
 
