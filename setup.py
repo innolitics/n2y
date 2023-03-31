@@ -36,6 +36,7 @@ setup(
             'pytest',
             'flake8',
             'check-manifest',
+            'requests-cache',
         ]
     },
     include_package_data=True,

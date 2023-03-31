@@ -304,6 +304,10 @@ Every rich text object and mention has a `block` property that is either refers
 back to the block that contains it, or is None if the rich text is within a
 property value or some other location.
 
+## Cache
+
+During development, it can be convenient to cache requests to Notion. This feature can be enabled by setting the `N2Y_CACHE` environment variable to the location of the sqlite file you'd like to use as your Notion request cache. To flush the cache, simply delete the file. Note that this feature is only available if you include dev options.
+
 ## Releases
 
 Any git commit tagged with a string starting with "v" will automatically be pushed to pypi.

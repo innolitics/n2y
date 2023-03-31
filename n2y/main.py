@@ -24,10 +24,11 @@ def int_under_6(x):
 def cli_main():
     args = sys.argv[1:]
     access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
-    sys.exit(main(args, access_token))
+    n2y_cache = os.environ.get('N2Y_CACHE', None)
+    sys.exit(main(args, access_token, n2y_cache))
 
 
-def main(raw_args, access_token):
+def main(raw_args, access_token, n2y_cache=None):
     parser = argparse.ArgumentParser(
         description="Move data from Notion into YAML/markdown",
         formatter_class=argparse.RawTextHelpFormatter,
@@ -56,6 +57,16 @@ def main(raw_args, access_token):
     logging.basicConfig(level=logging_level, handlers=[stdout_handler])
     global logger
     logger = logging.getLogger(__name__)
+
+    if n2y_cache is not None:
+        try:
+            import requests_cache
+            requests_cache.install_cache(n2y_cache, backend='sqlite', expire_after=-1)
+        except ImportError:
+            logger.warning(
+                "The requests_cache module is not installed. "
+                "Ignoring N2Y_CACHE %s", n2y_cache,
+            )
 
     if access_token is None:
         logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
