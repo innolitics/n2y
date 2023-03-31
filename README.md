@@ -14,7 +14,7 @@ To install the tool, just run:
 pip install n2y
 ```
 
-You'll also need to install [pandoc](https://github.com/jgm/pandoc/releases/). We've tested against version 2.16.2, but any newer versions should work too.
+You'll also need to install [pandoc](https://github.com/jgm/pandoc/releases/).
 
 Note: n2y has only been tested with `pandoc 2.18` and `mermaid-cli 8.11`.
 
