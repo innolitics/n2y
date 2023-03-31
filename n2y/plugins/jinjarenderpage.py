@@ -116,6 +116,7 @@ def _create_jinja_environment():
     environment = jinja2.Environment(
         cache_size=0,
         undefined=jinja2.StrictUndefined,
+        extensions=["jinja2.ext.do"],
     )
     environment.globals['first_pass_output'] = FirstPassOutput()
     environment.filters['join_to'] = join_to
