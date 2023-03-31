@@ -16,9 +16,9 @@ DEFAULTS = {
 
 
 EXPORT_DEFAULTS = {
-    "id_property": None,
+    "id_property": "notion_id",
     "content_property": None,
-    "url_property": None,
+    "url_property": "notion_url",
     "notion_filter": [],
     "notion_sorts": [],
     "pandoc_format": "gfm+tex_math_dollars+raw_attribute",

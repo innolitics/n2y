@@ -358,3 +358,4 @@ def test_jinja_render_plugin(tmpdir):
     assert "## blue is a color" in document
     assert "## pink is a color" in document
     assert "## red is a color" in document
+    assert "Page with JinjaCodeBlock" in document
