@@ -3,34 +3,9 @@ from pytest import raises
 
 from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
-from n2y.plugins.rawcodeblocks import RawFencedCodeBlock
-from tests.utils import render_from_string, invert_dependencies
-from n2y.plugins.jinjarenderpage import join_to, fuzzy_in, JinjaRenderPage
-from n2y.notion_mocks import mock_page, mock_rich_text_array, mock_block, mock_database
-
-
-def test_invert_dependencies_single():
-    objects = [
-        {'id': 'a', 'dependencies': ['r-1', 'r-2']}
-    ]
-    actual = invert_dependencies(objects, 'id', 'dependencies')
-    expected = [('r-1', {'a'}), ('r-2', {'a'})]
-    assert actual == expected
-
-
-def test_invert_dependencies_multiple():
-    objects = [
-        {'id': 'a', 'dependencies': ['r-1', 'r-2', 'r-3-2']},
-        {'id': 'b', 'dependencies': ['r-1', 'r-2', 'r-3-1']},
-    ]
-    actual = invert_dependencies(objects, 'id', 'dependencies')
-    expected = [
-        ('r-1', {'a', 'b'}),
-        ('r-2', {'a', 'b'}),
-        ('r-3-1', {'b'}),
-        ('r-3-2', {'a'}),
-    ]
-    assert actual == expected
+from n2y.utils import pandoc_ast_to_markdown
+from n2y.plugins.jinjarenderpage import render_from_string, join_to, fuzzy_in, JinjaFencedCodeBlock, JinjaRenderPage
+from n2y.notion_mocks import mock_page, mock_rich_text_array, mock_block
 
 
 def test_join_to_basic():
@@ -84,27 +59,49 @@ def test_undefined():
         render_from_string(input_string)
 
 
+def process_jinja_block(client, caption, jinja_code):
+    page_notion_data = mock_page()
+    page = JinjaRenderPage(client, page_notion_data)
+
+    page_block_notion_data = mock_block('child_page', {'title': "Mock Page"})
+    page_block = ChildPageBlock(client, page_block_notion_data, page, False)
+
+    page._block = page_block
+
+    code_block_notion_data = mock_block('code', {
+        'language': 'plain text',
+        'caption': caption,
+        'rich_text': mock_rich_text_array(jinja_code)
+    })
+    code_block = JinjaFencedCodeBlock(client, code_block_notion_data, page, False)
+    page.block.children = [code_block]
+    return page
+
+
 def test_jinja_syntax_err():
     client = Client('', exports=[])
-    database_notion_data = mock_database()
-    database_id = database_notion_data['id']
-    database_block = client._wrap_notion_database(database_notion_data)
-    client.databases_cache[database_id] = database_block
-    page_notion_data = mock_page()
-    page_notion_data['parent'] = {'type': 'database_id', 'database_id': database_id}
-    page_block = JinjaRenderPage(client, page_notion_data)
-    page_notion_data['has_children'] = False
-    page_notion_data['type'] = 'child_page'
-    page_notion_data['child_page'] = {'title': "Mock Page"}
-    child_page = ChildPageBlock(client, page_notion_data, page_block, False)
-    page_block._block = child_page
-    code_notion_type_data = {
-        'language': 'plain text',
-        'caption': mock_rich_text_array('{=gfm}'),
-        'rich_text': mock_rich_text_array("{% huhwhat 'hotel', 'california' %}")
-    }
-    code_notion_data = mock_block('code', code_notion_type_data)
-    code_block = RawFencedCodeBlock(client, code_notion_data, page_block, False)
-    page_block.block.children = [code_block]
+    caption = mock_rich_text_array('{jinja=gfm}')
+    jinja_code = "{% huhwhat 'hotel', 'california' %}"
+    page = process_jinja_block(client, caption, jinja_code)
     with raises(TemplateSyntaxError):
-        page_block.to_pandoc()
+        page.to_pandoc()
+
+
+def test_jinja_render():
+    client = Client('', exports=[])
+    caption = mock_rich_text_array('{jinja=gfm}')
+    jinja_code = "{% for v in ['a', 'b'] %}{{v}}{% endfor %}"
+    page = process_jinja_block(client, caption, jinja_code)
+    pandoc_ast = page.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert markdown == "ab\n"
+
+
+def test_jinja_render_with_second_pass():
+    pass
+    # TODO fill this in
+
+
+def test_jinja_render_with_database():
+    pass
+    # TODO fill this in
