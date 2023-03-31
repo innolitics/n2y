@@ -53,7 +53,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
     else:
         return pandoc_write_or_log_errors(
             pandoc_ast,
-            format='gfm+tex_math_dollars+raw_attribute',
+            format='markdown',
             options=[
                 '--wrap', 'none',  # don't hard line-wrap
                 '--eol', 'lf',  # use linux-style line endings

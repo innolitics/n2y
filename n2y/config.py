@@ -21,7 +21,7 @@ EXPORT_DEFAULTS = {
     "url_property": "notion_url",
     "notion_filter": [],
     "notion_sorts": [],
-    "pandoc_format": "gfm+tex_math_dollars+raw_attribute",
+    "pandoc_format": "markdown",
     "pandoc_options": [
         '--wrap', 'none',  # don't hard line-wrap
         '--eol', 'lf',  # use linux-style line endings

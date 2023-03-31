@@ -20,7 +20,7 @@ def _page_properties(
     property_map=None,
 ):
     if pandoc_format is None:
-        pandoc_format = "gfm+tex_math_dollars+raw_attribute"
+        pandoc_format = "markdown"
     if property_map is None:
         property_map = {}
     properties = page.properties_to_values(pandoc_format)
