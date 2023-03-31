@@ -161,6 +161,7 @@ def retry_api_call(api_call):
             if not should_retry:
                 raise err
             elif retry_count < max_api_retries:
+                retry_count += 1
                 if 'retry-after' in err.headers:
                     retry_after = float(err.headers['retry-after'])
                     logger.info(
@@ -176,7 +177,6 @@ def retry_api_call(api_call):
                         retry_after, retry_count, max_api_retries,
                     )
                 sleep(retry_after)
-                retry_count += 1
                 return wrapper(*args, retry_count=retry_count, **kwargs)
             else:
                 raise err
