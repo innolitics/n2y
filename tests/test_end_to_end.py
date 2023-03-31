@@ -294,7 +294,7 @@ def test_builtin_plugins(tmpdir):
         im1 = f'{tmpdir.strpath}/{im1_line}'
         root = Path(__file__).resolve().parent.parent
         with open(im1, 'rb') as img:
-            with open(root/'n2y'/'data'/'mermaid_err.png', 'rb') as err:
+            with open(root / 'n2y' / 'data' / 'mermaid_err.png', 'rb') as err:
                 assert img.read() != err.read()
 
     assert "Raw markdown should show up" in lines
@@ -319,6 +319,7 @@ def test_builtin_plugins(tmpdir):
 
 
 def test_comment():
+    # TODO: Add a link to page where this block can be seen
     block_with_comments_id = "ac496c7db16743488495976f7433dbfb"
     comments = Client(NOTION_ACCESS_TOKEN).get_comments(block_with_comments_id)
     assert comments[0].rich_text.to_plain_text() == "Test Comment"
@@ -326,6 +327,12 @@ def test_comment():
 
 
 def test_can_pull_all_relations(tmpdir):
+    """
+    This page can be seen here https://www.notion.so/Item-e611d7fdd4604d1192637a25bc9f5339
+
+    The purpose of this test is to confirm that we're handling pagination
+    unrolling for situations when a relation property has more than 30 items.
+    """
     object_id = "e611d7fdd4604d1192637a25bc9f5339"
     page = run_n2y_page(tmpdir, object_id)
     uuids = re.findall(
@@ -335,48 +342,19 @@ def test_can_pull_all_relations(tmpdir):
     assert len(uuids) == 31
 
 
-def test_render_plugin(tmpdir):
-    config = {
-        "exports": [
-            {
-                "id": "67e43fe467174002b166fd4536ff35f0",
-                "node_type": "database_as_yaml",
-                "output": "System_Items.yml",
-            },
-            {
-                "id": "a7169f72ff994a988e067287af5f557b",
-                "node_type": "database_as_files",
-                "filename_property": "Name",
-                "output": "files",
-                "plugins": [
-                    "n2y.plugins.jinjarenderpage",
-                    "n2y.plugins.deepheaders",
-                    "n2y.plugins.removecallouts",
-                    "n2y.plugins.rawcodeblocks",
-                    "n2y.plugins.mermaid",
-                    "n2y.plugins.footnotes",
-                    "n2y.plugins.expandlinktopages",
-                ]
-            }
-        ]
-    }
-    status = run_n2y_custom(tmpdir, config)
-    assert status == 0
-    with open(str(tmpdir / "files" / "Template_Test_Page.md"), "r") as f:
-        markdown = f.read()
-    target_markdown = """---
-Name: Template Test Page
-Tags:
-- Test
----
-This is a test page
+def test_jinja_render_plugin(tmpdir):
+    """
+    This test exercises our jinja render plugin. It involves a simple database
+    with three entries and a jinja code block.
 
-On this page we will test the ability to render jinja templates
+    See https://www.notion.so/Render-Test-4803ad13c6224deb93da94c41cc105d3 for
+    the parent page with the database and child page to be rendered.
+    """
+    object_id = "869e37f1523c468399411a1b23b27634"
+    document = run_n2y_page(tmpdir, object_id, plugins=[
+        "n2y.plugins.jinjarenderpage",
+    ])
 
-    ## [['blue']] is a color
-
-    ## [['pink']] is a color
-
-    ## [['red']] is a color
-"""
-    assert markdown == target_markdown
+    assert "## blue is a color" in document
+    assert "## pink is a color" in document
+    assert "## red is a color" in document
