@@ -16,7 +16,7 @@ pip install n2y
 
 You'll also need to install [pandoc](https://github.com/jgm/pandoc/releases/).
 
-Note: n2y has only been tested with `pandoc 2.18` and `mermaid-cli 8.11`.
+Note: n2y has only been tested with `pandoc 2.19.2` and `mermaid-cli 8.11`.
 
 ## Authorization
 
