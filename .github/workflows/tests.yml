@@ -16,6 +16,9 @@ jobs:
           sudo apt-get install -f
           python -m pip install --upgrade pip setuptools
           pip install -e '.[dev]'
+          npm install -g @mermaid-js/mermaid-cli@9.4.0
+          mmdc --version
+
       - name: Run tests
         run: |
           flake8 .
