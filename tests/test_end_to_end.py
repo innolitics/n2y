@@ -362,11 +362,8 @@ def test_can_pull_all_relations(tmpdir):
     """
     object_id = "e611d7fdd4604d1192637a25bc9f5339"
     page = run_n2y_page(tmpdir, object_id)
-    uuids = re.findall(
-        '[^\"][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[^\"]',
-        page
-    )
-    assert len(uuids) == 31
+    page_properties = parse_yaml_front_matter(page)
+    assert len(page_properties["Related Items"]) == 31
 
 
 def test_jinja_render_plugin(tmpdir):

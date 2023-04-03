@@ -127,10 +127,10 @@ def test_jinja_render_html():
     pandoc_ast = page.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert markdown == (
-        "| Name |\n"
-        "|------|\n"
-        "| a    |\n"
-        "| b    |\n"
+        "  Name\n"
+        "  ------\n"
+        "  a\n"
+        "  b\n"
     )
 
 

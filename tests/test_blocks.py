@@ -482,10 +482,10 @@ def test_table_block():
         TableFoot(("", [], []), []),
     )
     assert markdown == (
-        "| header1 | header2 |\n"
-        "|---------|---------|\n"
-        "| one     | two     |\n"
-        "| three   | four    |\n"
+        '  header1   header2\n'
+        '  --------- ---------\n'
+        '  one       two\n'
+        '  three     four\n'
     )
 
 
