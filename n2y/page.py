@@ -103,5 +103,5 @@ class Page:
     def to_pandoc(self):
         return self.block.to_pandoc()
 
-    def properties_to_values(self):
-        return {k: v.to_value() for k, v in self.properties.items()}
+    def properties_to_values(self, pandoc_format):
+        return {k: v.to_value(pandoc_format) for k, v in self.properties.items()}

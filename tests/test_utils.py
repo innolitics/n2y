@@ -2,10 +2,10 @@ from math import isclose
 from pytest import raises
 from datetime import datetime, timezone, timedelta
 
+import pytest
+
 from n2y.errors import APIResponseError
-from n2y.notion_mocks import MockResponse
-from n2y.notion import retry_api_call, Client
-from n2y.utils import fromisoformat, id_from_share_link
+from n2y.utils import fromisoformat, id_from_share_link, retry_api_call
 
 
 def test_fromisoformat_datetime():
@@ -50,146 +50,69 @@ def test_page_id_from_share_link():
     assert id_from_share_link(share_link) == page_id
 
 
+class MockResponse():
+    def __init__(self, time, code):
+        self.headers = {'retry-after': time}
+        self.text = ''
+        self.status_code = code
+
+
 def test_retry_api_call_no_error():
     @retry_api_call
-    def tester(client):
+    def tester():
         return True
+    assert tester()
 
-    assert tester(Client(''))
 
-
-def test_retry_api_call_errors():
+def test_retry_api_call_multiple_errors():
     status_code = 429
 
+    call_count = 0
+
     @retry_api_call
-    def tester(_, time):
+    def tester(time):
         seconds = timedelta.total_seconds(datetime.now() - time)
-        if retry_api_call.retry_count == 0:
-            raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
-        elif retry_api_call.retry_count == 1:
-            assert isclose(0.12, seconds, abs_tol=0.1)
+        nonlocal call_count
+        call_count += 1
+
+        if call_count == 1:
+            raise APIResponseError(MockResponse(0.05, status_code), '', status_code)
+        elif call_count == 2:
+            assert isclose(0.05, seconds, abs_tol=0.1)
             raise APIResponseError(MockResponse(0.23, status_code), '', status_code)
-        elif retry_api_call.retry_count == 2:
+        elif call_count == 3:
             assert isclose(0.35, seconds, abs_tol=0.1)
             raise APIResponseError(MockResponse(0.16, status_code), '', status_code)
-        elif retry_api_call.retry_count == 3:
+        elif call_count == 4:
             assert isclose(0.51, seconds, abs_tol=0.1)
             return True
 
-    client = Client('')
-    assert tester(client, datetime.now())
+    assert tester(datetime.now())
+
+
+@pytest.mark.parametrize("status_code", [409, 429, 500, 502, 504])
+def test_retry_api_call_onc(status_code):
+    call_count = 0
+
+    @retry_api_call
+    def tester():
+        nonlocal call_count
+        call_count += 1
+
+        if call_count == 1:
+            raise APIResponseError(MockResponse(0.001, status_code), '', status_code)
+        else:
+            return True
+
+    assert tester()
+    assert call_count == 2
 
 
 def test_retry_api_call_max_errors():
     status_code = 429
 
     @retry_api_call
-    def tester(_, time):
-        seconds = timedelta.total_seconds(datetime.now() - time)
-        if retry_api_call.retry_count == 0:
-            raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
-        elif retry_api_call.retry_count == 1:
-            assert isclose(0.12, seconds, abs_tol=0.1)
-            raise APIResponseError(MockResponse(0.23, status_code), '', status_code)
-        elif retry_api_call.retry_count == 2:
-            assert isclose(0.35, seconds, abs_tol=0.1)
-            raise APIResponseError(MockResponse(0.16, status_code), '', status_code)
-        elif retry_api_call.retry_count == 3:
-            assert isclose(0.51, seconds, abs_tol=0.1)
-            raise APIResponseError(MockResponse(0.2, status_code), '', status_code)
-
-    client = Client('')
+    def tester():
+        raise APIResponseError(MockResponse(0.001, status_code), '', status_code)
     with raises(APIResponseError):
-        tester(client, datetime.now())
-
-
-def test_retry_api_call_multiple_calls():
-    status_code = 429
-
-    @retry_api_call
-    def test_1(_):
-        if retry_api_call.retry_count == 0:
-            raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
-        elif retry_api_call.retry_count == 1:
-            return True
-
-    @retry_api_call
-    def test_2(_):
-        if retry_api_call.retry_count == 0:
-            return True
-        return False
-    client = Client('')
-    assert test_1(client)
-    assert test_2(client)
-
-
-def test_retry_409():
-    status_code = 409
-
-    @retry_api_call
-    def tester(_, time):
-        seconds = timedelta.total_seconds(datetime.now() - time)
-        if retry_api_call.retry_count == 0:
-            raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
-        elif retry_api_call.retry_count == 1:
-            assert isclose(0.12, seconds, abs_tol=0.1)
-            return True
-        else:
-            return False
-
-    client = Client('')
-    assert tester(client, datetime.now())
-
-
-def test_retry_500():
-    status_code = 500
-
-    @retry_api_call
-    def tester(_, time):
-        seconds = timedelta.total_seconds(datetime.now() - time)
-        if retry_api_call.retry_count == 0:
-            raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
-        elif retry_api_call.retry_count == 1:
-            assert isclose(0.12, seconds, abs_tol=0.1)
-            return True
-        else:
-            return False
-
-    client = Client('')
-    assert tester(client, datetime.now())
-
-
-def test_retry_502():
-    status_code = 502
-
-    @retry_api_call
-    def tester(_, time):
-        seconds = timedelta.total_seconds(datetime.now() - time)
-        if retry_api_call.retry_count == 0:
-            raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
-        elif retry_api_call.retry_count == 1:
-            assert isclose(0.12, seconds, abs_tol=0.1)
-            return True
-        else:
-            return False
-
-    client = Client('')
-    assert tester(client, datetime.now())
-
-
-def test_retry_504():
-    status_code = 504
-
-    @retry_api_call
-    def tester(_, time):
-        seconds = timedelta.total_seconds(datetime.now() - time)
-        if retry_api_call.retry_count == 0:
-            raise APIResponseError(MockResponse(0.12, status_code), '', status_code)
-        elif retry_api_call.retry_count == 1:
-            assert isclose(0.12, seconds, abs_tol=0.1)
-            return True
-        else:
-            return False
-
-    client = Client('')
-    assert tester(client, datetime.now())
+        tester()

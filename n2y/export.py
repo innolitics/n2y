@@ -12,10 +12,18 @@ from n2y.utils import pandoc_write_or_log_errors, sanitize_filename
 logger = logging.getLogger(__name__)
 
 
-def _page_properties(page, id_property=None, url_property=None, property_map=None):
+def _page_properties(
+    page,
+    pandoc_format=None,
+    id_property=None,
+    url_property=None,
+    property_map=None,
+):
+    if pandoc_format is None:
+        pandoc_format = "markdown"
     if property_map is None:
         property_map = {}
-    properties = page.properties_to_values()
+    properties = page.properties_to_values(pandoc_format)
     if id_property in properties:
         logger.warning(
             'The id property "%s" is shadowing an existing '
@@ -48,7 +56,7 @@ def export_page(
     url_property=None,
     property_map=None,
 ):
-    page_properties = _page_properties(page, id_property, url_property, property_map)
+    page_properties = _page_properties(page, pandoc_format, id_property, url_property, property_map)
     pandoc_ast = page.to_pandoc()
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
     return '\n'.join([
@@ -76,7 +84,7 @@ def database_to_yaml(
         )
     results = []
     for page in database.children_filtered(notion_filter, notion_sorts):
-        result = _page_properties(page, id_property, url_property, property_map)
+        result = _page_properties(page, pandoc_format, id_property, url_property, property_map)
         if content_property:
             pandoc_ast = page.to_pandoc()
             if pandoc_ast:
@@ -86,7 +94,7 @@ def database_to_yaml(
             else:
                 result[content_property] = None
         results.append(result)
-    return yaml.dump(results, sort_keys=False)
+    return results
 
 
 def database_to_markdown_files(

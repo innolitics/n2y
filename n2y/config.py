@@ -16,12 +16,12 @@ DEFAULTS = {
 
 
 EXPORT_DEFAULTS = {
-    "id_property": None,
+    "id_property": "notion_id",
     "content_property": None,
-    "url_property": None,
+    "url_property": "notion_url",
     "notion_filter": [],
     "notion_sorts": [],
-    "pandoc_format": "gfm+tex_math_dollars+raw_attribute",
+    "pandoc_format": "markdown",
     "pandoc_options": [
         '--wrap', 'none',  # don't hard line-wrap
         '--eol', 'lf',  # use linux-style line endings
@@ -78,6 +78,12 @@ def merge_config(config_items, builtin_defaults, defaults):
     return merged_config_items
 
 
+def merge_default_config(defaults):
+    master_defaults_copy = copy.deepcopy(EXPORT_DEFAULTS)
+    defaults_copy = copy.deepcopy(defaults)
+    return {**master_defaults_copy, **defaults_copy}
+
+
 def validate_config(config):
     if "exports" not in config:
         logger.error("Config missing the 'exports' key")
@@ -116,8 +122,7 @@ def _validate_config_item(config_item):
     if "notion_sorts" in config_item:
         if not _valid_notion_sort(config_item["notion_sorts"]):
             return False
-    # TODO: validate pandoc_formation
-    # TODO: validate pandoc_options
+    # TODO: validate pandoc_format using the `--list-output-types` and `--list-extensions`
     # TODO: property map
     return True
 

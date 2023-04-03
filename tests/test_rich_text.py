@@ -194,7 +194,7 @@ def test_link_inline():
 
 
 def test_prepend():
-    client = Client('', exports=[])
+    client = Client('')
     plain_data = mock_rich_text_array('plain text')
     mention_data = {'type': 'page', 'page': {'id': mock_id()}}
     mention_text = 'Test Page'

@@ -1,4 +1,6 @@
+import functools
 import re
+from time import sleep
 import yaml
 import logging
 from datetime import datetime
@@ -7,13 +9,12 @@ import pandoc
 from pandoc.types import Str, Space
 from plumbum import ProcessExecutionError
 
-from n2y.errors import PandocASTParseError
+from n2y.errors import HTTPResponseError, PandocASTParseError
 
 
 logger = logging.getLogger(__name__)
 # see https://pandoc.org/MANUAL.html#exit-codes
 PANDOC_PARSE_ERROR = 64
-DEFAULT_MAX_RETRIES = 3
 
 
 def process_notion_date(notion_date):
@@ -52,7 +53,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
     else:
         return pandoc_write_or_log_errors(
             pandoc_ast,
-            format='gfm+tex_math_dollars+raw_attribute',
+            format='markdown',
             options=[
                 '--wrap', 'none',  # don't hard line-wrap
                 '--eol', 'lf',  # use linux-style line endings
@@ -142,3 +143,41 @@ def load_yaml(data):
         return yaml.load(data, Loader=yaml.SafeLoader)
     except yaml.YAMLError as e:
         raise ValueError('"{}" contains invalid YAML: {}'.format(data, e))
+
+
+# TODO: Rename this file `client.py`
+
+
+def retry_api_call(api_call):
+    max_api_retries = 4
+
+    @functools.wraps(api_call)
+    def wrapper(*args, retry_count=0, **kwargs):
+        assert "retry_count" not in kwargs, "retry_count is a reserved keyword"
+        try:
+            return api_call(*args, **kwargs)
+        except HTTPResponseError as err:
+            should_retry = err.status in [409, 429, 500, 502, 504]
+            if not should_retry:
+                raise err
+            elif retry_count < max_api_retries:
+                retry_count += 1
+                if 'retry-after' in err.headers:
+                    retry_after = float(err.headers['retry-after'])
+                    logger.info(
+                        'This API call has been rate limited and '
+                        'will be retried in %f seconds. Attempt %d of %d.',
+                        retry_after, retry_count, max_api_retries,
+                    )
+                else:
+                    retry_after = 2
+                    logger.info(
+                        'This API call failed and '
+                        'will be retried in %f seconds. Attempt %d of %d.',
+                        retry_after, retry_count, max_api_retries,
+                    )
+                sleep(retry_after)
+                return wrapper(*args, retry_count=retry_count, **kwargs)
+            else:
+                raise err
+    return wrapper
