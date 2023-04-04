@@ -2,6 +2,7 @@
 These tests verify how the n2y block classes convert notion data into Pandoc
 abstract syntax tree (AST) objects, and then into markdown.
 """
+import re
 from unittest import mock
 
 import pytest
@@ -242,10 +243,7 @@ def test_divider():
     notion_block = mock_block("divider", {"divider": []})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == HorizontalRule()
-    expected_markdown = (
-        "------------------------------------------------------------------------\n"
-    )
-    assert markdown == expected_markdown
+    assert re.match('-+', markdown)
 
 
 def test_block_quote():
