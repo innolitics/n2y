@@ -56,6 +56,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
             format='markdown',
             options=[
                 '--wrap', 'none',  # don't hard line-wrap
+                '--columns', '10000',  # don't cap the number of columns in tables
                 '--eol', 'lf',  # use linux-style line endings
             ],
         )
