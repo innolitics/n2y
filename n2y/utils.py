@@ -56,7 +56,10 @@ def pandoc_ast_to_markdown(pandoc_ast):
             format='markdown',
             options=[
                 '--wrap', 'none',  # don't hard line-wrap
-                '--columns', '10000',  # don't cap the number of columns in tables
+                '--columns', '10000',  # The default column width is 72 characters.
+                # When the width is this small, then pandoc may elect to generate HTML
+                # tables in markdown instead of text-based tables; this is problematic
+                # when we then convert the markdown into DOCX files which don't support raw HTML.
                 '--eol', 'lf',  # use linux-style line endings
             ],
         )
