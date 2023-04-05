@@ -24,6 +24,7 @@ EXPORT_DEFAULTS = {
     "pandoc_format": "markdown",
     "pandoc_options": [
         '--wrap', 'none',  # don't hard line-wrap
+        '--columns', '10000',  # don't cap the number of columns in tables
         '--eol', 'lf',  # use linux-style line endings
     ],
     "plugins": [],
