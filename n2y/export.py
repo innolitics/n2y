@@ -113,11 +113,11 @@ def database_to_files(
     seen_file_names = set()
     counts = {'unnamed': 0, 'duplicate': 0}
     for page in database.children_filtered(notion_filter, notion_sorts):
-        page_filename = _page_filename(page, filename_template, pandoc_format)
+        page_filename = _page_filename(page, pandoc_format, filename_template)
         if page_filename:
             if page_filename not in seen_file_names:
                 seen_file_names.add(page_filename)
-                with open(os.path.join(directory, f"{page_filename}.md"), 'w') as f:
+                with open(os.path.join(directory, page_filename), 'w') as f:
                     document = export_page(
                         page,
                         pandoc_format,
