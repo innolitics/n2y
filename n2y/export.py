@@ -8,7 +8,7 @@ import logging
 from pandoc.types import Table
 import yaml
 
-from n2y.utils import pandoc_write_or_log_errors, sanitize_filename
+from n2y.utils import pandoc_format_to_file_extension, pandoc_write_or_log_errors, sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -123,12 +123,12 @@ def database_to_yaml(
     return results
 
 
-def database_to_markdown_files(
+def database_to_files(
     database,
     directory,
     pandoc_format,
     pandoc_options,
-    filename_property=None,
+    filename_template=None,
     notion_filter=None,
     notion_sorts=None,
     id_property=None,
@@ -139,7 +139,7 @@ def database_to_markdown_files(
     seen_file_names = set()
     counts = {'unnamed': 0, 'duplicate': 0}
     for page in database.children_filtered(notion_filter, notion_sorts):
-        page_filename = _page_filename(page, filename_property)
+        page_filename = _page_filename(page, filename_template, pandoc_format)
         if page_filename:
             if page_filename not in seen_file_names:
                 seen_file_names.add(page_filename)
@@ -163,15 +163,20 @@ def database_to_markdown_files(
             logger.info("%d %s page(s) skipped", count, key)
 
 
-def _page_filename(page, filename_property):
-    # TODO: switch to using the database's natural keys as the file names
-    if filename_property is None:
-        return sanitize_filename(page.title.to_plain_text())
-    elif filename_property in page.properties:
-        return sanitize_filename(page.properties[filename_property].to_value())
+def _page_filename(page, pandoc_format, filename_template=None):
+    page_title = page.title.to_plain_text()
+    if filename_template is None:
+        extension = pandoc_format_to_file_extension(pandoc_format)
+        return sanitize_filename(f"{page_title}.{extension}")
     else:
-        logger.warning(
-            'Invalid filename property, "%s". Valid options are %s',
-            filename_property, ", ".join(page.properties.keys()),
-        )
-        return sanitize_filename(page.title.to_plain_text())
+        page_properties = page.properties_to_values()
+        if "TITLE" not in page_properties:
+            page_properties["TITLE"] = page_title
+        try:
+            return sanitize_filename(filename_template.format(**page_properties))
+        except KeyError:
+            logger.warning(
+                'Invalid filename property, "%s". Valid options are %s',
+                filename_template, ", ".join(page.properties.keys()),
+            )
+            return _page_filename(page, pandoc_format)

@@ -97,6 +97,22 @@ def pandoc_write_or_log_errors(pandoc_ast, format, options):
             raise
 
 
+def pandoc_format_to_file_extension(format):
+    # split on '-' or '+' to handle formats like 'markdown+raw_tex'
+    base_type = re.split(r'[-+]', format)[0]
+    if format in [
+        'markdown', 'gfm', 'commonmark', 'commonmark_x', 'markdown_github',
+        'markdown_mmd', 'markdown_phpextra', 'markdown_strict'
+    ]:
+        return 'md'
+    elif format in ['html', 'html5', 'html4']:
+        return 'html'
+    elif format in ['latex']:
+        return 'tex'
+    else:
+        return base_type
+
+
 def fromisoformat(datestring):
     """
     Parse Notion's datestrings, which aren't handled out of the box by

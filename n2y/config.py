@@ -1,5 +1,6 @@
 import logging
 import copy
+import string
 
 import yaml
 
@@ -114,9 +115,9 @@ def _validate_config_item(config_item):
     if config_item["node_type"] not in ["page", "database_as_yaml", "database_as_files"]:
         logger.error("Invalid node_type in export config item: %s", config_item["node_type"])
         return False
-    if config_item["node_type"] == "database_as_files" and "filename_property" not in config_item:
-        logger.error("Missing the 'filename_property' key when node_type is 'database_as_files'")
-        return False
+    if "filename_template" in config_item:
+        if not _valid_filename_template(config_item["filename_template"]):
+            return False
     if "output" not in config_item:
         logger.error("Export config item missing the 'output' key")
         return False
@@ -128,6 +129,18 @@ def _validate_config_item(config_item):
             return False
     # TODO: validate pandoc_format using the `--list-output-types` and `--list-extensions`
     # TODO: property map
+    return True
+
+
+def _valid_filename_template(filename_template):
+    if not isinstance(filename_template, str):
+        logger.error("filename_template must be a string")
+        return False
+    try:
+        string.Formatter().parse(filename_template)
+    except ValueError as exc:
+        logger.error("filename_template is invalid: %s", exc)
+        return False
     return True
 
 
