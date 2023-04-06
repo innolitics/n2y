@@ -104,6 +104,15 @@ def fuzzy_in(left, right):
     return _canonicalize_markdown(left) in _canonicalize_markdown(right)
 
 
+def fuzzy_match(string, pattern):
+    """
+    Used to find a pattern in a markdown string which may have been modified using pandoc's smart extension.
+
+    see https://pandoc.org/MANUAL.html#extension-smart
+    """
+    return re.match(pattern, _canonicalize_markdown(string))
+
+
 def _canonicalize_markdown(markdown):
     markdown = markdown.replace('\u201D', '"').replace('\u201C', '"')
     markdown = markdown.replace('\u2019', "'").replace('\u2018', "'")
@@ -122,6 +131,7 @@ def _create_jinja_environment():
     environment.globals['first_pass_output'] = FirstPassOutput()
     environment.filters['join_to'] = join_to
     environment.filters['fuzzy_in'] = fuzzy_in
+    environment.filters['fuzzy_match'] = fuzzy_match
     return environment
 
 
