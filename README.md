@@ -49,7 +49,7 @@ The export configuration items may contain the following keys:
 | content_property | When set, it indicates the property name that will contain the content of the notion pages in that databse. If set to `None`, then only the page's properties will be included in the export. (Only applies to the `database_as_files` node type.) |
 | id_property | When set, this indicates the property name in which to place the page's underlying notion ID. |
 | url_property | When set, this indicates the property name in which to place the page's underlying notion url. |
-| filename_property | This key is required for the "database_as_files" node type; when set, it indicates which property to use when generating the file name. |
+| filename_template | This key is only used for the "database_as_files" node type; when set, it provides a [format string](https://docs.python.org/3/library/string.html#formatstrings) that is evaluated against the page's properties to generate the file name. Note that the filenames are sanitized. When not set, the title property is used and the extension is deduced from the `pandoc_format`. A special "TITLE" property may be used to access the title property in the template string. |
 | plugins | A list of python modules to use as plugins. |
 | notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
 | notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
@@ -79,10 +79,10 @@ exports:
 - id: 176fa24d4b7f4256877e60a1035b45a4
   node_type: database_as_files
   output: directory
-  filename_property: "Name"
+  filename_template: "{Name}.md"
 ```
 
-Each page in the database will generate a single markdown file, named according to the `filename_property`. This process will automatically skip pages whose "Name" property is empty.
+Each page in the database will generate a single markdown file, named according to the `filename_template`. This process will automatically skip pages whose "Name" property is empty.
 
 ### Convert a Page to a Markdown File
 
@@ -123,7 +123,7 @@ export_defaults:
 exports:
   - output: "documents/dhf"
     node_type: "database_as_files"
-    filename_property: "Name"
+    filename_template: "{Name}.md"
     id: e24f839e724848d69342d43c07cb5f3e
     plugins:
       - "n2y.plugins.mermaid"
@@ -138,7 +138,7 @@ exports:
       multi_select: { "contains": "DHF" }
   - output: "documents/510k"
     id: e24f839e724848d69342d43c07cb5f3e
-    filename_property: "Name"
+    filename_template: "{Name}.md"
     node_type: "database_as_files"
     plugins:
       - "n2y.plugins.mermaid"
@@ -343,6 +343,10 @@ Here are some features we're planning to add in the future:
 - Add more examples to the documentation
 
 ## Changelog
+
+### v0.9.0
+
+- Replace the `filename_property` configuration option with the more generic `filename_template`.
 
 ### v0.8.0
 

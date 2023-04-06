@@ -114,6 +114,12 @@ def test_valid_config_item_invalid_node_type():
     assert not _validate_config_item(config_item)
 
 
-def test_valid_config_item_missing_filename_property():
+def test_valid_config_item_missing_filename_template():
     config_item = mock_config_item("database_as_files")
+    assert not _validate_config_item(config_item)
+
+
+def test_valid_config_item_malformed_filename_template():
+    config_item = mock_config_item("database_as_files")
+    config_item["filename_template"] = "{"
     assert not _validate_config_item(config_item)

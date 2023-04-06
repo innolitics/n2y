@@ -1,6 +1,6 @@
 import pytest
 
-from n2y.export import _page_properties
+from n2y.export import _page_properties, _page_filename
 from n2y.notion_mocks import mock_page, mock_rich_text_property_value
 from n2y import notion
 
@@ -31,3 +31,20 @@ def test_page_properties_url(page):
 def test_page_properties_mapping(page):
     properties = _page_properties(page, property_map={"property": "p"})
     assert properties == {"title": "T", "p": "P"}
+
+
+def test_page_filename_no_template(page):
+    assert _page_filename(page, "pdf") == "T.pdf"
+    assert _page_filename(page, "pdf+extra") == "T.pdf"
+    assert _page_filename(page, "pdf-extra") == "T.pdf"
+    assert _page_filename(page, "pdf-extra+other") == "T.pdf"
+
+
+def test_page_filename_template(page):
+    assert _page_filename(page, "pdf", "{property}.p") == "P.p"
+    assert _page_filename(page, "pdf", "{TITLE}.p") == "T.p"
+    assert _page_filename(page, "pdf", "{TITLE}-{property}.p") == "T-P.p"
+
+
+def test_page_filename_template_malformed(page):
+    assert _page_filename(page, "pdf", "{missing}.p") == "T.pdf"

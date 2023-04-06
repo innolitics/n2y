@@ -43,7 +43,10 @@ class TextPropertyValue(PropertyValue):
         self.rich_text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
 
     def to_value(self, pandoc_format):
-        return self.rich_text.to_value(pandoc_format)
+        if pandoc_format is None:
+            return self.rich_text.to_plain_text()
+        else:
+            return self.rich_text.to_value(pandoc_format)
 
 
 class NumberPropertyValue(PropertyValue):
