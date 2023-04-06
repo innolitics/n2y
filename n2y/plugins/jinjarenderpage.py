@@ -110,7 +110,9 @@ def fuzzy_match(string, pattern):
 
     see https://pandoc.org/MANUAL.html#extension-smart
     """
-    return re.match(pattern, _canonicalize_markdown(string), re.IGNORECASE)
+    matches = re.match(pattern, _canonicalize_markdown(string))
+    not matches or print(f"MATCH!!!!!!!:\n{pattern}")
+    return matches
 
 
 def _canonicalize_markdown(markdown):
