@@ -57,7 +57,6 @@ def export_page(
     url_property=None,
     property_map=None,
 ):
-    page_properties = _page_properties(page, pandoc_format, id_property, url_property, property_map)
     pandoc_ast = page.to_pandoc()
 
     if (number_empty_headers := _count_headerless_tables(pandoc_ast)) > 0:
@@ -68,11 +67,18 @@ def export_page(
         )
 
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
-    return '\n'.join([
-        '---',
-        yaml.dump(page_properties) + '---',
-        page_content,
-    ])
+    if isinstance(page_content, str):
+        page_properties = _page_properties(
+            page, pandoc_format, id_property, url_property, property_map,
+        )
+        return '\n'.join([
+            '---',
+            yaml.dump(page_properties) + '---',
+            page_content,
+        ])
+    else:
+        # if the result is a binary file, return it as is (since we can't add YAML metadata to it)
+        return page_content
 
 
 def _count_headerless_tables(pandoc_ast):
@@ -143,15 +149,19 @@ def database_to_files(
         if page_filename:
             if page_filename not in seen_file_names:
                 seen_file_names.add(page_filename)
-                with open(os.path.join(directory, page_filename), 'w') as f:
-                    document = export_page(
-                        page,
-                        pandoc_format,
-                        pandoc_options,
-                        id_property,
-                        url_property,
-                        property_map,
-                    )
+                document = export_page(
+                    page,
+                    pandoc_format,
+                    pandoc_options,
+                    id_property,
+                    url_property,
+                    property_map,
+                )
+                if isinstance(document, bytes):
+                    file_mode = 'wb'
+                else:
+                    file_mode = 'w'
+                with open(os.path.join(directory, page_filename), file_mode) as f:
                     f.write(document)
             else:
                 logger.warning('Skipping page named "%s" since it has been used', page_filename)

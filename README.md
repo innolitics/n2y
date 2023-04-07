@@ -363,6 +363,8 @@ Here are some features we're planning to add in the future:
 ### v0.9.0
 
 - Replace the `filename_property` configuration option with the more generic `filename_template`.
+- Make it so we can render apges into any pandoc format
+- Include properties as pandoc meta values
 
 ### v0.8.0
 

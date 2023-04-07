@@ -33,6 +33,7 @@ EXPORT_DEFAULTS = {
     ],
     "plugins": [],
     "property_map": {},
+    "filename_template": None,
 }
 
 

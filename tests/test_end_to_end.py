@@ -1,5 +1,3 @@
-import pytest
-
 import logging
 import os
 from os import listdir
@@ -134,7 +132,6 @@ def test_simple_database_to_markdown_files(tmpdir):
     assert "content" not in metadata
 
 
-@pytest.mark.xfail(reason="There are still issues with direct docx rendering")
 def test_simple_database_to_docx_files(tmpdir):
     """
     The database can be seen here:
@@ -149,7 +146,6 @@ def test_simple_database_to_docx_files(tmpdir):
                 "pandoc_options": ["--standalone"],
                 "node_type": "database_as_files",
                 "output": "database",
-                "filename_template": "Name",
             }
         ]
     }

@@ -3,9 +3,10 @@ from pytest import raises
 from datetime import datetime, timezone, timedelta
 
 import pytest
+from pandoc.types import MetaMap, MetaList, MetaBool, MetaString
 
 from n2y.errors import APIResponseError
-from n2y.utils import fromisoformat, id_from_share_link, retry_api_call
+from n2y.utils import fromisoformat, id_from_share_link, retry_api_call, yaml_to_meta_value
 
 
 def test_fromisoformat_datetime():
@@ -116,3 +117,23 @@ def test_retry_api_call_max_errors():
         raise APIResponseError(MockResponse(0.001, status_code), '', status_code)
     with raises(APIResponseError):
         tester()
+
+
+def test_yaml_to_meta_value_scalar():
+    assert yaml_to_meta_value('test') == MetaString('test')
+    assert yaml_to_meta_value(3) == MetaString('3')
+    assert yaml_to_meta_value(3.45) == MetaString('3.45')
+    assert yaml_to_meta_value(True) == MetaBool(True)
+    assert yaml_to_meta_value(False) == MetaBool(False)
+    assert yaml_to_meta_value(None) == MetaString('')
+
+
+def test_yaml_to_meta_value_map():
+    assert yaml_to_meta_value({'a': '1', 'b': 2}) == MetaMap({
+        'a': MetaString('1'),
+        'b': MetaString('2'),
+    })
+
+
+def test_yaml_to_meta_value_list():
+    assert yaml_to_meta_value(['a', 1]) == MetaList([MetaString('a'), MetaString('1')])
