@@ -4,9 +4,10 @@ from time import sleep
 import yaml
 import logging
 from datetime import datetime
+import numbers
 
 import pandoc
-from pandoc.types import Str, Space
+from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
 from plumbum import ProcessExecutionError
 
 from n2y.errors import HTTPResponseError, PandocASTParseError
@@ -93,6 +94,35 @@ def pandoc_write_or_log_errors(pandoc_ast, format, options):
             raise
 
 
+def yaml_to_meta_value(data):
+    """
+    Convert a Python object to a Pandoc metadata values, following the approach used by
+    `yamlToMetaValue` here:
+
+    https://github.com/jgm/pandoc/blob/main/src/Text/Pandoc/Readers/Metadata.hs.
+
+    Note that all scalars end up as strings.
+    """
+    if isinstance(data, str):
+        return MetaString(data)
+    elif isinstance(data, bool):
+        return MetaBool(data)
+    elif data is None:
+        return MetaString("")
+    elif isinstance(data, numbers.Number):
+        return MetaString(str(data))
+    elif isinstance(data, list):
+        return MetaList([yaml_to_meta_value(item) for item in data])
+    elif isinstance(data, dict):
+        return MetaMap({key: yaml_to_meta_value(value) for key, value in data.items()})
+
+
+def yaml_map_to_meta(data):
+    assert isinstance(data, dict)
+    assert all(isinstance(k, str) for k in data.keys())
+    return Meta({k: yaml_to_meta_value(v) for k, v in data.items()})
+
+
 def pandoc_format_to_file_extension(format):
     # split on '-' or '+' to handle formats like 'markdown+raw_tex'
     base_type = re.split(r'[-+]', format)[0]
@@ -159,9 +189,6 @@ def load_yaml(data):
         return yaml.load(data, Loader=yaml.SafeLoader)
     except yaml.YAMLError as e:
         raise ValueError('"{}" contains invalid YAML: {}'.format(data, e))
-
-
-# TODO: Rename this file `client.py`
 
 
 def retry_api_call(api_call):

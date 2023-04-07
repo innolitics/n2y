@@ -3,11 +3,13 @@ from itertools import groupby
 from urllib.parse import urljoin
 
 from pandoc.types import (
-    Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
-    Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Space,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
+    Period, Pandoc, Link, HorizontalRule, BlockQuote, Image, Table, TableHead,
+    TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan, Str, Para, Plain,
+    Header, CodeBlock, BulletList, OrderedList, Decimal, Space, ColSpan,
+    ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
+
+from n2y.utils import yaml_map_to_meta
 
 
 logger = logging.getLogger(__name__)
@@ -111,7 +113,14 @@ class ChildPageBlock(Block):
         assert self.children is not None
         if self.children:
             children = self.children_to_pandoc()
-            return Pandoc(Meta({'title': MetaString(self.title)}), children)
+            if self.page:
+                properties = self.page.properties_to_values()
+            else:
+                properties = {}
+            if 'title' not in properties:
+                properties['title'] = self.title
+            meta = yaml_map_to_meta(properties)
+            return Pandoc(meta, children)
         else:
             return None
 

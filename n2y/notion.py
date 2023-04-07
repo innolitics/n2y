@@ -24,6 +24,9 @@ from n2y.errors import (
     UseNextClass, is_api_error_code, APIErrorCode
 )
 
+
+# TODO: Rename this file `client.py`
+
 DEFAULT_NOTION_CLASSES = {
     "page": Page,
     "database": Database,

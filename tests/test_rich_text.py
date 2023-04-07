@@ -13,7 +13,7 @@ def process_rich_text_array(notion_data):
     client = Client('')
     rich_text_array = client.wrap_notion_rich_text_array(notion_data)
     pandoc_ast = rich_text_array.to_pandoc()
-    markdown = rich_text_array.to_markdown()
+    markdown = rich_text_array.to_value('markdown')
     plain_text = rich_text_array.to_plain_text()
     return pandoc_ast, markdown, plain_text
 
