@@ -47,6 +47,7 @@ The export configuration items may contain the following keys:
 | pandoc_format | The [pandoc format](https://pandoc.org/MANUAL.html#general-options) that we're generating. |
 | pandoc_options | A list of strings that are [writer options](https://pandoc.org/MANUAL.html#general-writer-options) for pandoc. |
 | content_property | When set, it indicates the property name that will contain the content of the notion pages in that databse. If set to `None`, then only the page's properties will be included in the export. (Only applies to the `database_as_files` node type.) |
+| yaml_front_matter | Only used when exporting to text files. Indicates if the page properties should be exported as yaml front matter. |
 | id_property | When set, this indicates the property name in which to place the page's underlying notion ID. |
 | url_property | When set, this indicates the property name in which to place the page's underlying notion url. |
 | filename_template | This key is only used for the "database_as_files" node type; when set, it provides a [format string](https://docs.python.org/3/library/string.html#formatstrings) that is evaluated against the page's properties to generate the file name. Note that the filenames are sanitized. When not set, the title property is used and the extension is deduced from the `pandoc_format`. A special "TITLE" property may be used to access the title property in the template string. |
@@ -349,6 +350,7 @@ Here are some features we're planning to add in the future:
 - Replace the `filename_property` configuration option with the more generic `filename_template`.
 - Make it so we can render apges into any pandoc format
 - Include properties as pandoc meta values
+- Add export config option to indicate if we should export YAML front matter
 
 ### v0.8.0
 

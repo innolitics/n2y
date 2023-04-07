@@ -52,13 +52,14 @@ def export_page(
     page,
     pandoc_format,
     pandoc_options,
+    yaml_front_matter=True,
     id_property=None,
     url_property=None,
     property_map=None,
 ):
     pandoc_ast = page.to_pandoc()
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
-    if isinstance(page_content, str):
+    if isinstance(page_content, str) and yaml_front_matter:
         page_properties = _page_properties(
             page, pandoc_format, id_property, url_property, property_map,
         )
@@ -108,6 +109,7 @@ def database_to_files(
     directory,
     pandoc_format,
     pandoc_options,
+    yaml_front_matter=True,
     filename_template=None,
     notion_filter=None,
     notion_sorts=None,
@@ -127,6 +129,7 @@ def database_to_files(
                     page,
                     pandoc_format,
                     pandoc_options,
+                    yaml_front_matter,
                     id_property,
                     url_property,
                     property_map,
