@@ -104,7 +104,7 @@ def fuzzy_in(left, right):
 
     See https://pandoc.org/MANUAL.html#extension-smart
     """
-    return _canonicalize_markdown(left) in _canonicalize_markdown(right)
+    return _canonicalize(left) in _canonicalize(right)
 
 
 def fuzzy_search(string, pattern):
@@ -113,11 +113,33 @@ def fuzzy_search(string, pattern):
 
     see https://pandoc.org/MANUAL.html#extension-smart
     """
-    matches = re.findall(pattern, _canonicalize_markdown(string))
-    return matches
+    return re.findall(_canonicalize(pattern), _canonicalize(string))
 
 
-def _canonicalize_markdown(markdown):
+def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
+    """
+    Used to search a markdown string, which may have been modified using pandoc's smart extension,
+    for the value at a specified key in a dicionary for all dictionaries in a given list of them.
+
+    see https://pandoc.org/MANUAL.html#extension-smart
+    """
+    found = []
+    key_filter = lambda d: len(d[key]) if by_length else d[key]
+    sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
+    for term in sorted_dict_list:
+        matches = list(re.finditer(
+            '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
+            _canonicalize(string))
+        )
+        if matches != []:
+            found.append(term)
+            for match in matches:
+                span = match.span()
+                string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
+    return found
+
+
+def _canonicalize(markdown):
     markdown = markdown.replace('\u201D', '"').replace('\u201C', '"')
     markdown = markdown.replace('\u2019', "'").replace('\u2018', "'")
     markdown = markdown.replace('\u2013', '--').replace('\u2014', '---')
@@ -133,6 +155,7 @@ def _create_jinja_environment():
         extensions=["jinja2.ext.do"],
     )
     environment.globals['first_pass_output'] = FirstPassOutput()
+    environment.filters['fuzzy_find_in'] = fuzzy_find_in
     environment.filters['fuzzy_search'] = fuzzy_search
     environment.filters['fuzzy_in'] = fuzzy_in
     environment.filters['join_to'] = join_to
@@ -175,10 +198,8 @@ class JinjaRenderPage(Page):
             super().__init__(self.client, self.notion_data)
             second_pass_ast = super().to_pandoc()
             jinja2.clear_caches()
-            print('SECOND PASS COMPLETE')
             return second_pass_ast
         else:
-            print('NO SECOND PASS')
             return first_pass_ast
 
 
@@ -194,10 +215,6 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             raise UseNextClass()
         self.rendered_text = ''
         self.databases = {}
-        if self.notion_id == '131e29ef-38a3-4ac1-8fa3-1bcd92aed652':
-            print()
-            print()
-            print(f"DEFINITIONS_INIT: for {self.page.title.to_plain_text()}")
 
     def _get_database_ids_from_mentions(self):
         for rich_text in self.caption:
@@ -254,9 +271,6 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
     def to_pandoc(self):
         self._get_yaml_from_mentions()
         self._render_text()
-        if self.notion_id == '131e29ef-38a3-4ac1-8fa3-1bcd92aed652':
-            print("DEFINITIONS:")
-            print(self.rendered_text)
         # pandoc.read includes Meta data, which isn't relevant here; we just
         # want the AST for the content
         document_ast = pandoc.read(
