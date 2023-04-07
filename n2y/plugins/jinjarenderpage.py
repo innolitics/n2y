@@ -47,17 +47,20 @@ logger = logging.getLogger(__name__)
 class FirstPassOutput:
     def __init__(self, lines=None):
         self._second_pass_is_requested = False
-        self.is_second_pass = lines is not None
         if lines is None:
             lines = []
         self._lines = lines
         self._source = None
 
     def __bool__(self):
-        return False
+        return bool(self._lines)
 
     def request_second_pass(self):
         self._second_pass_is_requested = True
+
+    @property
+    def is_second_pass(self):
+        return self._lines != []
 
     @property
     def second_pass_is_requested(self):
@@ -65,7 +68,7 @@ class FirstPassOutput:
 
     @property
     def lines(self):
-        self.request_second_pass()
+        self.is_second_pass or self.request_second_pass()
         return self._lines
 
     def set_lines(self, lines):
@@ -73,7 +76,7 @@ class FirstPassOutput:
 
     @property
     def source(self):
-        if self._source is None:
+        if self._source is None or self.is_second_pass and self._source == '':
             self._source = '\n'.join(self.lines)
         return self._source
 
@@ -104,14 +107,13 @@ def fuzzy_in(left, right):
     return _canonicalize_markdown(left) in _canonicalize_markdown(right)
 
 
-def fuzzy_match(string, pattern):
+def fuzzy_search(string, pattern):
     """
     Used to find a pattern in a markdown string which may have been modified using pandoc's smart extension.
 
     see https://pandoc.org/MANUAL.html#extension-smart
     """
-    matches = re.match(pattern, _canonicalize_markdown(string))
-    not matches or print(f"MATCH!!!!!!!:\n{pattern}")
+    matches = re.findall(pattern, _canonicalize_markdown(string))
     return matches
 
 
@@ -131,9 +133,9 @@ def _create_jinja_environment():
         extensions=["jinja2.ext.do"],
     )
     environment.globals['first_pass_output'] = FirstPassOutput()
-    environment.filters['join_to'] = join_to
+    environment.filters['fuzzy_search'] = fuzzy_search
     environment.filters['fuzzy_in'] = fuzzy_in
-    environment.filters['fuzzy_match'] = fuzzy_match
+    environment.filters['join_to'] = join_to
     return environment
 
 
@@ -154,21 +156,29 @@ def render_from_string(source, context=None, environment=None):
 class JinjaRenderPage(Page):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.client.plugin_data['jinjarenderpage'] = {
-            'environment': _create_jinja_environment(),
-        }
+        if 'jinjarenderpage' not in client.plugin_data:
+            client.plugin_data['jinjarenderpage'] = {}
+        if self.notion_id not in client.plugin_data:
+            client.plugin_data['jinjarenderpage'][self.notion_id] = {
+                'environment': _create_jinja_environment(),
+                'database_cache': {},
+            }
 
     def to_pandoc(self):
         first_pass_ast = super().to_pandoc()
-        jinja_environment = self.client.plugin_data['jinjarenderpage']['environment']
+        jinja_environment = self.client.plugin_data['jinjarenderpage']\
+            [self.notion_id]['environment']
         first_pass_output = jinja_environment.globals["first_pass_output"]
         if first_pass_output.second_pass_is_requested:
             first_pass_output_text = pandoc_ast_to_markdown(first_pass_ast)
             first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
-            jinja2.clear_caches()
+            super().__init__(self.client, self.notion_data)
             second_pass_ast = super().to_pandoc()
+            jinja2.clear_caches()
+            print('SECOND PASS COMPLETE')
             return second_pass_ast
         else:
+            print('NO SECOND PASS')
             return first_pass_ast
 
 
@@ -182,25 +192,12 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             self.pandoc_format = result.group(1)
         else:
             raise UseNextClass()
+        self.rendered_text = ''
         self.databases = {}
-        export_defaults = client.export_defaults
-        for database_id in self._get_database_ids_from_mentions():
-            database = self.client.get_database(database_id)
-            # TODO: Rethink about the database data is accessed from within the
-            # templates; perhaps it should be something more like Django's ORM
-            # where we can filter and sort the databases via the API, instead of
-            # having to pull in ALL of the data first before filtering it.
-            # Such an API would also alleviate the need to pass in the export
-            # defaults and it could provide a mechanism to access the page
-            # content from within the Jinja templates, which isn't possible
-            # right now.
-            self.databases[database.title.to_plain_text()] = database_to_yaml(
-                database=database,
-                pandoc_format=self.pandoc_format,
-                pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
-                id_property=export_defaults["id_property"],
-                url_property=export_defaults["url_property"],
-            )
+        if self.notion_id == '131e29ef-38a3-4ac1-8fa3-1bcd92aed652':
+            print()
+            print()
+            print(f"DEFINITIONS_INIT: for {self.page.title.to_plain_text()}")
 
     def _get_database_ids_from_mentions(self):
         for rich_text in self.caption:
@@ -208,15 +205,43 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             if is_mention and isinstance(rich_text.mention, DatabaseMention):
                 yield rich_text.mention.notion_database_id
 
-    def to_pandoc(self):
-        jinja_environment = self.client.plugin_data['jinjarenderpage']['environment']
+    def _get_yaml_from_mentions(self):
+        if self.notion_id in self.client.plugin_data['jinjarenderpage']\
+            [self.page.notion_id]['database_cache']:
+            self.databases = self.client.plugin_data['jinjarenderpage']\
+                [self.page.notion_id]['database_cache'][self.notion_id]
+        else:
+            export_defaults = self.client.export_defaults
+            for database_id in self._get_database_ids_from_mentions():
+                database = self.client.get_database(database_id)
+                # TODO: Rethink about the database data is accessed from within the
+                # templates; perhaps it should be something more like Django's ORM
+                # where we can filter and sort the databases via the API, instead of
+                # having to pull in ALL of the data first before filtering it.
+                # Such an API would also alleviate the need to pass in the export
+                # defaults and it could provide a mechanism to access the page
+                # content from within the Jinja templates, which isn't possible
+                # right now.
+                self.databases[database.title.to_plain_text()] = database_to_yaml(
+                    database=database,
+                    pandoc_format=self.pandoc_format,
+                    pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
+                    id_property=export_defaults["id_property"],
+                    url_property=export_defaults["url_property"],
+                )
+                self.client.plugin_data['jinjarenderpage'][self.page.notion_id]\
+                    ['database_cache'][self.notion_id] = {**self.databases}
+
+    def _render_text(self):
+        jinja_environment = self.client.plugin_data['jinjarenderpage']\
+            [self.page.notion_id]['environment']
         jinja_code = self.rich_text.to_plain_text()
         context = {
             "databases": self.databases,
             "page": self.page.properties_to_values(self.pandoc_format),
         }
         try:
-            rendered_text = render_from_string(jinja_code, context, jinja_environment)
+            self.rendered_text = render_from_string(jinja_code, context, jinja_environment)
         except (UndefinedError, TemplateSyntaxError):
             logger.error(
                 "Error rendering Jinja template on %s [%s]",
@@ -226,9 +251,19 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             )
             raise
 
+    def to_pandoc(self):
+        self._get_yaml_from_mentions()
+        self._render_text()
+        if self.notion_id == '131e29ef-38a3-4ac1-8fa3-1bcd92aed652':
+            print("DEFINITIONS:")
+            print(self.rendered_text)
         # pandoc.read includes Meta data, which isn't relevant here; we just
         # want the AST for the content
-        document_ast = pandoc.read(rendered_text, format=self.pandoc_format)
+        document_ast = pandoc.read(
+            self.rendered_text,
+            format=self.pandoc_format,
+            options=self.client.export_defaults["pandoc_options"],
+        )
         children_ast = document_ast[1]
         return children_ast
 

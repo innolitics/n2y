@@ -42,12 +42,8 @@ class Database:
             self._children = self.client.get_database_pages(self.notion_id)
         return self._children
 
-    def get_children(self):
-        self._children = self.client.get_database_pages(self.notion_id)
-
     def children_filtered(self, filter, sort=None):
-        loading_from_cache = filter is not None
-        if loading_from_cache:
+        if filter is not None:
             tupled_filter = self._tuplize(filter)
             tupled_sort = self._tuplize(sort)
             if tupled_filter not in self._filtered_children:
