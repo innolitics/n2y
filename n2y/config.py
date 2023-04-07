@@ -17,6 +17,7 @@ DEFAULTS = {
 
 
 EXPORT_DEFAULTS = {
+    "yaml_front_matter": True,
     "id_property": "notion_id",
     "content_property": None,
     "url_property": "notion_url",
