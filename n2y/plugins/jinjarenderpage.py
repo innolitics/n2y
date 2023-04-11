@@ -47,8 +47,6 @@ logger = logging.getLogger(__name__)
 class FirstPassOutput:
     def __init__(self, lines=None):
         self._second_pass_is_requested = False
-        if lines is None:
-            lines = []
         self._lines = lines
         self._source = None
 
@@ -60,7 +58,7 @@ class FirstPassOutput:
 
     @property
     def is_second_pass(self):
-        return self._lines != []
+        return self._lines is not None
 
     @property
     def second_pass_is_requested(self):
@@ -69,14 +67,14 @@ class FirstPassOutput:
     @property
     def lines(self):
         self.is_second_pass or self.request_second_pass()
-        return self._lines
+        return self._lines or []
 
     def set_lines(self, lines):
         self._lines = lines
 
     @property
     def source(self):
-        if self._source is None or self.is_second_pass and self._source == '':
+        if self._source is None or self.is_second_pass:
             self._source = '\n'.join(self.lines)
         return self._source
 
@@ -109,8 +107,8 @@ def fuzzy_in(left, right):
 
 def fuzzy_search(string, pattern):
     """
-    Used to find a pattern in a markdown string which may have been modified using pandoc's smart extension.
-
+    Used to find a pattern in a markdown string which may have
+    been modified using pandoc's smart extension.
     see https://pandoc.org/MANUAL.html#extension-smart
     """
     return re.findall(_canonicalize(pattern), _canonicalize(string))
@@ -189,8 +187,8 @@ class JinjaRenderPage(Page):
 
     def to_pandoc(self):
         first_pass_ast = super().to_pandoc()
-        jinja_environment = self.client.plugin_data['jinjarenderpage']\
-            [self.notion_id]['environment']
+        jinja_environment = self.client.plugin_data[
+            'jinjarenderpage'][self.notion_id]['environment']
         first_pass_output = jinja_environment.globals["first_pass_output"]
         if first_pass_output.second_pass_is_requested:
             first_pass_output_text = pandoc_ast_to_markdown(first_pass_ast)
@@ -223,10 +221,9 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 yield rich_text.mention.notion_database_id
 
     def _get_yaml_from_mentions(self):
-        if self.notion_id in self.client.plugin_data['jinjarenderpage']\
-            [self.page.notion_id]['database_cache']:
-            self.databases = self.client.plugin_data['jinjarenderpage']\
-                [self.page.notion_id]['database_cache'][self.notion_id]
+        jinjapage_cache = self.client.plugin_data['jinjarenderpage'][self.page.notion_id]
+        if self.notion_id in jinjapage_cache['database_cache']:
+            self.databases = jinjapage_cache['database_cache'][self.notion_id]
         else:
             export_defaults = self.client.export_defaults
             for database_id in self._get_database_ids_from_mentions():
@@ -246,12 +243,11 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                     id_property=export_defaults["id_property"],
                     url_property=export_defaults["url_property"],
                 )
-                self.client.plugin_data['jinjarenderpage'][self.page.notion_id]\
-                    ['database_cache'][self.notion_id] = {**self.databases}
+                jinjapage_cache['database_cache'][self.notion_id] = {**self.databases}
 
     def _render_text(self):
-        jinja_environment = self.client.plugin_data['jinjarenderpage']\
-            [self.page.notion_id]['environment']
+        jinja_environment = self.client.plugin_data[
+            'jinjarenderpage'][self.page.notion_id]['environment']
         jinja_code = self.rich_text.to_plain_text()
         context = {
             "databases": self.databases,
