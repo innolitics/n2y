@@ -31,7 +31,7 @@ import logging
 import pandoc
 import jinja2
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
-from n2y.blocks import FencedCodeBlock
+from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.errors import UseNextClass
 from n2y.mentions import DatabaseMention
 
@@ -253,6 +253,21 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             "databases": self.databases,
             "page": self.page.properties_to_values(self.pandoc_format),
         }
+        if 'render_content' in jinja_code:
+            def render_content(notion_id):
+                page = self.client.get_page(notion_id)
+                for child in page.block.children:
+                    if isinstance(child, HeadingBlock):
+                        child.level += 1
+                ast = page.to_pandoc()
+                content = pandoc.write(
+                    ast,
+                    format=self.pandoc_format,
+                    options=self.client.export_defaults["pandoc_options"],
+                )
+                return content
+            self.client.plugin_data['jinjarenderpage'][self.page.notion_id][
+                'environment'].filters['render_content'] = render_content
         try:
             self.rendered_text = render_from_string(jinja_code, context, jinja_environment)
         except (UndefinedError, TemplateSyntaxError):

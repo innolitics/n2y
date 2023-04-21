@@ -158,7 +158,10 @@ class BulletedListItemBlock(ListItemBlock):
         content = [Plain(self.rich_text.to_pandoc())]
         if self.has_children:
             children = self.children_to_pandoc()
-            content.extend(children)
+            for child in children:
+                if isinstance(child, Table):
+                    content.append(Para([]))
+                content.append(child)
         return content
 
     @classmethod
@@ -186,7 +189,10 @@ class NumberedListItemBlock(ListItemBlock):
         content = [Plain(self.rich_text.to_pandoc())]
         if self.has_children:
             children = self.children_to_pandoc()
-            content.extend(children)
+            for child in children:
+                if isinstance(child, Table):
+                    content.append(Para([]))
+                content.append(child)
         return content
 
     @classmethod
