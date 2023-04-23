@@ -9,7 +9,7 @@ from pandoc.types import (
     ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
 
-from n2y.utils import yaml_map_to_meta
+from n2y.utils import yaml_map_to_meta, header_id_from_text
 
 
 logger = logging.getLogger(__name__)
@@ -217,7 +217,8 @@ class HeadingBlock(Block):
             rich_text.bold = False
 
     def to_pandoc(self):
-        return Header(self.level, ('', [], []), self.rich_text.to_pandoc())
+        section_id = header_id_from_text(self.rich_text.to_plain_text())
+        return Header(self.level, (section_id, [], []), self.rich_text.to_pandoc())
 
 
 class HeadingOneBlock(HeadingBlock):

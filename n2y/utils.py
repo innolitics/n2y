@@ -161,6 +161,17 @@ def sanitize_filename(filename):
     return s
 
 
+def header_id_from_text(header_text, existing_ids=None):
+    """
+    Given the plain text for a header, produce a header.
+
+    See https://pandoc.org/MANUAL.html#extension-auto_identifiers
+    """
+    # TODO: Actually implement the proper algorithm; this is only partially
+    # implemented; see the test cases marked xfail
+    return re.sub(r"[^a-zA-Z0-9]+", "-", header_text.lower())
+
+
 def id_from_share_link(share_link):
     hyphens_removed = strip_hyphens(share_link)
     if not hyphens_removed.startswith("https://www.notion.so/"):
