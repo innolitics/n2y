@@ -6,7 +6,10 @@ import pytest
 from pandoc.types import MetaMap, MetaList, MetaBool, MetaString
 
 from n2y.errors import APIResponseError
-from n2y.utils import fromisoformat, id_from_share_link, retry_api_call, yaml_to_meta_value
+from n2y.utils import (
+    fromisoformat, header_id_from_text, id_from_share_link, retry_api_call,
+    yaml_to_meta_value,
+)
 
 
 def test_fromisoformat_datetime():
@@ -137,3 +140,30 @@ def test_yaml_to_meta_value_map():
 
 def test_yaml_to_meta_value_list():
     assert yaml_to_meta_value(['a', 1]) == MetaList([MetaString('a'), MetaString('1')])
+
+
+def test_header_id_from_text_basic():
+    assert header_id_from_text("Essays") == 'essays'
+    assert header_id_from_text("Hello Goodbye") == 'hello-goodbye'
+
+
+@pytest.mark.xfail(reason='not implemented')
+def test_header_id_from_text():
+    """
+    These test cases were taken from the pandoc documentation. See:
+    https://pandoc.org/MANUAL.html#extension-auto_identifiers
+    """
+    assert header_id_from_text('Heading identifiers in HTML') == 'heading-identifiers-in-html'
+    assert header_id_from_text("Maître d'hôtel") == 'maître-dhôtel'
+    assert header_id_from_text('*Dogs*?--in *my* house?') == 'dogs--in-my-house'
+    assert header_id_from_text('[HTML], [S5], or [RTF]?') == 'html-s5-or-rtf'
+    assert header_id_from_text('3. Applications') == 'applications'
+    assert header_id_from_text('33 section') == 'section'
+
+
+@pytest.mark.xfail(reason='not implemented')
+def test_header_id_from_text_existing_ids():
+    # TODO: Note that this behavior should match how pandoc works if that's easy
+    # to implement, and theses assertions may need to be updated
+    assert header_id_from_text('a', {'a'}) == 'a-1'
+    assert header_id_from_text('a', {'a', 'a-1'}) == 'a-2'

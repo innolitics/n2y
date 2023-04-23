@@ -160,12 +160,7 @@ def database_to_files(
                     url_property,
                     property_map,
                 )
-                if isinstance(document, bytes):
-                    file_mode = 'wb'
-                else:
-                    file_mode = 'w'
-                with open(os.path.join(directory, page_filename), file_mode) as f:
-                    f.write(document)
+                write_document(document, os.path.join(directory, page_filename))
             else:
                 logger.warning('Skipping page named "%s" since it has been used', page_filename)
                 counts['duplicate'] += 1
@@ -174,6 +169,15 @@ def database_to_files(
     for key, count in counts.items():
         if count > 0:
             logger.info("%d %s page(s) skipped", count, key)
+
+
+def write_document(document, path):
+    if isinstance(document, bytes):
+        file_mode = 'wb'
+    else:
+        file_mode = 'w'
+    with open(path, file_mode) as f:
+        f.write(document)
 
 
 def _page_filename(page, pandoc_format, filename_template=None):
