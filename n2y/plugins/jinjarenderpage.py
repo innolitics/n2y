@@ -30,6 +30,7 @@ import logging
 
 import pandoc
 import jinja2
+from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
 from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.errors import UseNextClass
@@ -96,24 +97,6 @@ def join_to(foreign_keys, table, primary_key='id'):
     return joined
 
 
-def fuzzy_in(left, right):
-    """
-    Used to compare markdown strings which may have been modified using pandoc's smart extension.
-
-    See https://pandoc.org/MANUAL.html#extension-smart
-    """
-    return _canonicalize(left) in _canonicalize(right)
-
-
-def fuzzy_search(string, pattern):
-    """
-    Used to find a pattern in a markdown string which may have
-    been modified using pandoc's smart extension.
-    see https://pandoc.org/MANUAL.html#extension-smart
-    """
-    return re.findall(_canonicalize(pattern), _canonicalize(string))
-
-
 def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     """
     Used to search a markdown string, which may have been modified using pandoc's smart extension,
@@ -154,8 +137,6 @@ def _create_jinja_environment():
     )
     environment.globals['first_pass_output'] = FirstPassOutput()
     environment.filters['fuzzy_find_in'] = fuzzy_find_in
-    environment.filters['fuzzy_search'] = fuzzy_search
-    environment.filters['fuzzy_in'] = fuzzy_in
     environment.filters['join_to'] = join_to
     return environment
 
@@ -182,7 +163,6 @@ class JinjaRenderPage(Page):
         if self.notion_id not in client.plugin_data:
             client.plugin_data['jinjarenderpage'][self.notion_id] = {
                 'environment': _create_jinja_environment(),
-                'database_cache': {},
             }
 
     def to_pandoc(self):
@@ -221,29 +201,24 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 yield rich_text.mention.notion_database_id
 
     def _get_yaml_from_mentions(self):
-        jinjapage_cache = self.client.plugin_data['jinjarenderpage'][self.page.notion_id]
-        if self.notion_id in jinjapage_cache['database_cache']:
-            self.databases = jinjapage_cache['database_cache'][self.notion_id]
-        else:
-            export_defaults = self.client.export_defaults
-            for database_id in self._get_database_ids_from_mentions():
-                database = self.client.get_database(database_id)
-                # TODO: Rethink about the database data is accessed from within the
-                # templates; perhaps it should be something more like Django's ORM
-                # where we can filter and sort the databases via the API, instead of
-                # having to pull in ALL of the data first before filtering it.
-                # Such an API would also alleviate the need to pass in the export
-                # defaults and it could provide a mechanism to access the page
-                # content from within the Jinja templates, which isn't possible
-                # right now.
-                self.databases[database.title.to_plain_text()] = database_to_yaml(
-                    database=database,
-                    pandoc_format=self.pandoc_format,
-                    pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
-                    id_property=export_defaults["id_property"],
-                    url_property=export_defaults["url_property"],
-                )
-                jinjapage_cache['database_cache'][self.notion_id] = {**self.databases}
+        export_defaults = self.client.export_defaults
+        for database_id in self._get_database_ids_from_mentions():
+            database = self.client.get_database(database_id)
+            # TODO: Rethink about the database data is accessed from within the
+            # templates; perhaps it should be something more like Django's ORM
+            # where we can filter and sort the databases via the API, instead of
+            # having to pull in ALL of the data first before filtering it.
+            # Such an API would also alleviate the need to pass in the export
+            # defaults and it could provide a mechanism to access the page
+            # content from within the Jinja templates, which isn't possible
+            # right now.
+            self.databases[database.title.to_plain_text()] = database_to_yaml(
+                database=database,
+                pandoc_format=self.pandoc_format,
+                pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
+                id_property=export_defaults["id_property"],
+                url_property=export_defaults["url_property"],
+            )
 
     def _render_text(self):
         jinja_environment = self.client.plugin_data[
@@ -260,6 +235,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                     if isinstance(child, HeadingBlock):
                         child.level += 1
                 ast = page.to_pandoc()
+                ast = ast if ast is not None else Pandoc(Meta({'title': MetaString(page.block.title)}), [])
                 content = pandoc.write(
                     ast,
                     format=self.pandoc_format,

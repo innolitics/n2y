@@ -160,6 +160,9 @@ class BulletedListItemBlock(ListItemBlock):
             children = self.children_to_pandoc()
             for child in children:
                 if isinstance(child, Table):
+                    # A bug in pandoc's markdown reader makes it unable to register mid-list tables.
+                    # This adds an extra space between the table and the previous list item, which
+                    # Allows the table to be read as such.
                     content.append(Para([]))
                 content.append(child)
         return content
@@ -191,6 +194,7 @@ class NumberedListItemBlock(ListItemBlock):
             children = self.children_to_pandoc()
             for child in children:
                 if isinstance(child, Table):
+                    # See comment in BulletedListItemBlock.to_pandoc()
                     content.append(Para([]))
                 content.append(child)
         return content
