@@ -229,13 +229,13 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             "page": self.page.properties_to_values(self.pandoc_format),
         }
         if 'render_content' in jinja_code:
-            def render_content(notion_id):
+            def render_content(notion_id, level_adjustment=0):
                 page = self.client.get_page(notion_id)
                 for child in page.block.children:
                     if isinstance(child, HeadingBlock):
-                        child.level += 1
-                ast = page.to_pandoc()
-                ast = ast if ast is not None else Pandoc(Meta({'title': MetaString(page.block.title)}), [])
+                        child.level = max(1, child.level + level_adjustment)
+                ast = page.to_pandoc() if page.to_pandoc() else \
+                    Pandoc(Meta({'title': MetaString(page.block.title)}), [])
                 content = pandoc.write(
                     ast,
                     format=self.pandoc_format,

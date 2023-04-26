@@ -184,11 +184,11 @@ class Client:
         """
         page_in_cache = notion_data["id"] in self.pages_cache
         if page_in_cache and self.page_class_is_in_use(
-        # Need to check that the page in the client cache was instantiated using
-        # The currently favored page class. Otherwise, plugins set for one export
-        # Will be used in another or a plugin will be set but not used.
-        # As we currently use the `jinjarenderpage` plugin for all pages,
-        # this check is most likely uneccessary at this point.
+            # Need to check that the page in the client cache was instantiated using
+            # the currently favored page class. Otherwise, plugins set for one export
+            # will be used in another or a plugin will be set but not used.
+            # As we currently use the `jinjarenderpage` plugin for all pages,
+            # this check is most likely uneccessary at this point.
             self.pages_cache[notion_data["id"]]
         ):
             return self.pages_cache[notion_data["id"]]
