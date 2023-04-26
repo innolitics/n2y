@@ -182,12 +182,22 @@ class Client:
         replace our existing page instance, along with it's content or other
         state that has been added to it.
         """
-        if notion_data["id"] in self.pages_cache and self.page_class_is_in_use(
+        page_in_cache = notion_data["id"] in self.pages_cache
+        if page_in_cache and self.page_class_is_in_use(
+            # Need to check that the page in the client cache was instantiated using
+            # the currently favored page class. Otherwise, plugins set for one export
+            # will be used in another or a plugin will be set but not used.
+            # As we currently use the `jinjarenderpage` plugin for all pages,
+            # this check is most likely uneccessary at this point.
             self.pages_cache[notion_data["id"]]
         ):
             return self.pages_cache[notion_data["id"]]
         else:
             page = self.instantiate_class("page", None, self, notion_data)
+            not page_in_cache or logger.warning((
+                "page in cache overwritten at "
+                f"key \"{notion_data['id']}\""
+            ))
             self.pages_cache[page.notion_id] = page
             return page
 
@@ -621,6 +631,10 @@ class Client:
         return self._parse_response(response)
 
     def page_class_is_in_use(self, page):
+        '''
+        Checks if the given page has been instantiated
+        with the currently favored page class in use.
+        '''
         if page is None or self.notion_classes['page'][-1] == type(page):
             return True
         return False

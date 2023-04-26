@@ -30,8 +30,9 @@ import logging
 
 import pandoc
 import jinja2
+from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
-from n2y.blocks import FencedCodeBlock
+from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.errors import UseNextClass
 from n2y.mentions import DatabaseMention
 
@@ -47,17 +48,18 @@ logger = logging.getLogger(__name__)
 class FirstPassOutput:
     def __init__(self, lines=None):
         self._second_pass_is_requested = False
-        self.is_second_pass = lines is not None
-        if lines is None:
-            lines = []
         self._lines = lines
         self._source = None
 
     def __bool__(self):
-        return False
+        return bool(self._lines)
 
     def request_second_pass(self):
         self._second_pass_is_requested = True
+
+    @property
+    def is_second_pass(self):
+        return self._lines is not None
 
     @property
     def second_pass_is_requested(self):
@@ -65,15 +67,15 @@ class FirstPassOutput:
 
     @property
     def lines(self):
-        self.request_second_pass()
-        return self._lines
+        self.is_second_pass or self.request_second_pass()
+        return self._lines or []
 
     def set_lines(self, lines):
         self._lines = lines
 
     @property
     def source(self):
-        if self._source is None:
+        if self._source is None or self.is_second_pass:
             self._source = '\n'.join(self.lines)
         return self._source
 
@@ -95,16 +97,30 @@ def join_to(foreign_keys, table, primary_key='id'):
     return joined
 
 
-def fuzzy_in(left, right):
+def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     """
-    Used to compare markdown strings which may have been modified using pandoc's smart extension.
+    Used to search a markdown string, which may have been modified using pandoc's smart extension,
+    for the value at a specified key in a dicionary for all dictionaries in a given list of them.
 
-    See https://pandoc.org/MANUAL.html#extension-smart
+    see https://pandoc.org/MANUAL.html#extension-smart
     """
-    return _canonicalize_markdown(left) in _canonicalize_markdown(right)
+    found = []
+    key_filter = lambda d: len(d[key]) if by_length else d[key]
+    sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
+    for term in sorted_dict_list:
+        matches = list(re.finditer(
+            '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
+            _canonicalize(string))
+        )
+        if matches != []:
+            found.append(term)
+            for match in matches:
+                span = match.span()
+                string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
+    return found
 
 
-def _canonicalize_markdown(markdown):
+def _canonicalize(markdown):
     markdown = markdown.replace('\u201D', '"').replace('\u201C', '"')
     markdown = markdown.replace('\u2019', "'").replace('\u2018', "'")
     markdown = markdown.replace('\u2013', '--').replace('\u2014', '---')
@@ -120,8 +136,8 @@ def _create_jinja_environment():
         extensions=["jinja2.ext.do"],
     )
     environment.globals['first_pass_output'] = FirstPassOutput()
+    environment.filters['fuzzy_find_in'] = fuzzy_find_in
     environment.filters['join_to'] = join_to
-    environment.filters['fuzzy_in'] = fuzzy_in
     return environment
 
 
@@ -142,19 +158,24 @@ def render_from_string(source, context=None, environment=None):
 class JinjaRenderPage(Page):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.client.plugin_data['jinjarenderpage'] = {
-            'environment': _create_jinja_environment(),
-        }
+        if 'jinjarenderpage' not in client.plugin_data:
+            client.plugin_data['jinjarenderpage'] = {}
+        if self.notion_id not in client.plugin_data:
+            client.plugin_data['jinjarenderpage'][self.notion_id] = {
+                'environment': _create_jinja_environment(),
+            }
 
     def to_pandoc(self):
         first_pass_ast = super().to_pandoc()
-        jinja_environment = self.client.plugin_data['jinjarenderpage']['environment']
+        jinja_environment = self.client.plugin_data[
+            'jinjarenderpage'][self.notion_id]['environment']
         first_pass_output = jinja_environment.globals["first_pass_output"]
         if first_pass_output.second_pass_is_requested:
             first_pass_output_text = pandoc_ast_to_markdown(first_pass_ast)
             first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
-            jinja2.clear_caches()
+            super().__init__(self.client, self.notion_data)
             second_pass_ast = super().to_pandoc()
+            jinja2.clear_caches()
             return second_pass_ast
         else:
             return first_pass_ast
@@ -170,8 +191,17 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             self.pandoc_format = result.group(1)
         else:
             raise UseNextClass()
+        self.rendered_text = ''
         self.databases = {}
-        export_defaults = client.export_defaults
+
+    def _get_database_ids_from_mentions(self):
+        for rich_text in self.caption:
+            is_mention = isinstance(rich_text, MentionRichText)
+            if is_mention and isinstance(rich_text.mention, DatabaseMention):
+                yield rich_text.mention.notion_database_id
+
+    def _get_yaml_from_mentions(self):
+        export_defaults = self.client.export_defaults
         for database_id in self._get_database_ids_from_mentions():
             database = self.client.get_database(database_id)
             # TODO: Rethink about the database data is accessed from within the
@@ -190,21 +220,32 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 url_property=export_defaults["url_property"],
             )
 
-    def _get_database_ids_from_mentions(self):
-        for rich_text in self.caption:
-            is_mention = isinstance(rich_text, MentionRichText)
-            if is_mention and isinstance(rich_text.mention, DatabaseMention):
-                yield rich_text.mention.notion_database_id
-
-    def to_pandoc(self):
-        jinja_environment = self.client.plugin_data['jinjarenderpage']['environment']
+    def _render_text(self):
+        jinja_environment = self.client.plugin_data[
+            'jinjarenderpage'][self.page.notion_id]['environment']
         jinja_code = self.rich_text.to_plain_text()
         context = {
             "databases": self.databases,
             "page": self.page.properties_to_values(self.pandoc_format),
         }
+        if 'render_content' in jinja_code:
+            def render_content(notion_id, level_adjustment=0):
+                page = self.client.get_page(notion_id)
+                for child in page.block.children:
+                    if isinstance(child, HeadingBlock):
+                        child.level = max(1, child.level + level_adjustment)
+                ast = page.to_pandoc() if page.to_pandoc() else \
+                    Pandoc(Meta({'title': MetaString(page.block.title)}), [])
+                content = pandoc.write(
+                    ast,
+                    format=self.pandoc_format,
+                    options=self.client.export_defaults["pandoc_options"],
+                )
+                return content
+            self.client.plugin_data['jinjarenderpage'][self.page.notion_id][
+                'environment'].filters['render_content'] = render_content
         try:
-            rendered_text = render_from_string(jinja_code, context, jinja_environment)
+            self.rendered_text = render_from_string(jinja_code, context, jinja_environment)
         except (UndefinedError, TemplateSyntaxError):
             logger.error(
                 "Error rendering Jinja template on %s [%s]",
@@ -214,9 +255,16 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             )
             raise
 
+    def to_pandoc(self):
+        self._get_yaml_from_mentions()
+        self._render_text()
         # pandoc.read includes Meta data, which isn't relevant here; we just
         # want the AST for the content
-        document_ast = pandoc.read(rendered_text, format=self.pandoc_format)
+        document_ast = pandoc.read(
+            self.rendered_text,
+            format=self.pandoc_format,
+            options=self.client.export_defaults["pandoc_options"],
+        )
         children_ast = document_ast[1]
         return children_ast
 

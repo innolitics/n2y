@@ -1,12 +1,13 @@
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 from jinja2 import TemplateSyntaxError
 from pytest import raises
 
+from n2y.page import Page
 from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
 from n2y.utils import pandoc_ast_to_markdown
 from n2y.plugins.jinjarenderpage import (
-    render_from_string, join_to, fuzzy_in,
+    render_from_string, join_to, fuzzy_find_in,
     JinjaFencedCodeBlock, JinjaRenderPage,
 )
 from n2y.notion_mocks import (
@@ -25,32 +26,23 @@ def test_join_to_basic():
     assert join_to(foreign_keys, table, 'data') == [None, None]
 
 
-def test_fuzzy_in_quotes():
-    assert fuzzy_in('a"b', 'a\u201cb')
-    assert fuzzy_in('a\u201cb', 'a"b')
-    assert fuzzy_in('"', '\u201d')
-    assert fuzzy_in('\u201d', '"')
-
-
-def test_fuzzy_in_ellipse():
-    assert fuzzy_in('a\u2026b', 'a...b')
-    assert fuzzy_in('a...b', 'a\u2026b')
-    assert fuzzy_in('\u2026', '...')
-    assert fuzzy_in('...', '\u2026')
-
-
-def test_fuzzy_in_em_dash():
-    assert fuzzy_in('a\u2014b', 'a---b')
-    assert fuzzy_in('a---b', 'a\u2014b')
-    assert fuzzy_in('\u2014', '---')
-    assert fuzzy_in('---', '\u2014')
-
-
-def test_fuzzy_in_en_dash():
-    assert fuzzy_in('a\u2013b', 'a--b')
-    assert fuzzy_in('a--b', 'a\u2013b')
-    assert fuzzy_in('\u2013', '--')
-    assert fuzzy_in('--', '\u2013')
+def test_fuzzy_find_in():
+    dict_list = [
+        {'id': '1', 'data': 'a'},
+        {'id': '2', 'data': 'bc'},
+        {'id': '3', 'data': 'def'},
+    ]
+    reversed_dict_list = [
+        {'id': '3', 'data': 'def'},
+        {'id': '2', 'data': 'bc'},
+        {'id': '1', 'data': 'a'}
+    ]
+    catch_all_string = 'a bc def'
+    assert fuzzy_find_in(dict_list, 'a', 'data') == [{'id': '1', 'data': 'a'}]
+    assert fuzzy_find_in(dict_list, catch_all_string, 'data') == reversed_dict_list
+    assert fuzzy_find_in(dict_list, catch_all_string, 'data', False) == reversed_dict_list
+    assert fuzzy_find_in(dict_list, catch_all_string, 'data', False, False) == dict_list
+    assert fuzzy_find_in(dict_list, catch_all_string, 'data', True, False) == dict_list
 
 
 def test_render_no_filtering():
@@ -109,7 +101,10 @@ def test_jinja_render_gfm_with_second_pass():
     caption = mock_rich_text_array('{jinja=gfm}')
     jinja_code = "a{% for v in first_pass_output.lines %}{{v}}{% endfor %}"
     page = process_jinja_block(client, caption, jinja_code)
-    pandoc_ast = page.to_pandoc()
+    page_block = page.block
+    with patch.object(Page, "block", new_callable=PropertyMock) as mock_block:
+        mock_block.return_value = page_block
+        pandoc_ast = page.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert markdown == "aa\n"
 
@@ -150,7 +145,7 @@ def test_jinja_render_with_database():
             mock_get_notion_database.return_value = database_notion_data
             mock_get_database_notion_pages.return_value = database_pages_notion_data
             page = process_jinja_block(client, caption, jinja_code)
-    pandoc_ast = page.to_pandoc()
+            pandoc_ast = page.to_pandoc()
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert markdown == "ab\n"
