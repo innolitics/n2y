@@ -101,11 +101,16 @@ def validate_config(config):
     return True
 
 
+def valid_notion_id(notion_id):
+    canonical_id = strip_hyphens(notion_id)
+    return len(canonical_id) == 32 and canonical_id.isalnum()
+
+
 def _validate_config_item(config_item):
     if "id" not in config_item:
         logger.error("Export config item missing the 'id' key")
         return False
-    if not _valid_id(config_item["id"]):
+    if not valid_notion_id(config_item["id"]):
         logger.error("Invalid id in export config item: %s", config_item["id"])
     if "node_type" not in config_item:
         logger.error("Export config item missing the 'node_type' key")
@@ -156,7 +161,3 @@ def _valid_notion_sort(notion_sorts):
         return False
     # TODO validate keys and values
     return True
-
-
-def _valid_id(notion_id):
-    return len(strip_hyphens(notion_id)) == 32
