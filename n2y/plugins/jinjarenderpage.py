@@ -80,7 +80,7 @@ class FirstPassOutput:
         return self._source
 
 
-def join_to(foreign_keys, table, primary_key='id'):
+def join_to(foreign_keys, table, primary_key='notion_id'):
     '''
     Given a set of ids for an object, and a list of the objects these ids refer
     to, select out the objects by joining using the specified primary key
