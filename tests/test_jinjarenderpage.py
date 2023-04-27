@@ -19,10 +19,10 @@ from n2y.notion_mocks import (
 def test_join_to_basic():
     foreign_keys = ['1', '3']
     table = [
-        {'id': '1', 'data': 'a'},
-        {'id': '2', 'data': 'b'},
+        {'notion_id': '1', 'data': 'a'},
+        {'notion_id': '2', 'data': 'b'},
     ]
-    assert join_to(foreign_keys, table) == [{'id': '1', 'data': 'a'}, None]
+    assert join_to(foreign_keys, table) == [{'notion_id': '1', 'data': 'a'}, None]
     assert join_to(foreign_keys, table, 'data') == [None, None]
 
 
