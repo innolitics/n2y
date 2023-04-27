@@ -105,7 +105,7 @@ def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     see https://pandoc.org/MANUAL.html#extension-smart
     """
     found = []
-    key_filter = lambda d: len(d[key]) if by_length else d[key]
+    def key_filter(d): return len(d[key]) if by_length else d[key]
     sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
     for term in sorted_dict_list:
         matches = list(re.finditer(
@@ -253,6 +253,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 self.notion_url,
                 exc_info=True,
             )
+            self._print_context_debug(context)
             raise
 
     def to_pandoc(self):
@@ -267,6 +268,17 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         )
         children_ast = document_ast[1]
         return children_ast
+
+    def _print_context_debug(self, context):
+        logger.info("Databases")
+        for database_name, database in context["databases"].items():
+            logger.info("  %s [%d]", database_name, len(database))
+            if len(database) > 0:
+                for key in database[0]:
+                    logger.info("    %s", key)
+        logger.info("page")
+        for key, value in context["page"].items():
+            logger.info("  %s: %r", key, value)
 
 
 notion_classes = {
