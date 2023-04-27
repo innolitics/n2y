@@ -105,7 +105,10 @@ def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     see https://pandoc.org/MANUAL.html#extension-smart
     """
     found = []
-    def key_filter(d): return len(d[key]) if by_length else d[key]
+
+    def key_filter(d):
+        return len(d[key]) if by_length else d[key]
+
     sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
     for term in sorted_dict_list:
         matches = list(re.finditer(
