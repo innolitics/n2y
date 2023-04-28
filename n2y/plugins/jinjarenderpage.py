@@ -29,13 +29,14 @@ import re
 import logging
 
 import pandoc
+from pandoc.types import Plain, Str
 import jinja2
 from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
-from n2y.blocks import FencedCodeBlock, HeadingBlock
+
+from n2y.blocks import FencedCodeBlock
 from n2y.errors import UseNextClass
 from n2y.mentions import DatabaseMention
-
 from n2y.page import Page
 from n2y.rich_text import MentionRichText
 from n2y.utils import pandoc_ast_to_markdown
@@ -212,7 +213,13 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             # defaults and it could provide a mechanism to access the page
             # content from within the Jinja templates, which isn't possible
             # right now.
-            self.databases[database.title.to_plain_text()] = database_to_yaml(
+            database_name = database.title.to_plain_text()
+            if database_name in self.databases:
+                logger.warn(
+                    "Duplicate database name \"%s\" when rendering [%s]",
+                    database_name, self.notion_url
+                )
+            self.databases[database_name] = database_to_yaml(
                 database=database,
                 pandoc_format=self.pandoc_format,
                 pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
@@ -258,15 +265,19 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
     def to_pandoc(self):
         self._get_yaml_from_mentions()
         self._render_text()
-        # pandoc.read includes Meta data, which isn't relevant here; we just
-        # want the AST for the content
-        document_ast = pandoc.read(
-            self.rendered_text,
-            format=self.pandoc_format,
-            options=self.client.export_defaults["pandoc_options"],
-        )
-        children_ast = document_ast[1]
-        return children_ast
+        if self.pandoc_format != "plain":
+            # pandoc.read includes Meta data, which isn't relevant here; we just
+            # want the AST for the content
+            document_ast = pandoc.read(self.rendered_text, format=self.pandoc_format)
+            children_ast = document_ast[1]
+            return children_ast
+        else:
+            # Pandoc doesn't support reading "plain" text into it's AST (since
+            # if it was just plain text, why would you need pandoc to parse it!)
+            # That said, sometimes it is useful to create plain text from the
+            # jinja rendering (e.g., when producing a site map or something
+            # similar from Notion databases).
+            return Plain([Str(self.rendered_text)])
 
 
 notion_classes = {

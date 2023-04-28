@@ -242,11 +242,37 @@ Most of the Notion blocks can generate their pandoc AST from _only_ their own da
 
 N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
 
-### Render
+### Jinja Render Page
 
-When CodeBlocks are captioned "{template}", the block is rendered as jinja using yaml data previously cached by n2y.
+CodeBlocks whose caption begins with "{jinja=pandocformat}" will be rendered using [Jinja](https://jinja.palletsprojects.com/en/3.1.x/templates/) into text and then read into the AST using the specified pandoc input format. Note that, other than the special "plain" format, the pandocformat must be available both for reading and writing.
 
-The jinja context has a few special filters available to it. See the code for details.
+Any databases that are [mentioned](https://www.notion.so/help/comments-mentions-and-reminders) in the codeblock's caption will be made available in the jinja render context within the `databases` dictionary.
+
+For example, if you have a code block with the caption "{jinja=html} @People:
+
+```
+<table>
+  <tr><th>Name</th><th>Email</th></tr>
+  {% for person in databases["People"] %}
+  <tr><td>{{person.Name}}</td><td>{{person.Email}}</td></tr>
+  {% endfor %}
+</table>
+```
+
+Where "Name" and "Email" are properties in the "People" database.
+
+Note that any rich text properties are rendered into the pandoc input format specified.
+
+The codeblock's parent page's properties are made available in the `page` context variable.
+
+The jinja context has a few special filters available to it:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `join_to` | filter | Make it possible to join notion databases together. |
+| `first_pass_output` | object | Makes it possible to access the full text of the initial page's render. Useful if you want to render a glossary of terms that are used on the page. |
+
+See the [code](https://github.com/innolitics/n2y/blob/main/n2y/plugins/jinjarenderpage.py) for details.
 
 ### Deep Headers
 
@@ -258,7 +284,7 @@ Completely remove all callout blocks. It's often helpful to include help text in
 
 ### Raw Fenced Code Blocks
 
-Any code block whose caption begins with "{=language}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other formats. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
+Any code block whose caption begins with "{=pandocformat}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other output formats that pandoc supports. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
 
 ### Mermaid Fenced Code Blocks
 
