@@ -333,6 +333,24 @@ flake8 .
 pytest tests
 ```
 
+## Developer Tools
+
+### Pandoc
+
+`n2y` is built on top of [`pandoc`](https://pandoc.org/MANUAL.html), using it to build intermediate representations and for output generation. Being familiar with the pandoc AST is important as an `n2y` developer. Documentation is available for the [native Haskell AST](https://hackage.haskell.org/package/pandoc-types-1.23) and for the corresponding [Python wrapper library](https://boisgera.github.io/pandoc/document/) used directly by `n2y`.
+
+As part of a typical development cycle, you can use the `pandoc` CLI to inspect the relationship between, for example, GitHub-flavored Markdown and the native `pandoc` AST. The following CLI invocation of `pandoc` takes in the GitHub-flavored Markdown file "example.md", converts it to the `pandoc` AST in JSON format, and pipes this output to the command line `jq` JSON processor program for viewing in the terminal:
+
+```
+pandoc -f gfm -t json example.md | jq .
+```
+
+The following command performs a full round-trip from GitHub-flavored Markdown to the `pandoc` AST and back to GitHub-flavored Markdown:
+
+```
+pandoc -f gfm -t json example.md | pandoc -f json -t gfm
+```
+
 ## Roadmap
 
 Here are some features we're planning to add in the future:
