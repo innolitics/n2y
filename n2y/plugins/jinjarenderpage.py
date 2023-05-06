@@ -108,15 +108,16 @@ def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     key_filter = lambda d: len(d[key]) if by_length else d[key]
     sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
     for term in sorted_dict_list:
-        matches = list(re.finditer(
-            '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
-            _canonicalize(string))
-        )
-        if matches != []:
-            found.append(term)
-            for match in matches:
-                span = match.span()
-                string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
+        if term[key] != '':
+            matches = list(re.finditer(
+                '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
+                _canonicalize(string))
+            )
+            if matches != []:
+                found.append(term)
+                for match in matches:
+                    span = match.span()
+                    string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
     return found
 
 
