@@ -6,7 +6,7 @@ from pandoc.types import (
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, LowerAlpha,
-    UpperAlpha, LowerRoman, UpperRoman, Decimal, Space, ColSpan, 
+    UpperAlpha, LowerRoman, UpperRoman, Decimal, Space, ColSpan,
     ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
 
@@ -226,7 +226,7 @@ class LowerAlphaListItemBlock(ListItemBlock):
     @classmethod
     def list_to_pandoc(klass, items):
         return OrderedList((1, LowerAlpha(), Period()), [b.to_pandoc() for b in items])
-    
+
 
 class UpperAlphaListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
@@ -249,7 +249,7 @@ class UpperAlphaListItemBlock(ListItemBlock):
     @classmethod
     def list_to_pandoc(klass, items):
         return OrderedList((1, UpperAlpha(), Period()), [b.to_pandoc() for b in items])
-        
+
 
 class LowerRomanListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
@@ -272,6 +272,7 @@ class LowerRomanListItemBlock(ListItemBlock):
     @classmethod
     def list_to_pandoc(klass, items):
         return OrderedList((1, LowerRoman(), Period()), [b.to_pandoc() for b in items])
+
 
 class UpperRomanListItemBlock(ListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
@@ -749,7 +750,7 @@ DEFAULT_BLOCKS = {
     "bulleted_list_item": BulletedListItemBlock,
     "numbered_list_item": NumberedListItemBlock,
     "lalpha_list_item": LowerAlphaListItemBlock,
-    "ualpha_list_item": UpperAlphaListItemBlock,    
+    "ualpha_list_item": UpperAlphaListItemBlock,
     "lroman_list_item": LowerRomanListItemBlock,
     "uroman_list_item": UpperRomanListItemBlock,
     "to_do": ToDoListItemBlock,

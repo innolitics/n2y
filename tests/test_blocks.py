@@ -194,8 +194,8 @@ def test_numbered_list():
         ),
     ]
     assert markdown == "Numbered List\n\n1.  Item One\n2.  Item Two\n"
-    
-    
+
+
 def test_lalpha_list():
     parent = mock_paragraph_block([("Lower Alpha List", [])], has_children=True)
     children = [
@@ -214,8 +214,8 @@ def test_lalpha_list():
         ),
     ]
     assert markdown == "Lower Alpha List\n\na.  Item One\nb.  Item Two\n"
-    
-    
+
+
 def test_ualpha_list():
     parent = mock_paragraph_block([("Upper Alpha List", [])], has_children=True)
     children = [
@@ -234,8 +234,8 @@ def test_ualpha_list():
         ),
     ]
     assert markdown == "Upper Alpha List\n\nA.  Item One\nB.  Item Two\n"
-    
-    
+
+
 def test_lroman_list():
     parent = mock_paragraph_block([("Lower Roman List", [])], has_children=True)
     children = [
