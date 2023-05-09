@@ -15,6 +15,10 @@ from pandoc.types import (
     CodeBlock,
     BulletList,
     OrderedList,
+    LowerAlpha,
+    UpperAlpha,
+    LowerRoman,
+    UpperRoman,
     Decimal,
     Period,
     Meta,
@@ -190,6 +194,86 @@ def test_numbered_list():
         ),
     ]
     assert markdown == "Numbered List\n\n1.  Item One\n2.  Item Two\n"
+    
+    
+def test_lalpha_list():
+    parent = mock_paragraph_block([("Lower Alpha List", [])], has_children=True)
+    children = [
+        mock_block("lalpha_list_item", {"rich_text": [mock_rich_text("Item One")]}),
+        mock_block("lalpha_list_item", {"rich_text": [mock_rich_text("Item Two")]}),
+    ]
+    pandoc_ast, markdown = process_parent_block(parent, children)
+    assert pandoc_ast == [
+        Para([Str("Lower"), Space(), Str("Alpha"), Space(), Str("List")]),
+        OrderedList(
+            (1, LowerAlpha(), Period()),
+            [
+                [Plain([Str("Item"), Space(), Str("One")])],
+                [Plain([Str("Item"), Space(), Str("Two")])],
+            ],
+        ),
+    ]
+    assert markdown == "Lower Alpha List\n\na.  Item One\nb.  Item Two\n"
+    
+    
+def test_ualpha_list():
+    parent = mock_paragraph_block([("Upper Alpha List", [])], has_children=True)
+    children = [
+        mock_block("ualpha_list_item", {"rich_text": [mock_rich_text("Item One")]}),
+        mock_block("ualpha_list_item", {"rich_text": [mock_rich_text("Item Two")]}),
+    ]
+    pandoc_ast, markdown = process_parent_block(parent, children)
+    assert pandoc_ast == [
+        Para([Str("Upper"), Space(), Str("Alpha"), Space(), Str("List")]),
+        OrderedList(
+            (1, UpperAlpha(), Period()),
+            [
+                [Plain([Str("Item"), Space(), Str("One")])],
+                [Plain([Str("Item"), Space(), Str("Two")])],
+            ],
+        ),
+    ]
+    assert markdown == "Upper Alpha List\n\nA.  Item One\nB.  Item Two\n"
+    
+    
+def test_lroman_list():
+    parent = mock_paragraph_block([("Lower Roman List", [])], has_children=True)
+    children = [
+        mock_block("lroman_list_item", {"rich_text": [mock_rich_text("Item One")]}),
+        mock_block("lroman_list_item", {"rich_text": [mock_rich_text("Item Two")]}),
+    ]
+    pandoc_ast, markdown = process_parent_block(parent, children)
+    assert pandoc_ast == [
+        Para([Str("Lower"), Space(), Str("Roman"), Space(), Str("List")]),
+        OrderedList(
+            (1, LowerRoman(), Period()),
+            [
+                [Plain([Str("Item"), Space(), Str("One")])],
+                [Plain([Str("Item"), Space(), Str("Two")])],
+            ],
+        ),
+    ]
+    assert markdown == "Lower Roman List\n\ni.  Item One\nii. Item Two\n"
+
+
+def test_uroman_list():
+    parent = mock_paragraph_block([("Upper Roman List", [])], has_children=True)
+    children = [
+        mock_block("uroman_list_item", {"rich_text": [mock_rich_text("Item One")]}),
+        mock_block("uroman_list_item", {"rich_text": [mock_rich_text("Item Two")]}),
+    ]
+    pandoc_ast, markdown = process_parent_block(parent, children)
+    assert pandoc_ast == [
+        Para([Str("Upper"), Space(), Str("Roman"), Space(), Str("List")]),
+        OrderedList(
+            (1, UpperRoman(), Period()),
+            [
+                [Plain([Str("Item"), Space(), Str("One")])],
+                [Plain([Str("Item"), Space(), Str("Two")])],
+            ],
+        ),
+    ]
+    assert markdown == "Upper Roman List\n\nI.  Item One\nII. Item Two\n"
 
 
 def test_page():

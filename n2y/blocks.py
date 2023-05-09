@@ -5,8 +5,9 @@ from urllib.parse import urljoin
 from pandoc.types import (
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Space,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
+    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, LowerAlpha,
+    UpperAlpha, LowerRoman, UpperRoman, Decimal, Space, ColSpan, 
+    ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
 
 
@@ -202,6 +203,97 @@ class NumberedListItemBlock(ListItemBlock):
     @classmethod
     def list_to_pandoc(klass, items):
         return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in items])
+
+
+class LowerAlphaListItemBlock(ListItemBlock):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
+
+    def to_pandoc(self):
+        content = [Plain(self.rich_text.to_pandoc())]
+        if self.has_children:
+            children = self.children_to_pandoc()
+            for child in children:
+                if isinstance(child, Table):
+                    # See comment in BulletedListItemBlock.to_pandoc()
+                    content.append(Para([]))
+                content.append(child)
+        return content
+
+    @classmethod
+    def list_to_pandoc(klass, items):
+        return OrderedList((1, LowerAlpha(), Period()), [b.to_pandoc() for b in items])
+    
+
+class UpperAlphaListItemBlock(ListItemBlock):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
+
+    def to_pandoc(self):
+        content = [Plain(self.rich_text.to_pandoc())]
+        if self.has_children:
+            children = self.children_to_pandoc()
+            for child in children:
+                if isinstance(child, Table):
+                    # See comment in BulletedListItemBlock.to_pandoc()
+                    content.append(Para([]))
+                content.append(child)
+        return content
+
+    @classmethod
+    def list_to_pandoc(klass, items):
+        return OrderedList((1, UpperAlpha(), Period()), [b.to_pandoc() for b in items])
+        
+
+class LowerRomanListItemBlock(ListItemBlock):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
+
+    def to_pandoc(self):
+        content = [Plain(self.rich_text.to_pandoc())]
+        if self.has_children:
+            children = self.children_to_pandoc()
+            for child in children:
+                if isinstance(child, Table):
+                    # See comment in BulletedListItemBlock.to_pandoc()
+                    content.append(Para([]))
+                content.append(child)
+        return content
+
+    @classmethod
+    def list_to_pandoc(klass, items):
+        return OrderedList((1, LowerRoman(), Period()), [b.to_pandoc() for b in items])
+
+class UpperRomanListItemBlock(ListItemBlock):
+    def __init__(self, client, notion_data, page, get_children=True):
+        super().__init__(client, notion_data, page, get_children)
+        self.rich_text = client.wrap_notion_rich_text_array(
+            self.notion_type_data["rich_text"], self
+        )
+
+    def to_pandoc(self):
+        content = [Plain(self.rich_text.to_pandoc())]
+        if self.has_children:
+            children = self.children_to_pandoc()
+            for child in children:
+                if isinstance(child, Table):
+                    # See comment in BulletedListItemBlock.to_pandoc()
+                    content.append(Para([]))
+                content.append(child)
+        return content
+
+    @classmethod
+    def list_to_pandoc(klass, items):
+        return OrderedList((1, UpperRoman(), Period()), [b.to_pandoc() for b in items])
 
 
 class HeadingBlock(Block):
@@ -656,6 +748,10 @@ DEFAULT_BLOCKS = {
     "heading_3": HeadingThreeBlock,
     "bulleted_list_item": BulletedListItemBlock,
     "numbered_list_item": NumberedListItemBlock,
+    "lalpha_list_item": LowerAlphaListItemBlock,
+    "ualpha_list_item": UpperAlphaListItemBlock,    
+    "lroman_list_item": LowerRomanListItemBlock,
+    "uroman_list_item": UpperRomanListItemBlock,
     "to_do": ToDoListItemBlock,
     "toggle": ToggleBlock,
     "child_page": ChildPageBlock,
