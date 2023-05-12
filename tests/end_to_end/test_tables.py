@@ -1,5 +1,6 @@
 import pytest
 
+import difflib
 import os
 from pathlib import Path
 
@@ -16,7 +17,10 @@ NOTION_ACCESS_TOKEN = os.getenv("NOTION_ACCESS_TOKEN") or 'secret_lylx4iL5awveY3
 
 def test_simple_table(monkeypatch, request, tmp_path):
     """
-    https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f?pvs=4
+    This will pass only after a workaround for Markdown's table spec. The dominant dialect of Markdown requires a
+    header row to designate a table, whereas others do not.
+
+    Relies on https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f?pvs=4
     """
     object_id = "9b1dd705f61647b6a10032ec7671402f"
 
@@ -39,7 +43,7 @@ def test_simple_table(monkeypatch, request, tmp_path):
     assert status == 0, f"Status {status}"
     output_path = tmp_path / f"{request.node.name}-output"
     content = output_path.read_text()
-    assert content == """\
+    diff = list(difflib.context_diff("""\
 ---
 notion_id: 9b1dd705-f616-47b6-a100-32ec7671402f
 notion_url: https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f
@@ -67,5 +71,6 @@ Yakkity yakkity yakkity yak
 | header | row    |
 |--------|--------|
 | Nutter | Butter |
-"""
+""".splitlines(keepends=True), content.splitlines(keepends=True)))
+    assert not diff, f"Markdown produced:\n{''.join(diff)}"
 
