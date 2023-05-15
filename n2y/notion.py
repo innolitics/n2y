@@ -204,10 +204,10 @@ class Client:
     def _wrap_notion_database(self, notion_data):
         return self.instantiate_class("database", None, self, notion_data)
 
-    def wrap_notion_block(self, notion_data, page, get_children):
+    def wrap_notion_block(self, notion_data, page, get_children, level=None):
         return self.instantiate_class(
             "blocks", notion_data["type"],
-            self, notion_data, page, get_children,
+            self, notion_data, page, get_children, level=level
         )
 
     def wrap_notion_user(self, notion_data):
@@ -325,9 +325,9 @@ class Client:
         response = requests.get(url, headers=self.headers)
         return self._parse_response(response)
 
-    def get_child_blocks(self, block_id, page, get_children):
+    def get_child_blocks(self, block_id, page, get_children, level=None):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
+        return [self.wrap_notion_block(b, page, get_children, level=level) for b in child_notion_blocks]
 
     @retry_api_call
     def get_child_notion_blocks(self, block_id):

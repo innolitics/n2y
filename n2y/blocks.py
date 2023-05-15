@@ -6,7 +6,8 @@ from pandoc.types import (
     Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
     Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
     Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Space,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
+    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak,
+    LowerRoman, UpperRoman, LowerAlpha, UpperAlpha, DefaultStyle
 )
 
 
@@ -17,7 +18,7 @@ class Block:
     """
     A Notion page's content consists of a tree of nested Blocks.
 
-    See here for a listing of all of them: https://developers.notion.com/reference/block
+    See here for a listing of all of them: https://developers.notion.com/reference/block#keys
 
     This class that wraps the Notion blocks and also is responsible for
     transforming them into Pandoc abstract syntax tree. A single Notion block
@@ -27,7 +28,7 @@ class Block:
     Notion doesn't have a wrapper around lists, while Pandoc does.
     """
 
-    def __init__(self, client, notion_data, page=None, get_children=True):
+    def __init__(self, client, notion_data, page=None, get_children=True, level=0):
         """
         The Notion client object is passed down for the following reasons:
         1. Some child objects may be unknown until the block is processed.
@@ -48,6 +49,7 @@ class Block:
         self.archived = notion_data['archived']
         self.notion_type = notion_data['type']
         self.notion_data = notion_data
+        self.level = level
         if get_children:
             self.get_children()
         else:
@@ -55,7 +57,7 @@ class Block:
 
     def get_children(self):
         if self.has_children:
-            self.children = self.client.get_child_blocks(self.notion_id, self.page, True)
+            self.children = self.client.get_child_blocks(self.notion_id, self.page, True, level=self.level+1)
         else:
             self.children = []
 
@@ -64,9 +66,22 @@ class Block:
 
     def children_to_pandoc(self):
         pandoc_ast = []
-        for block_type, blocks in groupby(self.children, lambda c: type(c)):
-            if issubclass(block_type, ListItemBlock):
+        for (block_type, level), blocks in groupby(self.children, lambda c: (type(c), c.level)):
+            if issubclass(block_type, BulletedListItemBlock):
                 pandoc_ast.append(block_type.list_to_pandoc(blocks))
+            elif issubclass(block_type, NumberedListItemBlock):
+                match level:
+                    case 1:
+                        style = Decimal()
+                    case 2:
+                        style = LowerAlpha()
+                    case 3:
+                        style = LowerRoman()
+                    case _:
+                        style = DefaultStyle()
+                pandoc_ast.append(
+                    OrderedList((1, style, Period()), [b.to_pandoc() for b in blocks])
+                )
             else:
                 for b in blocks:
                     result = b.to_pandoc()
@@ -103,7 +118,7 @@ class ListItemBlock(Block):
 
 
 class ChildPageBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.title = self.notion_type_data["title"]
 
@@ -117,7 +132,7 @@ class ChildPageBlock(Block):
 
 
 class EquationBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.expression = self.notion_type_data["expression"]
 
@@ -126,7 +141,7 @@ class EquationBlock(Block):
 
 
 class ParagraphBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
@@ -148,7 +163,7 @@ class ParagraphBlock(Block):
 
 
 class BulletedListItemBlock(ListItemBlock):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
@@ -173,7 +188,7 @@ class BulletedListItemBlock(ListItemBlock):
 
 
 class ToDoListItemBlock(BulletedListItemBlock):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.checked = self.notion_type_data['checked']
 
@@ -182,8 +197,8 @@ class ToDoListItemBlock(BulletedListItemBlock):
 
 
 class NumberedListItemBlock(ListItemBlock):
-    def __init__(self, client, notion_data, page, get_children=True):
-        super().__init__(client, notion_data, page, get_children)
+    def __init__(self, client, notion_data, page, get_children=True, level=1):
+        super().__init__(client, notion_data, page, get_children, level=level)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
         )
@@ -199,13 +214,8 @@ class NumberedListItemBlock(ListItemBlock):
                 content.append(child)
         return content
 
-    @classmethod
-    def list_to_pandoc(klass, items):
-        return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in items])
-
-
 class HeadingBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
@@ -239,7 +249,7 @@ class DividerBlock(Block):
 
 
 class BookmarkBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.url = self.notion_type_data["url"]
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
@@ -288,7 +298,7 @@ class FencedCodeBlock(Block):
         'shell': 'bash',  # seems better than nothing
     }
 
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.language = self.notion_type_data["language"]
         self.rich_text = client.wrap_notion_rich_text_array(
@@ -313,7 +323,7 @@ class FencedCodeBlock(Block):
 
 
 class QuoteBlock(ParagraphBlock):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
@@ -329,7 +339,7 @@ class QuoteBlock(ParagraphBlock):
 
 
 class FileBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['file'])
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
@@ -348,7 +358,7 @@ class FileBlock(Block):
 
 
 class ImageBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['image'])
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
@@ -366,7 +376,7 @@ class ImageBlock(Block):
 
 
 class TableBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.has_column_header = self.notion_type_data['has_column_header']
         self.has_row_header = self.notion_type_data['has_row_header']
@@ -402,7 +412,7 @@ class TableBlock(Block):
 
 
 class RowBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.cells = [
             client.wrap_notion_rich_text_array(nc, self)
@@ -437,7 +447,7 @@ class RowBlock(Block):
 
 
 class ColumnListBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
 
     def to_pandoc(self):
@@ -458,7 +468,7 @@ class ToggleBlock(Block):
     to add html classes and replicate the interactive behavior found in Notion.
     """
 
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
@@ -473,7 +483,7 @@ class ToggleBlock(Block):
 
 
 class CalloutBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
@@ -492,7 +502,7 @@ class CalloutBlock(Block):
 
 
 class NoopBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         # don't get the child blocks, as we're not using the data
         super().__init__(client, notion_data, page, get_children=False)
 
@@ -537,7 +547,7 @@ class EmbedBlock(WarningBlock):
 
 
 class VideoBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(notion_data['video'])
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
@@ -556,7 +566,7 @@ class VideoBlock(Block):
 
 
 class PdfBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
         self.pdf = client.wrap_notion_file(notion_data['pdf'])
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
@@ -584,7 +594,7 @@ class LinkPreviewBlock(WarningBlock):
 
 
 class SyncedBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         self.original = notion_data[notion_data["type"]]["synced_from"] is None
         super().__init__(client, notion_data, page, get_children=self.original)
         # Synced blocks will always have children unless not shared
@@ -608,7 +618,7 @@ class SyncedBlock(Block):
 
 
 class LinkToPageBlock(Block):
-    def __init__(self, client, notion_data, page, get_children=True):
+    def __init__(self, client, notion_data, page, get_children=True, level=NotImplemented):
         super().__init__(client, notion_data, page, get_children)
 
         self.link_type = self.notion_type_data["type"]
