@@ -37,8 +37,9 @@ def main(raw_args, access_token, n2y_cache=None):
 
     args = parser.parse_args(raw_args)
 
+    logging_level = logging.__dict__[args.verbosity]
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    logging.basicConfig(level=args.verbosity.upper(), handlers=[stdout_handler])
+    logging.basicConfig(level=logging_level, handlers=[stdout_handler])
     global logger
     logger = logging.getLogger(__name__)
 
