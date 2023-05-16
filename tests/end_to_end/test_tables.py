@@ -1,25 +1,19 @@
-import pytest
+import pytest  # noqa: E401
 
-import difflib
-import os
+import logging
 from pathlib import Path
+import sys
 
 import yaml
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
 
-import n2y
 from n2y.main import main
 
-NOTION_ACCESS_TOKEN = os.getenv("NOTION_ACCESS_TOKEN") or 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r'
 
-
-@pytest.mark.skip("Choice of Markdown dialect will determine whether header-free simple tables render this way")
-def test_simple_table(monkeypatch, request, tmp_path):
+def test_simple_table(caplog, monkeypatch, request, tmp_path,
+                      valid_access_token):
     """
-    Simply show what flattened Markdown content is expected if the input contains tables without headers.
+    Simply show what flattened Markdown content is expected if the input
+    contains tables without headers.
 
     Relies on https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f?pvs=4
     """
@@ -40,21 +34,25 @@ def test_simple_table(monkeypatch, request, tmp_path):
         config_path = Path("{}-config.yaml".format(request.node.name))
         with config_path.open("w") as fo:
             yaml.dump(config, fo)
-        status = main([str(config_path)], NOTION_ACCESS_TOKEN)
+        m.setattr(sys, "argv", ["n2y", str(config_path)])
+        status = main()
+        captured_messages = [r.message for r in caplog.records
+                             if r.levelno >= logging.WARNING]
     assert status == 0, f"Status {status}"
     output_path = tmp_path / f"{request.node.name}-output"
     content = output_path.read_text()
-    diff = list(difflib.context_diff("""\
----
-notion_id: 9b1dd705-f616-47b6-a100-32ec7671402f
-notion_url: https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f
-title: Simple Tables
----
+
+    n_expected_table_warnings = 0
+    if """\
 Some text
 
+|      |         |
+|------|---------|
 | This | has     |
 | no   | headers |
-
+""" in content:
+        n_expected_table_warnings += 1
+    assert """\
 More text
 
 |        | header | row     |
@@ -63,15 +61,21 @@ More text
 | column | both   | headers |
 |        |        |         |
 | and    | an     | empty   |
-
+""" in content
+    if """\
 Yakkity yakkity yakkity yak
 
+|        |        |
+|--------|--------|
 | header | Fiddle |
 | column | Faddle |
-
+""" in content:
+        n_expected_table_warnings += 1
+    assert """\
 | header | row    |
 |--------|--------|
 | Nutter | Butter |
-""".splitlines(keepends=True), content.splitlines(keepends=True)))
-    assert not diff, f"Markdown produced:\n{''.join(diff)}"
-
+"""
+    if n_expected_table_warnings > 0:
+        assert f"{n_expected_table_warnings} tables will present empty " \
+               "headers to maintain Markdown spec" in captured_messages

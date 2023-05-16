@@ -113,9 +113,9 @@ class Page:
                     n_empty_headers += 1
         if n_empty_headers:
             logger.warning(
-                "%r: %d tables will present empty headers to maintain Markdown spec",
-                self.notion_id,
+                "%d table(s) will present empty headers to maintain Markdown spec",
                 n_empty_headers,
+                extra={"url": self.notion_url}
             )
 
         return ast
