@@ -61,10 +61,10 @@ More text
     assert """\
 Yakkity yakkity yakkity yak
 
-| column-1 | column-2 |
-|----------|----------|
-| header   | Fiddle   |
-| column   | Faddle   |
+|        | column-1 |
+|--------|----------|
+| header | Fiddle   |
+| column | Faddle   |
 
 """ in content
     assert """\

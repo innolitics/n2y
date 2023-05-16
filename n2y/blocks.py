@@ -378,7 +378,12 @@ class TableBlock(Block):
         if self.has_column_header:
             header_rows = [children.pop(0)]
         else:
-            n_fields = len(children[0])
+            if self.has_row_header:
+                n_fields = len(children[0])-1
+                field_names = [""]+[f"column-{i}" for i in range(1, n_fields+1)]
+            else:
+                n_fields = len(children[0])
+                field_names = [f"column-{i}" for i in range(1, n_fields + 1)]
             # When [], only some dialects will produce an unadorned table
             header_rows = [
                 Row(("", [], []), [
@@ -387,8 +392,8 @@ class TableBlock(Block):
                         AlignDefault(),
                         RowSpan(1),
                         ColSpan(1),
-                        [Plain([Str(f"column-{i}")])]
-                    ) for i in range(1, n_fields + 1)
+                        [Plain([Str(name)])]
+                    ) for name in field_names
                 ])]
             logger.warning("Generic header added to satisfy Markdown table spec", extra={"url": self.notion_url})
         if self.has_row_header:
