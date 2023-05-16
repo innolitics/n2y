@@ -1,15 +1,9 @@
-import pytest
+import pytest  # noqa: E401
 
 from pathlib import Path
 
 import yaml
 
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
-
-import n2y
 from n2y.main import main
 
 

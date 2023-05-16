@@ -70,7 +70,7 @@ class Block:
             if issubclass(block_type, BulletedListItemBlock):
                 pandoc_ast.append(block_type.list_to_pandoc(blocks))
             elif issubclass(block_type, NumberedListItemBlock):
-                match level:
+                match level:  # noqa: E999
                     case 1:
                         style = Decimal()
                     case 2:
