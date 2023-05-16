@@ -378,7 +378,19 @@ class TableBlock(Block):
         if self.has_column_header:
             header_rows = [children.pop(0)]
         else:
-            header_rows = []
+            n_fields = len(children[0])
+            # When [], only some dialects will produce an unadorned table
+            header_rows = [
+                Row(("", [], []), [
+                    Cell(
+                        ("", [], []),
+                        AlignDefault(),
+                        RowSpan(1),
+                        ColSpan(1),
+                        [Plain([Str(f"column-{i}")])]
+                    ) for i in range(1, n_fields + 1)
+                ])]
+            logger.warning("Generic header added to satisfy Markdown table spec", extra={"url": self.notion_url})
         if self.has_row_header:
             row_header_columns = 1
         else:

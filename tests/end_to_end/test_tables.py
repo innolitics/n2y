@@ -1,7 +1,5 @@
 import pytest
 
-import difflib
-import os
 from pathlib import Path
 
 import yaml
@@ -13,11 +11,8 @@ except ImportError:
 import n2y
 from n2y.main import main
 
-NOTION_ACCESS_TOKEN = os.getenv("NOTION_ACCESS_TOKEN") or 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r'
 
-
-@pytest.mark.skip("Choice of Markdown dialect will determine whether header-free simple tables render this way")
-def test_simple_table(monkeypatch, request, tmp_path):
+def test_simple_table(access_token, monkeypatch, request, tmp_path):
     """
     Simply show what flattened Markdown content is expected if the input contains tables without headers.
 
@@ -40,21 +35,20 @@ def test_simple_table(monkeypatch, request, tmp_path):
         config_path = Path("{}-config.yaml".format(request.node.name))
         with config_path.open("w") as fo:
             yaml.dump(config, fo)
-        status = main([str(config_path)], NOTION_ACCESS_TOKEN)
+        status = main([str(config_path)], access_token)
     assert status == 0, f"Status {status}"
     output_path = tmp_path / f"{request.node.name}-output"
     content = output_path.read_text()
-    diff = list(difflib.context_diff("""\
----
-notion_id: 9b1dd705-f616-47b6-a100-32ec7671402f
-notion_url: https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f
-title: Simple Tables
----
+    assert """\
 Some text
 
-| This | has     |
-| no   | headers |
+| column-1 | column-2 |
+|----------|----------|
+| This     | has      |
+| no       | headers  |
 
+""" in content
+    assert """\
 More text
 
 |        | header | row     |
@@ -63,15 +57,18 @@ More text
 | column | both   | headers |
 |        |        |         |
 | and    | an     | empty   |
-
+""" in content
+    assert """\
 Yakkity yakkity yakkity yak
 
-| header | Fiddle |
-| column | Faddle |
+| column-1 | column-2 |
+|----------|----------|
+| header   | Fiddle   |
+| column   | Faddle   |
 
+""" in content
+    assert """\
 | header | row    |
 |--------|--------|
 | Nutter | Butter |
-""".splitlines(keepends=True), content.splitlines(keepends=True)))
-    assert not diff, f"Markdown produced:\n{''.join(diff)}"
-
+""" in content
