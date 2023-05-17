@@ -6,7 +6,7 @@ import sys
 
 import yaml
 
-from n2y.main import main
+from n2y.main import cli_main
 
 
 def test_simple_table(caplog, monkeypatch, request, tmp_path,
@@ -35,10 +35,12 @@ def test_simple_table(caplog, monkeypatch, request, tmp_path,
         with config_path.open("w") as fo:
             yaml.dump(config, fo)
         m.setattr(sys, "argv", ["n2y", str(config_path)])
-        status = main()
+        # cli_main calls sys.exit, which should be changed for testing
+        m.setattr(sys, "exit", lambda x: x)
+        status = cli_main()
         captured_messages = [r.message for r in caplog.records
                              if r.levelno >= logging.WARNING]
-    assert status == 0, f"Status {status}"
+    assert not status, f"Status {status}"
     output_path = tmp_path / f"{request.node.name}-output"
     content = output_path.read_text()
 
