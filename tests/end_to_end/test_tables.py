@@ -1,4 +1,4 @@
-import pytest  # noqa: E401
+import pytest  # noqa: F401
 
 import logging
 from pathlib import Path
@@ -35,9 +35,13 @@ def test_simple_table(caplog, monkeypatch, request, tmp_path,
         with config_path.open("w") as fo:
             yaml.dump(config, fo)
         m.setattr(sys, "argv", ["n2y", str(config_path)])
-        # cli_main calls sys.exit, which should be changed for testing
+
+        # cli_main calls sys.exit, unnecessarily I think. It's more expected
+        # that a main() takes no arguments and sys.exit is only called in the
+        # __main__ scope, either at the module or __main__.py level.
         m.setattr(sys, "exit", lambda x: x)
         status = cli_main()
+
         captured_messages = [r.message for r in caplog.records
                              if r.levelno >= logging.WARNING]
     assert not status, f"Status {status}"
