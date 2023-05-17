@@ -1,20 +1,19 @@
-import pytest
+import pytest  # noqa: E401
 
+import logging
 from pathlib import Path
+import sys
 
 import yaml
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
 
-import n2y
 from n2y.main import main
 
 
-def test_simple_table(access_token, monkeypatch, request, tmp_path):
+def test_simple_table(caplog, monkeypatch, request, tmp_path,
+                      valid_access_token):
     """
-    Simply show what flattened Markdown content is expected if the input contains tables without headers.
+    Simply show what flattened Markdown content is expected if the input
+    contains tables without headers.
 
     Relies on https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f?pvs=4
     """
@@ -35,19 +34,24 @@ def test_simple_table(access_token, monkeypatch, request, tmp_path):
         config_path = Path("{}-config.yaml".format(request.node.name))
         with config_path.open("w") as fo:
             yaml.dump(config, fo)
-        status = main([str(config_path)], access_token)
+        m.setattr(sys, "argv", ["n2y", str(config_path)])
+        status = main()
+        captured_messages = [r.message for r in caplog.records
+                             if r.levelno >= logging.WARNING]
     assert status == 0, f"Status {status}"
     output_path = tmp_path / f"{request.node.name}-output"
     content = output_path.read_text()
-    assert """\
+
+    n_expected_table_warnings = 0
+    if """\
 Some text
 
-| column-1 | column-2 |
-|----------|----------|
-| This     | has      |
-| no       | headers  |
-
-""" in content
+|      |         |
+|------|---------|
+| This | has     |
+| no   | headers |
+""" in content:
+        n_expected_table_warnings += 1
     assert """\
 More text
 
@@ -58,17 +62,20 @@ More text
 |        |        |         |
 | and    | an     | empty   |
 """ in content
-    assert """\
+    if """\
 Yakkity yakkity yakkity yak
 
-|        | column-1 |
-|--------|----------|
-| header | Fiddle   |
-| column | Faddle   |
-
-""" in content
+|        |        |
+|--------|--------|
+| header | Fiddle |
+| column | Faddle |
+""" in content:
+        n_expected_table_warnings += 1
     assert """\
 | header | row    |
 |--------|--------|
 | Nutter | Butter |
-""" in content
+"""
+    if n_expected_table_warnings > 0:
+        assert f"{n_expected_table_warnings} tables will present empty " \
+               "headers to maintain Markdown spec" in captured_messages
