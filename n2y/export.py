@@ -73,7 +73,7 @@ def export_page(
             logger.warning(
                 "%d table(s) will present empty headers to maintain Markdown spec",
                 n_empty_headers,
-                extra={"url": url_property or page.notion_url}
+                extra={"url": page.notion_url}
             )
 
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
