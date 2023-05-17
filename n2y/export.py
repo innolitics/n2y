@@ -59,19 +59,22 @@ def export_page(
 ):
     page_properties = _page_properties(page, pandoc_format, id_property, url_property, property_map)
     pandoc_ast = page.to_pandoc()
-    n_empty_headers = 0
-    for element in pandoc_ast[1]:
-        if isinstance(element, Table):
-            _, head = element[3]
-            n_header_rows = sum(1 for _, row in head)
-            if n_header_rows == 0:
-                n_empty_headers += 1
-    if n_empty_headers:
-        logger.warning(
-            "%d table(s) will present empty headers to maintain Markdown spec",
-            n_empty_headers,
-            extra={"url": url_property or page.notion_url}
-        )
+    has_tables = pandoc_ast and any(isinstance(e, Table) for e in pandoc_ast[1])
+
+    if has_tables:
+        n_empty_headers = 0
+        for element in pandoc_ast[1]:
+            if isinstance(element, Table):
+                _, head = element[3]
+                n_header_rows = sum(1 for _, row in head)
+                if n_header_rows == 0:
+                    n_empty_headers += 1
+        if n_empty_headers:
+            logger.warning(
+                "%d table(s) will present empty headers to maintain Markdown spec",
+                n_empty_headers,
+                extra={"url": url_property or page.notion_url}
+            )
 
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
     return '\n'.join([
