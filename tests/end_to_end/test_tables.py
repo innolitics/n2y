@@ -77,5 +77,5 @@ Yakkity yakkity yakkity yak
 | Nutter | Butter |
 """
     if n_expected_table_warnings > 0:
-        assert f"{n_expected_table_warnings} tables will present empty " \
+        assert f"{n_expected_table_warnings} table(s) will present empty " \
                "headers to maintain Markdown spec" in captured_messages

@@ -1,7 +1,5 @@
 import logging
 
-from pandoc.types import Table
-
 from .blocks import ChildDatabaseBlock, ChildPageBlock
 
 from n2y.utils import fromisoformat
@@ -103,22 +101,7 @@ class Page:
             return self.client.get_database(self.notion_parent["database_id"])
 
     def to_pandoc(self):
-        ast = self.block.to_pandoc()
-        n_empty_headers = 0
-        for element in ast[1]:
-            if isinstance(element, Table):
-                _, head = element[3]
-                n_header_rows = sum(1 for _, row in head)
-                if n_header_rows == 0:
-                    n_empty_headers += 1
-        if n_empty_headers:
-            logger.warning(
-                "%d table(s) will present empty headers to maintain Markdown spec",
-                n_empty_headers,
-                extra={"url": self.notion_url}
-            )
-
-        return ast
+        return self.block.to_pandoc()
 
     def properties_to_values(self, pandoc_format):
         return {k: v.to_value(pandoc_format) for k, v in self.properties.items()}

@@ -32,7 +32,7 @@ def _parse_args(argv=None):
     )
     parser.add_argument(
         "-v", "--verbose", action="store_const",
-        dest="verbosity", const="DEBUG",
+        dest="log_level", const="DEBUG",
         help="Set the log level to DEBUG",
     )
     parser.add_argument(
@@ -47,7 +47,7 @@ def _parse_args(argv=None):
 def main():
     args = _parse_args()
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    logging.basicConfig(level=args.verbosity, handlers=[stdout_handler])
+    logging.basicConfig(level=args.log_level, handlers=[stdout_handler])
     global logger
     logger = logging.getLogger(__name__)
 
