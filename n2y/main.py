@@ -1,7 +1,12 @@
+"""
+Move data from Notion into YAML/markdown
+"""
+
 import os
 import sys
 import logging
 import argparse
+from pathlib import Path
 import pkg_resources
 import yaml
 
@@ -13,35 +18,41 @@ from n2y.export import export_page, database_to_yaml, database_to_markdown_files
 logger = None
 
 
-def cli_main():
-    args = sys.argv[1:]
-    access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
-    n2y_cache = os.environ.get('N2Y_CACHE', None)
-    sys.exit(main(args, access_token, n2y_cache))
-
-
-def main(raw_args, access_token, n2y_cache=None):
+def _parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Move data from Notion into YAML/markdown",
-        formatter_class=argparse.RawTextHelpFormatter,
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("config", help="The path to the config file")
+    parser.add_argument("config", help="The path to the config file",
+                        type=Path)
     parser.add_argument(
-        "--verbosity", '-v', default='INFO',
+        "--log-level", default="INFO",
         help="Level to set the root logging module to",
+        type=lambda text: text.upper(),
     )
     parser.add_argument(
-        "--version", action='version', version=pkg_resources.require("n2y")[0].version,
-        help="The version of n2y installed",
+        "-v", "--verbose", action="store_const",
+        dest="verbosity", const="DEBUG",
+        help="Set the log level to DEBUG",
     )
+    parser.add_argument(
+        "--version", action="version",
+        version=pkg_resources.require("n2y")[0].version,
+    )
+    parser.set_defaults(access_token=os.getenv("NOTION_ACCESS_TOKEN"),
+                        n2y_cache=os.getenv("N2Y_CACHE"))
+    return parser.parse_args(argv)
 
-    args = parser.parse_args(raw_args)
 
-    logging_level = logging.__dict__[args.verbosity]
+def main():
+    args = _parse_args()
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    logging.basicConfig(level=logging_level, handlers=[stdout_handler])
+    logging.basicConfig(level=args.verbosity, handlers=[stdout_handler])
     global logger
     logger = logging.getLogger(__name__)
+
+    access_token = args.access_token
+    n2y_cache = args.n2y_cache
 
     if n2y_cache is not None:
         try:
@@ -55,8 +66,7 @@ def main(raw_args, access_token, n2y_cache=None):
             )
 
     if access_token is None:
-        logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
-        return 1
+        return "No NOTION_ACCESS_TOKEN environment variable is set"
 
     config = load_config(args.config)
     if config is None:
@@ -145,4 +155,4 @@ def _export_node_from_config(client, export):
 
 
 if __name__ == "__main__":
-    cli_main()
+    sys.exit(main())
