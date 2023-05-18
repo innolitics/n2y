@@ -1,6 +1,6 @@
 import pytest  # noqa: F401
 
-from tests.utils import NOTION_ACCESS_TOKEN
+from ..utils import NOTION_ACCESS_TOKEN
 
 
 @pytest.fixture()
