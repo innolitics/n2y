@@ -48,7 +48,7 @@ def test_simple_table(caplog, monkeypatch, request, tmp_path, valid_access_token
     output_path = tmp_path / f"{request.node.name}-output"
     content = output_path.read_text()
 
-    n_expected_table_warnings = 0
+    number_expected_table_warnings = 0
     if (
         """\
 Some text
@@ -60,7 +60,7 @@ Some text
 """
         in content
     ):
-        n_expected_table_warnings += 1
+        number_expected_table_warnings += 1
     assert (
         """\
 More text
@@ -85,15 +85,15 @@ Yakkity yakkity yakkity yak
 """
         in content
     ):
-        n_expected_table_warnings += 1
+        number_expected_table_warnings += 1
     assert """\
 | header | row    |
 |--------|--------|
 | Nutter | Butter |
 """
-    if n_expected_table_warnings > 0:
+    if number_expected_table_warnings > 0:
         expected_blurb = (
-            f"{n_expected_table_warnings} table(s) will present empty "
+            f"{number_expected_table_warnings} table(s) will present empty "
             "headers to maintain Markdown spec"
         )
         assert any(expected_blurb in m for m in captured_messages)
