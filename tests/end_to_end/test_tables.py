@@ -9,8 +9,7 @@ import yaml
 from n2y.main import cli_main
 
 
-def test_simple_table(caplog, monkeypatch, request, tmp_path,
-                      valid_access_token):
+def test_simple_table(caplog, monkeypatch, request, tmp_path, valid_access_token):
     """
     Simply show what flattened Markdown content is expected if the input
     contains tables without headers.
@@ -42,23 +41,28 @@ def test_simple_table(caplog, monkeypatch, request, tmp_path,
         m.setattr(sys, "exit", lambda x: x)
         status = cli_main()
 
-        captured_messages = [r.message for r in caplog.records
-                             if r.levelno >= logging.WARNING]
+        captured_messages = [
+            r.message for r in caplog.records if r.levelno >= logging.WARNING
+        ]
     assert not status, f"Status {status}"
     output_path = tmp_path / f"{request.node.name}-output"
     content = output_path.read_text()
 
     n_expected_table_warnings = 0
-    if """\
+    if (
+        """\
 Some text
 
 |      |         |
 |------|---------|
 | This | has     |
 | no   | headers |
-""" in content:
+"""
+        in content
+    ):
         n_expected_table_warnings += 1
-    assert """\
+    assert (
+        """\
 More text
 
 |        | header | row     |
@@ -67,15 +71,20 @@ More text
 | column | both   | headers |
 |        |        |         |
 | and    | an     | empty   |
-""" in content
-    if """\
+"""
+        in content
+    )
+    if (
+        """\
 Yakkity yakkity yakkity yak
 
 |        |        |
 |--------|--------|
 | header | Fiddle |
 | column | Faddle |
-""" in content:
+"""
+        in content
+    ):
         n_expected_table_warnings += 1
     assert """\
 | header | row    |
@@ -83,5 +92,8 @@ Yakkity yakkity yakkity yak
 | Nutter | Butter |
 """
     if n_expected_table_warnings > 0:
-        assert f"{n_expected_table_warnings} table(s) will present empty " \
-               "headers to maintain Markdown spec" in captured_messages
+        expected_blurb = (
+            f"{n_expected_table_warnings} table(s) will present empty "
+            "headers to maintain Markdown spec"
+        )
+        assert any(expected_blurb in m for m in captured_messages)
