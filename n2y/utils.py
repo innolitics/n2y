@@ -70,12 +70,12 @@ def pandoc_ast_to_html(pandoc_ast):
     )
 
 
-def pandoc_write_or_log_errors(pandoc_ast, format, options):
+def pandoc_write_or_log_errors(pandoc_ast, format, options, path=None):
     if pandoc_ast is None or pandoc_ast == []:
         return ""
     try:
         # TODO: add a mechanism to customize this
-        return pandoc.write(pandoc_ast, format=format, options=options)
+        return pandoc.write(pandoc_ast, format=format, options=options, file=path)
     except ProcessExecutionError as err:
         if err.retcode == PANDOC_PARSE_ERROR:
             lines = []

@@ -2,8 +2,11 @@
 This module contains all the code responsible for exporting `page.Page` and
 `database.Database` objects into the various supported file formats.
 """
-import os
 import logging
+import os
+from pathlib import Path
+import tempfile
+from zipfile import ZipFile
 
 import yaml
 
@@ -58,11 +61,22 @@ def export_page(
     property_map=None,
 ):
     pandoc_ast = page.to_pandoc()
+    page_properties = _page_properties(
+        page, pandoc_format, id_property, url_property, property_map,
+    )
+    if pandoc_format.startswith("docx"):
+        metadata = {"page": page_properties}
+        output_path = Path(tempfile.mkdtemp()) / "page.docx"
+        pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options, path=output_path)
+        if not output_path.exists():
+            logger.warning("An empty page will produce corrupt docx output (%r)", page.notion_url)
+        if metadata:
+            with ZipFile(output_path, "a") as zf:
+                zf.writestr("_n2y/metadata.yaml", yaml.safe_dump(metadata))
+        return output_path.read_bytes() if output_path.exists() else None
+
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
     if isinstance(page_content, str) and yaml_front_matter:
-        page_properties = _page_properties(
-            page, pandoc_format, id_property, url_property, property_map,
-        )
         return '\n'.join([
             '---',
             yaml.dump(page_properties) + '---',
