@@ -11,6 +11,7 @@ from zipfile import ZipFile
 import yaml
 
 from n2y.utils import pandoc_format_to_file_extension, pandoc_write_or_log_errors, sanitize_filename
+from n2y.open_office_format import OpenOfficeMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -65,14 +66,13 @@ def export_page(
         page, pandoc_format, id_property, url_property, property_map,
     )
     if pandoc_format.startswith("docx"):
-        metadata = {"page": page_properties}
         output_path = Path(tempfile.mkdtemp()) / "page.docx"
         pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options, path=output_path)
         if not output_path.exists():
             logger.warning("An empty page will produce corrupt docx output (%r)", page.notion_url)
-        if metadata:
-            with ZipFile(output_path, "a") as zf:
-                zf.writestr("_n2y/metadata.yaml", yaml.safe_dump(metadata))
+        if page_properties:
+            with OpenOfficeMetadata(output_path, "a") as oof:
+                oof.update(page_properties)
         return output_path.read_bytes() if output_path.exists() else None
 
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
