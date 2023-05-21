@@ -388,7 +388,7 @@ def test_dbfootnote_plugin(tmpdir):
     """
     This test exercises our database footnote. It involves a simple page with
     an inline database containing content for 3 footnotes.
-    
+
     The page can be seen here:
     https://www.notion.so/Advanced-DB-Footnote-8a1a17c7ef3043f4bd9fb041ef31ba7
     """
