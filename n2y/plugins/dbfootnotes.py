@@ -14,20 +14,16 @@ logger = logging.getLogger(__name__)
 class PageMentionFootnote(PageMention):
     def __init__(self, client, notion_data, plain_text, block=None):
         super().__init__(client, notion_data, plain_text, block)
-        if (
-            self._get_mention_page()
-            and self._get_mention_page_parent()
-            and self._is_footnote()
-        ):
+        if self._get_mention() and self._get_parent() and self._is_footnote():
             self._attach_footnote()
         else:
             raise UseNextClass
 
-    def _get_mention_page(self):
+    def _get_mention(self):
         self.mentioned_page = self.client.get_page(self.notion_page_id)
         return self.mentioned_page is not None
 
-    def _get_mention_page_parent(self):
+    def _get_parent(self):
         self.mentioned_page_parent = self.mentioned_page.parent
         return self.mentioned_page_parent is not None
 
