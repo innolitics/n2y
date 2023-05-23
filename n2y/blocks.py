@@ -627,7 +627,7 @@ class LinkToPageBlock(Block):
             raise NotImplementedError(f"Unknown link type: {self.link_type}")
 
         if node is None:
-            msg = "Permission denied when attempting to access linked node [%s]"
+            msg = "Permission denied when attempting to access linked node (%r)"
             logger.warning(msg, self.notion_url)
             return None
         else:

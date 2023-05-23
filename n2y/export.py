@@ -5,6 +5,7 @@ This module contains all the code responsible for exporting `page.Page` and
 import os
 import logging
 
+from pandoc.types import Table
 import yaml
 
 from n2y.utils import pandoc_write_or_log_errors, sanitize_filename
@@ -58,12 +59,37 @@ def export_page(
 ):
     page_properties = _page_properties(page, pandoc_format, id_property, url_property, property_map)
     pandoc_ast = page.to_pandoc()
+
+    if (number_empty_headers := _count_headerless_tables(pandoc_ast)) > 0:
+        logger.warning(
+            "%d table(s) will present empty headers to maintain Markdown spec (%r)",
+            number_empty_headers,
+            page.notion_url,
+        )
+
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
     return '\n'.join([
         '---',
         yaml.dump(page_properties) + '---',
         page_content,
     ])
+
+
+def _count_headerless_tables(pandoc_ast):
+    """
+    Count the number of tables in the AST that will result in empty
+    header rows prepended by Pandoc.
+    """
+    number_empty_headers = 0
+    if pandoc_ast and any(isinstance(e, Table) for e in pandoc_ast[1]):
+        for element in pandoc_ast[1]:
+            if isinstance(element, Table):
+                _, head = element[3]
+                # We do count empty rows
+                number_header_rows = sum(1 for _, row in head)
+                if number_header_rows == 0:
+                    number_empty_headers += 1
+    return number_empty_headers
 
 
 def database_to_yaml(
