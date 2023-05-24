@@ -3,6 +3,8 @@ import os
 
 from os.path import isfile, join
 
+import pandoc
+from pandoc.types import Str
 import yaml
 try:
     from yaml import CLoader as Loader
@@ -132,7 +134,7 @@ def test_simple_database_to_markdown_files(tmpdir):
     assert "content" not in metadata
 
 
-def test_simple_database_to_docx_files(tmpdir):
+def test_simple_database_to_docx_files(tmp_path):
     """
     The database can be seen here:
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
@@ -149,11 +151,16 @@ def test_simple_database_to_docx_files(tmpdir):
             }
         ]
     }
-    status = run_n2y(tmpdir, config)
+    status = run_n2y(tmp_path, config)
     assert status == 0
-    output_directory = os.path.join(tmpdir, "database")
-    generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
-    assert generated_files == {"A.docx", "B.docx", "C.docx"}
+    for expected_filename in ["A.docx", "B.docx", "C.docx"]:
+        expected_path = tmp_path / "database" / expected_filename
+        doc = pandoc.read(expected_path.read_bytes(), format="docx")
+        metadata_dict = doc[0][0]
+
+        # Should arrive from yaml
+        assert "notion_id" in metadata_dict
+        assert "notion_url" in metadata_dict
 
 
 def test_simple_database_config(tmpdir):
