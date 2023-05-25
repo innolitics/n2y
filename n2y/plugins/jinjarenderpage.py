@@ -34,7 +34,7 @@ import jinja2
 from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
 
-from n2y.blocks import FencedCodeBlock
+from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.errors import UseNextClass
 from n2y.mentions import DatabaseMention
 from n2y.page import Page
@@ -44,6 +44,19 @@ from n2y.export import database_to_yaml
 
 
 logger = logging.getLogger(__name__)
+
+
+class JinjaDatabaseCache(dict):
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return super().__getitem__(key)
+        elif isinstance(key, int):
+            return super().__getitem__(list(self)[key])
+        logger.error((
+            'Jinja template database must be '
+            'selected using a string or an integer'
+        ))
+        raise KeyError(key)
 
 
 class FirstPassOutput:
@@ -109,15 +122,16 @@ def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     key_filter = lambda d: len(d[key]) if by_length else d[key]
     sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
     for term in sorted_dict_list:
-        matches = list(re.finditer(
-            '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
-            _canonicalize(string))
-        )
-        if matches != []:
-            found.append(term)
-            for match in matches:
-                span = match.span()
-                string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
+        if term[key] != '':
+            matches = list(re.finditer(
+                '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
+                _canonicalize(string))
+            )
+            if matches != []:
+                found.append(term)
+                for match in matches:
+                    span = match.span()
+                    string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
     return found
 
 
@@ -193,7 +207,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         else:
             raise UseNextClass()
         self.rendered_text = ''
-        self.databases = {}
+        self.databases = JinjaDatabaseCache()
 
     def _get_database_ids_from_mentions(self):
         for rich_text in self.caption:
@@ -215,14 +229,15 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             # right now.
             database_name = database.title.to_plain_text()
             if database_name in self.databases:
-                logger.warn(
-                    "Duplicate database name \"%s\" when rendering [%s]",
-                    database_name, self.notion_url
-                )
+                logger.error((
+                    f'Duplicate database name "{database_name}"'
+                    f' when rendering [{self.notion_url}]'
+                ))
+                raise ValueError(database_name)
             self.databases[database_name] = database_to_yaml(
                 database=database,
                 pandoc_format=self.pandoc_format,
-                pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
+                pandoc_options=[],
                 id_property=export_defaults["id_property"],
                 url_property=export_defaults["url_property"],
             )

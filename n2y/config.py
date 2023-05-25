@@ -143,10 +143,18 @@ def _valid_filename_template(filename_template):
     if not isinstance(filename_template, str):
         logger.error("filename_template must be a string")
         return False
+    if filename_template == "":
+        logger.error("filename_template must be a non-empty string")
+        return False
     try:
-        string.Formatter().parse(filename_template)
+        format_itr = string.Formatter().parse(filename_template)
+        initial_format_tuple = next(format_itr)
     except ValueError as exc:
         logger.error("filename_template is invalid: %s", exc)
+        return False
+    initial_field_name = initial_format_tuple[1]
+    if initial_field_name is None:
+        logger.error("filename_template is invalid: Must be a format string")
         return False
     return True
 

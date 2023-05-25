@@ -248,7 +248,7 @@ CodeBlocks whose caption begins with "{jinja=pandocformat}" will be rendered usi
 
 Any databases that are [mentioned](https://www.notion.so/help/comments-mentions-and-reminders) in the codeblock's caption will be made available in the jinja render context within the `databases` dictionary.
 
-For example, if you have a code block with the caption "{jinja=html} @People:
+Take the following code block for example:
 
 ```
 <table>
@@ -259,7 +259,7 @@ For example, if you have a code block with the caption "{jinja=html} @People:
 </table>
 ```
 
-Where "Name" and "Email" are properties in the "People" database.
+The caption would be, "{jinja=html} @People," where "Name" and "Email" are properties in the "People" database.
 
 Note that any rich text properties are rendered into the pandoc input format specified.
 
@@ -390,7 +390,7 @@ Here are some features we're planning to add in the future:
 ### v0.9.0
 
 - Replace the `filename_property` configuration option with the more generic `filename_template`.
-- Make it so we can render apges into any pandoc format
+- Make it so we can render pages into any pandoc format
 - Include properties as pandoc meta values
 - Add export config option to indicate if we should export YAML front matter
 

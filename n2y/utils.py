@@ -119,6 +119,9 @@ def yaml_to_meta_value(data):
         return MetaList([yaml_to_meta_value(item) for item in data])
     elif isinstance(data, dict):
         return MetaMap({key: yaml_to_meta_value(value) for key, value in data.items()})
+    else:
+        logger.warning("Unsupported type %s for metadata value %s", type(data), data)
+        return None
 
 
 def yaml_map_to_meta(data):
