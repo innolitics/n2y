@@ -5,6 +5,7 @@ This module contains all the code responsible for exporting `page.Page` and
 import os
 import logging
 
+from pandoc.types import Para, Str
 import yaml
 
 from n2y.utils import pandoc_format_to_file_extension, pandoc_write_or_log_errors, sanitize_filename
@@ -57,20 +58,21 @@ def export_page(
     url_property=None,
     property_map=None,
 ):
+    pandoc_options = list(pandoc_options)
     pandoc_ast = page.to_pandoc()
+    if not pandoc_ast:
+        logger.warning("%r is empty, inserting a placeholder to satisfy Pandoc", page.notion_url)
+        pandoc_ast = [Para([Str("𐞁")])]
+    for key, value in _page_properties(
+            page, pandoc_format, id_property, url_property,
+            property_map).items():
+        pandoc_options += ["-M", f"{key}={value}"]
+    if yaml_front_matter and any(pandoc_format.startswith(f) for f in ["commonmark", "gfm", "markdown"]):
+        pandoc_format += "+yaml_metadata_block"
+        pandoc_options += ["--standalone"]
+
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
-    if isinstance(page_content, str) and yaml_front_matter:
-        page_properties = _page_properties(
-            page, pandoc_format, id_property, url_property, property_map,
-        )
-        return '\n'.join([
-            '---',
-            yaml.dump(page_properties) + '---',
-            page_content,
-        ])
-    else:
-        # if the result is a binary file, return it as is (since we can't add YAML metadata to it)
-        return page_content
+    return page_content
 
 
 def database_to_yaml(

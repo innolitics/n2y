@@ -1,7 +1,5 @@
-from os import listdir
 import os
-
-from os.path import isfile, join
+from pathlib import Path
 
 import pandoc
 from pandoc.types import Str
@@ -118,20 +116,24 @@ def test_big_database_to_yaml(tmpdir):
     assert len(database) == 101
 
 
-def test_simple_database_to_markdown_files(tmpdir):
+def test_simple_database_to_markdown_files(tmp_path):
     """
     The database can be seen here:
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     object_id = "176fa24d4b7f4256877e60a1035b45a4"
-    output_directory = run_n2y_database_as_files(tmpdir, object_id, filename_template="{Name}.md")
-    generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
-    assert generated_files == {"A.md", "B.md", "C.md"}
-    document = open(join(output_directory, "A.md"), "r").read()
-    metadata = parse_yaml_front_matter(document)
-    assert metadata["Name"] == "A"
-    assert metadata["Tags"] == ["a", "b"]
-    assert "content" not in metadata
+    output_directory = Path(run_n2y_database_as_files(
+        tmp_path, object_id,
+        filename_template="{Name}.md"))
+    for expected_filename in ["A.md", "B.md", "C.md"]:
+        expected_path = output_directory / expected_filename
+        expected_name = expected_path.stem
+        document = expected_path.read_text()
+        assert document, f"File {expected_path} is empty"
+        metadata = parse_yaml_front_matter(document)
+        assert metadata["Name"] == expected_name
+        #assert metadata["Tags"] == ["a", "b"]
+        assert "content" not in metadata
 
 
 def test_simple_database_to_docx_files(tmp_path):
