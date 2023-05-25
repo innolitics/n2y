@@ -2,10 +2,12 @@
 This module contains all the code responsible for exporting `page.Page` and
 `database.Database` objects into the various supported file formats.
 """
-import os
 import logging
+import os
+from pathlib import Path
+import tempfile
 
-from pandoc.types import Table
+from pandoc.types import Para, Str, Table
 import yaml
 
 from n2y.utils import pandoc_format_to_file_extension, pandoc_write_or_log_errors, sanitize_filename
@@ -58,6 +60,7 @@ def export_page(
     url_property=None,
     property_map=None,
 ):
+    pandoc_options = list(pandoc_options)
     pandoc_ast = page.to_pandoc()
 
     if (number_empty_headers := _count_headerless_tables(pandoc_ast)) > 0:
@@ -66,20 +69,24 @@ def export_page(
             number_empty_headers,
             page.notion_url,
         )
+    if not pandoc_ast:
+        logger.warning("Page is empty, inserting a placeholder to satisfy Pandoc (%r)",
+                       page.notion_url)
+        pandoc_ast = [Para([Str("𐞁")])]
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        metadata_file = td / "metadata.yaml"
+        yaml.safe_dump(
+            _page_properties(page, pandoc_format, id_property, url_property, property_map),
+            metadata_file.open("w"))
+        pandoc_options += ["--metadata-file", str(metadata_file)]
+        if yaml_front_matter and any(
+                pandoc_format.startswith(f) for f in ["commonmark", "gfm", "markdown"]):
+            pandoc_format += "+yaml_metadata_block"
+            pandoc_options += ["--standalone"]
 
-    page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
-    if isinstance(page_content, str) and yaml_front_matter:
-        page_properties = _page_properties(
-            page, pandoc_format, id_property, url_property, property_map,
-        )
-        return '\n'.join([
-            '---',
-            yaml.dump(page_properties) + '---',
-            page_content,
-        ])
-    else:
-        # if the result is a binary file, return it as is (since we can't add YAML metadata to it)
-        return page_content
+        page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
+    return page_content
 
 
 def _count_headerless_tables(pandoc_ast):
