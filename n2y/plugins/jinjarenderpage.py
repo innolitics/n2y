@@ -229,11 +229,12 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             # right now.
             database_name = database.title.to_plain_text()
             if database_name in self.databases:
-                logger.error((
+                msg = (
                     f'Duplicate database name "{database_name}"'
                     f' when rendering [{self.notion_url}]'
-                ))
-                raise ValueError(database_name)
+                )
+                logger.error(msg)
+                raise ValueError(msg)
             self.databases[database_name] = database_to_yaml(
                 database=database,
                 pandoc_format=self.pandoc_format,
@@ -278,8 +279,9 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             raise
 
     def to_pandoc(self):
-        self._get_yaml_from_mentions()
-        self._render_text()
+        if not len(self.databases):
+            self._get_yaml_from_mentions()
+            self._render_text()
         if self.pandoc_format != "plain":
             # pandoc.read includes Meta data, which isn't relevant here; we just
             # want the AST for the content
