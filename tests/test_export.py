@@ -7,15 +7,15 @@ from n2y import notion
 
 @pytest.fixture
 def page():
-    property = mock_rich_text_property_value("P")
-    notion_page = mock_page(title="T", extra_properties={"property": property})
+    property_value = mock_rich_text_property_value("P")
+    notion_page = mock_page(title="T", extra_properties={"property": property_value})
     client = notion.Client('')
     return client._wrap_notion_page(notion_page)
 
 
 def test_page_properties_basic(page):
     properties = _page_properties(page)
-    assert properties == {"title": "T", "property": "P"}
+    assert properties == {"title": "T", "property": "P\n"}
 
 
 def test_page_properties_id(page):
@@ -30,7 +30,7 @@ def test_page_properties_url(page):
 
 def test_page_properties_mapping(page):
     properties = _page_properties(page, property_map={"property": "p"})
-    assert properties == {"title": "T", "p": "P"}
+    assert properties == {"title": "T", "p": "P\n"}
 
 
 def test_page_filename_no_template(page):

@@ -24,7 +24,7 @@ def test_bold_word():
     assert pandoc_ast == [
         Str("A"), Space(), Strong([Str("bold")]), Space(), Str("word.")
     ]
-    assert markdown == "A **bold** word."
+    assert markdown == "A **bold** word.\n"
     assert plain_text == "A bold word."
 
 
@@ -34,7 +34,7 @@ def test_bold_letter():
     assert pandoc_ast == [
         Str("A"), Space(), Strong([Str("b")]), Str("old"), Space(), Str("word.")
     ]
-    assert markdown == "A **b**old word."
+    assert markdown == "A **b**old word.\n"
     assert plain_text == "A bold word."
 
 
@@ -44,7 +44,7 @@ def test_bold_spaces():
     assert pandoc_ast == [
         Str("A"), Space(), Strong([Str("bold")]), Space(), Str("word.")
     ]
-    assert markdown == "A **bold** word."
+    assert markdown == "A **bold** word.\n"
     assert plain_text == "A bold word."
 
 
@@ -54,14 +54,14 @@ def test_italic_word():
     assert pandoc_ast == [
         Str("An"), Space(), Emph([Str("italic")]), Space(), Str("word.")
     ]
-    assert markdown == "An *italic* word."
+    assert markdown == "An *italic* word.\n"
 
 
 def test_italic_letter():
     notion_data = mock_rich_text_array([('An ', []), ('i', ['italic']), ('talic word.', [])])
     pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
     assert pandoc_ast == [Str("An"), Space(), Emph([Str("i")]), Str("talic"), Space(), Str("word.")]
-    assert markdown == "An *i*talic word."
+    assert markdown == "An *i*talic word.\n"
 
 
 def test_bold_italic_word():
@@ -78,7 +78,7 @@ def test_bold_italic_word():
         Space(),
         Str('word.'),
     ]
-    assert markdown == "A ***bold-italic*** word."
+    assert markdown == "A ***bold-italic*** word.\n"
     assert plain_text == "A bold-italic word."
 
 
@@ -94,7 +94,7 @@ def test_italic_spaces():
     notion_data = mock_rich_text_array([('An', []), (' italic ', ['italic']), ('word.', [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [Str('An'), Space(), Emph([Str('italic')]), Space(), Str('word.')]
-    assert markdown == "An *italic* word."
+    assert markdown == "An *italic* word.\n"
     assert plain_text == "An italic word."
 
 
@@ -102,7 +102,7 @@ def test_strikeout_word():
     notion_data = mock_rich_text_array([('A ', []), ('deleted', ['strikethrough']), (' word.', [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")]
-    assert markdown == "A ~~deleted~~ word."
+    assert markdown == "A ~~deleted~~ word.\n"
     assert plain_text == "A deleted word."
 
 
@@ -110,7 +110,7 @@ def test_strikeout_spaces():
     notion_data = mock_rich_text_array([('A', []), (' deleted ', ['strikethrough']), ('word.', [])])
     pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
     assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")]
-    assert markdown == "A ~~deleted~~ word."
+    assert markdown == "A ~~deleted~~ word.\n"
 
 
 def test_blended_annotated_spaces():
@@ -123,7 +123,7 @@ def test_blended_annotated_spaces():
         (' i pass', ['underline', 'code']),
         ('?', [])
     ])
-    pandoc_ast, _, _ = process_rich_text_array(notion_data)
+    pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
     assert pandoc_ast == [
         Strong([Str('this')]),
         Space(),
@@ -136,7 +136,10 @@ def test_blended_annotated_spaces():
         Underline([Code(('', [], []), ' i pass')]),
         Str('?')
     ]
-    # TODO: add assertion for markdown
+    assert markdown == (
+        '**this** ***is*** *a*\n~~test~~[**` did`*'
+        '*]{.underline}[` i pass`]{.underline}?\n'
+    )
 
 
 def test_equation_inline():
@@ -163,17 +166,19 @@ def test_equation_inline():
         Str('is'), Space(), Str('a'), Space(), Str('very'), Space(),
         Str('useful'), Space(), Str('one'), Space(), Str('indeed'),
     ]
-    md1 = "The Schrödinger Equation (${\\displaystyle i\\hbar "
-    md2 = "{\\frac {d}{dt}}\\vert \\Psi (t)\\rangle={\\hat "
-    md3 = "{H}}\\vert \\Psi (t)\\rangle}$) is a very useful one indeed"
-    assert markdown == f"{md1}{md2}{md3}"
+    assert markdown == (
+        'The Schrödinger Equation\n(${\\displaystyle '
+        'i\\hbar {\\frac {d}{dt}}\\vert \\Psi (t)\\'
+        'rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}$)\nis'
+        ' a very useful one indeed\n'
+    )
 
 
 def test_code_inline():
     notion_data = mock_rich_text_array([('A ', []), ('code', ['code']), (' word.', [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [Str("A"), Space(), Code(("", [], []), "code"), Space(), Str("word.")]
-    assert markdown == "A `code` word."
+    assert markdown == "A `code` word.\n"
     assert plain_text == "A code word."
 
 
@@ -189,7 +194,7 @@ def test_link_inline():
         Link(('', [], []), [Strong([Str('link')])], ('https://example.com', '')),
         Str('.'),
     ]
-    assert markdown == 'This is a [**link**](https://example.com).'
+    assert markdown == 'This is a [**link**](https://example.com).\n'
     assert plain_text == 'This is a link.'
 
 
