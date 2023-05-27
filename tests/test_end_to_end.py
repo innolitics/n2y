@@ -1,8 +1,9 @@
-from os import listdir
-import os
-
-from os.path import isfile, join
 import pytest
+
+import logging
+import os
+from os import listdir
+from os.path import isfile, join
 
 import yaml
 try:
@@ -403,3 +404,68 @@ def test_dbfootnote_plugin(tmpdir):
     assert "[^1]: Inline DB content for footnote 1." in document
     assert "[^2]: Inline DB content for footnote 2." in document
     assert "[^3]: Inline DB content for footnote 3." in document
+
+
+def test_simple_table_headers(caplog, tmp_path):
+    """
+    Simply show what flattened Markdown content is expected if the input
+    contains tables without headers.
+
+    Relies on https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f?pvs=4
+    """
+    object_id = "9b1dd705f61647b6a10032ec7671402f"
+
+    content = run_n2y_page(tmp_path, object_id, pandoc_format="gfm")
+    captured_messages = [
+        r.message for r in caplog.records if r.levelno >= logging.WARNING
+    ]
+
+    number_expected_table_warnings = 0
+    if (
+        """\
+Some text
+
+|      |         |
+|------|---------|
+| This | has     |
+| no   | headers |
+"""
+        in content
+    ):
+        number_expected_table_warnings += 1
+    assert (
+        """\
+More text
+
+|        | header | row     |
+|--------|--------|---------|
+| header | This   | has     |
+| column | both   | headers |
+|        |        |         |
+| and    | an     | empty   |
+"""
+        in content
+    )
+    if (
+        """\
+Yakkity yakkity yakkity yak
+
+|        |        |
+|--------|--------|
+| header | Fiddle |
+| column | Faddle |
+"""
+        in content
+    ):
+        number_expected_table_warnings += 1
+    assert """\
+| header | row    |
+|--------|--------|
+| Nutter | Butter |
+"""
+    if number_expected_table_warnings > 0:
+        expected_blurb = (
+            f"{number_expected_table_warnings} table(s) will present empty "
+            "headers to maintain Markdown spec"
+        )
+        assert any(expected_blurb in m for m in captured_messages)

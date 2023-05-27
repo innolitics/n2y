@@ -8,15 +8,13 @@ We use it at [Innolitics](https://innolitics.com) to generate pages for our webs
 
 ## Installation
 
-To install the tool, just run:
+Install first `pandoc` and `mermaid` CLIs. Please note that `n2y` has only been tested with `pandoc 2.19.2` and `mermaid-cli 9.4.0`. This [pandoc](https://github.com/jgm/pandoc/releases/tag/2.19.2) link will take you to their `2.19.2` github releases page. This [mermaid](https://github.com/mermaid-js/mermaid-cli) link will take you to their github page where you will find installation instructions. If using `npm` to install `mermaid`, append `@9.4.0` to the `npm` command to install that specific version.
+
+Finally, install `n2y`:
 
 ```
 pip install n2y
 ```
-
-You'll also need to install [pandoc](https://github.com/jgm/pandoc/releases/).
-
-Note: n2y has only been tested with `pandoc 2.19.2` and `mermaid-cli 8.11`.
 
 ## Authorization
 
