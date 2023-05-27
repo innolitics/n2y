@@ -239,7 +239,7 @@ Most of the Notion blocks can generate their pandoc AST from _only_ their own da
 
 ## Built-in Plugins
 
-N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
+N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/main/n2y/plugins) for details.
 
 ### Render
 
@@ -274,6 +274,9 @@ Replace headers with links back to the originating notion block.
 ### Footnotes
 
 Adds support for Pandoc-style footnotes. Any `text` rich texts that contain footnote references in the format `[^NUMBER]` (eg: `...some claim [^2].`) will be linked to the corresponding footnote paragraph block starting with `[NUMBER]:` (eg: `[2]: This is a footnote.`).
+
+### DB Footnotes
+Adds general footnote support (not specialized for markdown) with the expectation that all footnote content is placed in an inline database on the original page wherein footnote references are made. Specific footnote references are made with Notion's page mention feature, mentioning a specific footnote page in the database. For example, each page in the database can simply be titled with a footnote number and contain the footnote text as the page content. The inline database must have a title that ends with "Footnotes."
 
 ### Expand Link To Page Blocks
 
