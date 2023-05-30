@@ -7,7 +7,7 @@ from pandoc.types import (
     Underline, Math, InlineMath
 )
 
-from n2y.utils import pandoc_ast_to_markdown, pandoc_write_or_log_errors
+from n2y.utils import pandoc_write_or_log_errors
 from n2y.notion_mocks import mock_rich_text
 
 
@@ -42,9 +42,6 @@ class RichText:
 
     def to_pandoc(self):
         raise NotImplementedError()
-
-    def to_markdown(self):
-        return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
 
     def to_value(self, pandoc_format):
         return pandoc_write_or_log_errors(
@@ -208,15 +205,12 @@ class RichTextArray:
     def to_pandoc(self):
         return sum([item.to_pandoc() for item in self.items], [])
 
-    def to_markdown(self):
-        return pandoc_ast_to_markdown(self.to_pandoc()).strip('\n')
-
     def to_value(self, pandoc_format):
         return pandoc_write_or_log_errors(
             self.to_pandoc(),
             format=pandoc_format,
             options=[],
-        ).strip('\n')
+        )
 
     def to_plain_text(self):
         return ''.join(item.plain_text for item in self.items)

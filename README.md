@@ -45,9 +45,10 @@ The export configuration items may contain the following keys:
 | pandoc_format | The [pandoc format](https://pandoc.org/MANUAL.html#general-options) that we're generating. |
 | pandoc_options | A list of strings that are [writer options](https://pandoc.org/MANUAL.html#general-writer-options) for pandoc. |
 | content_property | When set, it indicates the property name that will contain the content of the notion pages in that databse. If set to `None`, then only the page's properties will be included in the export. (Only applies to the `database_as_files` node type.) |
+| yaml_front_matter | Only used when exporting to text files. Indicates if the page properties should be exported as yaml front matter. |
 | id_property | When set, this indicates the property name in which to place the page's underlying notion ID. |
 | url_property | When set, this indicates the property name in which to place the page's underlying notion url. |
-| filename_property | This key is required for the "database_as_files" node type; when set, it indicates which property to use when generating the file name. |
+| filename_template | This key is only used for the "database_as_files" node type; when set, it provides a [format string](https://docs.python.org/3/library/string.html#formatstrings) that is evaluated against the page's properties to generate the file name. Note that the filenames are sanitized. When not set, the title property is used and the extension is deduced from the `pandoc_format`. A special "TITLE" property may be used to access the title property in the template string. |
 | plugins | A list of python modules to use as plugins. |
 | notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
 | notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
@@ -77,10 +78,10 @@ exports:
 - id: 176fa24d4b7f4256877e60a1035b45a4
   node_type: database_as_files
   output: directory
-  filename_property: "Name"
+  filename_template: "{Name}.md"
 ```
 
-Each page in the database will generate a single markdown file, named according to the `filename_property`. This process will automatically skip pages whose "Name" property is empty.
+Each page in the database will generate a single markdown file, named according to the `filename_template`. This process will automatically skip pages whose "Name" property is empty.
 
 ### Convert a Page to a Markdown File
 
@@ -121,7 +122,7 @@ export_defaults:
 exports:
   - output: "documents/dhf"
     node_type: "database_as_files"
-    filename_property: "Name"
+    filename_template: "{Name}.md"
     id: e24f839e724848d69342d43c07cb5f3e
     plugins:
       - "n2y.plugins.mermaid"
@@ -136,7 +137,7 @@ exports:
       multi_select: { "contains": "DHF" }
   - output: "documents/510k"
     id: e24f839e724848d69342d43c07cb5f3e
-    filename_property: "Name"
+    filename_template: "{Name}.md"
     node_type: "database_as_files"
     plugins:
       - "n2y.plugins.mermaid"
@@ -241,11 +242,37 @@ Most of the Notion blocks can generate their pandoc AST from _only_ their own da
 
 N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/main/n2y/plugins) for details.
 
-### Render
+### Jinja Render Page
 
-When CodeBlocks are captioned "{template}", the block is rendered as jinja using yaml data previously cached by n2y.
+CodeBlocks whose caption begins with "{jinja=pandocformat}" will be rendered using [Jinja](https://jinja.palletsprojects.com/en/3.1.x/templates/) into text and then read into the AST using the specified pandoc input format. Note that, other than the special "plain" format, the pandocformat must be available both for reading and writing.
 
-The jinja context has a few special filters available to it. See the code for details.
+Any databases that are [mentioned](https://www.notion.so/help/comments-mentions-and-reminders) in the codeblock's caption will be made available in the jinja render context within the `databases` dictionary.
+
+Take the following code block for example:
+
+```
+<table>
+  <tr><th>Name</th><th>Email</th></tr>
+  {% for person in databases["People"] %}
+  <tr><td>{{person.Name}}</td><td>{{person.Email}}</td></tr>
+  {% endfor %}
+</table>
+```
+
+The caption would be, "{jinja=html} @People," where "Name" and "Email" are properties in the "People" database.
+
+Note that any rich text properties are rendered into the pandoc input format specified.
+
+The codeblock's parent page's properties are made available in the `page` context variable.
+
+The jinja context has a few special filters available to it:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `join_to` | filter | Make it possible to join notion databases together. |
+| `first_pass_output` | object | Makes it possible to access the full text of the initial page's render. Useful if you want to render a glossary of terms that are used on the page. |
+
+See the [code](https://github.com/innolitics/n2y/blob/main/n2y/plugins/jinjarenderpage.py) for details.
 
 ### Deep Headers
 
@@ -257,7 +284,7 @@ Completely remove all callout blocks. It's often helpful to include help text in
 
 ### Raw Fenced Code Blocks
 
-Any code block whose caption begins with "{=language}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other formats. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
+Any code block whose caption begins with "{=pandocformat}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other output formats that pandoc supports. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
 
 ### Mermaid Fenced Code Blocks
 
@@ -362,6 +389,13 @@ Here are some features we're planning to add in the future:
 - Add more examples to the documentation
 
 ## Changelog
+
+### v0.9.0
+
+- Replace the `filename_property` configuration option with the more generic `filename_template`.
+- Make it so we can render pages into any pandoc format
+- Include properties as pandoc meta values
+- Add export config option to indicate if we should export YAML front matter
 
 ### v0.8.0
 

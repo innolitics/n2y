@@ -1,5 +1,6 @@
 import logging
 import copy
+import string
 
 import yaml
 
@@ -16,6 +17,7 @@ DEFAULTS = {
 
 
 EXPORT_DEFAULTS = {
+    "yaml_front_matter": True,
     "id_property": "notion_id",
     "content_property": None,
     "url_property": "notion_url",
@@ -32,6 +34,7 @@ EXPORT_DEFAULTS = {
     ],
     "plugins": [],
     "property_map": {},
+    "filename_template": None,
 }
 
 
@@ -102,11 +105,16 @@ def validate_config(config):
     return True
 
 
+def valid_notion_id(notion_id):
+    canonical_id = strip_hyphens(notion_id)
+    return len(canonical_id) == 32 and canonical_id.isalnum()
+
+
 def _validate_config_item(config_item):
     if "id" not in config_item:
         logger.error("Export config item missing the 'id' key")
         return False
-    if not _valid_id(config_item["id"]):
+    if not valid_notion_id(config_item["id"]):
         logger.error("Invalid id in export config item: %s", config_item["id"])
     if "node_type" not in config_item:
         logger.error("Export config item missing the 'node_type' key")
@@ -114,9 +122,9 @@ def _validate_config_item(config_item):
     if config_item["node_type"] not in ["page", "database_as_yaml", "database_as_files"]:
         logger.error("Invalid node_type in export config item: %s", config_item["node_type"])
         return False
-    if config_item["node_type"] == "database_as_files" and "filename_property" not in config_item:
-        logger.error("Missing the 'filename_property' key when node_type is 'database_as_files'")
-        return False
+    if "filename_template" in config_item:
+        if not _valid_filename_template(config_item["filename_template"]):
+            return False
     if "output" not in config_item:
         logger.error("Export config item missing the 'output' key")
         return False
@@ -128,6 +136,26 @@ def _validate_config_item(config_item):
             return False
     # TODO: validate pandoc_format using the `--list-output-types` and `--list-extensions`
     # TODO: property map
+    return True
+
+
+def _valid_filename_template(filename_template):
+    if not isinstance(filename_template, str):
+        logger.error("filename_template must be a string")
+        return False
+    if filename_template == "":
+        logger.error("filename_template must be a non-empty string")
+        return False
+    try:
+        format_itr = string.Formatter().parse(filename_template)
+        initial_format_tuple = next(format_itr)
+    except ValueError as exc:
+        logger.error("filename_template is invalid: %s", exc)
+        return False
+    initial_field_name = initial_format_tuple[1]
+    if initial_field_name is None:
+        logger.error("filename_template is invalid: Must be a format string")
+        return False
     return True
 
 
@@ -145,7 +173,3 @@ def _valid_notion_sort(notion_sorts):
         return False
     # TODO validate keys and values
     return True
-
-
-def _valid_id(notion_id):
-    return len(strip_hyphens(notion_id)) == 32

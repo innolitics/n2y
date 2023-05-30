@@ -1,5 +1,3 @@
-import pytest
-
 import logging
 import os
 from os import listdir
@@ -124,7 +122,7 @@ def test_simple_database_to_markdown_files(tmpdir):
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     object_id = "176fa24d4b7f4256877e60a1035b45a4"
-    output_directory = run_n2y_database_as_files(tmpdir, object_id, filename_property="Name")
+    output_directory = run_n2y_database_as_files(tmpdir, object_id, filename_template="{Name}.md")
     generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
     assert generated_files == {"A.md", "B.md", "C.md"}
     document = open(join(output_directory, "A.md"), "r").read()
@@ -134,7 +132,6 @@ def test_simple_database_to_markdown_files(tmpdir):
     assert "content" not in metadata
 
 
-@pytest.mark.xfail(reason="There are still issues with direct docx rendering")
 def test_simple_database_to_docx_files(tmpdir):
     """
     The database can be seen here:
@@ -149,7 +146,6 @@ def test_simple_database_to_docx_files(tmpdir):
                 "pandoc_options": ["--standalone"],
                 "node_type": "database_as_files",
                 "output": "database",
-                "filename_property": "Name",
             }
         ]
     }

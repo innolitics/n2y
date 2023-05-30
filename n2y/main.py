@@ -8,7 +8,7 @@ import yaml
 from n2y import notion
 from n2y.config import load_config, merge_default_config
 from n2y.utils import share_link_from_id
-from n2y.export import export_page, database_to_yaml, database_to_markdown_files
+from n2y.export import export_page, database_to_yaml, database_to_files, write_document
 
 logger = None
 
@@ -91,16 +91,16 @@ def _export_node_from_config(client, export):
             )
             logger.error(msg, export['id'], share_link_from_id(export['id']))
             return False
-        result = export_page(
+        document = export_page(
             page,
             export["pandoc_format"],
             export["pandoc_options"],
+            export["yaml_front_matter"],
             export["id_property"],
             export["url_property"],
             export["property_map"],
         )
-        with open(export["output"], "w") as f:
-            f.write(result)
+        write_document(document, export["output"])
     else:
         database = client.get_database(export['id'])
         if database is None:
@@ -126,12 +126,13 @@ def _export_node_from_config(client, export):
             with open(export["output"], "w") as f:
                 f.write(result)
         elif node_type == "database_as_files":
-            database_to_markdown_files(
+            database_to_files(
                 database=database,
                 directory=export["output"],
                 pandoc_format=export["pandoc_format"],
                 pandoc_options=export["pandoc_options"],
-                filename_property=export["filename_property"],
+                yaml_front_matter=export["yaml_front_matter"],
+                filename_template=export["filename_template"],
                 notion_filter=export["notion_filter"],
                 notion_sorts=export["notion_sorts"],
                 id_property=export["id_property"],
