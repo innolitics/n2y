@@ -23,3 +23,6 @@ class File:
         else:
             file_type = notion_data['type']
             raise ValueError(f'Unknown file type "{file_type}"')
+
+    def to_value(self):
+        return self.url
