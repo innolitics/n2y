@@ -262,7 +262,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 content = pandoc.write(
                     ast,
                     format=self.pandoc_format,
-                    options=self.client.export_defaults["pandoc_options"],
+                    options=[],
                 )
                 return content
             self.client.plugin_data['jinjarenderpage'][self.page.notion_id][

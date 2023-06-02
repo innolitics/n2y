@@ -19,7 +19,7 @@ class PluginError(N2YError):
     pass
 
 
-class UseNextClass(Exception):
+class UseNextClass(N2YError):
     """
     Used by plugin classes to indicate that the next class should be used instead of them.
     """
@@ -56,6 +56,21 @@ class HTTPResponseError(N2YError):
         self.status = response.status_code
         self.headers = response.headers
         self.body = response.text
+
+
+class APIResponseError(HTTPResponseError):
+    """An error raised by Notion API."""
+
+    def __init__(self, response, message, code) -> None:
+        super().__init__(response, f"{message} [{code}]")
+        self.code = code
+
+
+class ObjectNotFound(APIResponseError):
+    def __init__(self, response, message) -> None:
+        code = APIErrorCode.ObjectNotFound
+        super().__init__(response, f"{message} [{code}]", code)
+        self.code = code
 
 
 class APIErrorCode(str, Enum):
@@ -106,21 +121,6 @@ class APIErrorCode(str, Enum):
 
     DatabaseConnectionUnavailable = "database_connection_unavailable"
     """Notion's database is unavailable or in an unqueryable state. Try again later."""
-
-
-class APIResponseError(HTTPResponseError):
-    """An error raised by Notion API."""
-
-    def __init__(self, response, message, code) -> None:
-        super().__init__(response, f"{message} [{code}]")
-        self.code = code
-
-
-class ObjectNotFound(APIResponseError):
-    def __init__(self, response, message) -> None:
-        code = APIErrorCode.ObjectNotFound
-        super().__init__(response, f"{message} [{code}]", code)
-        self.code = code
 
 
 def is_api_error_code(code: str) -> bool:

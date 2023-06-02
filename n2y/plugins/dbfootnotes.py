@@ -35,7 +35,7 @@ class PageMentionFootnote(PageMention):
         )
 
     def _references_correct(self):
-        return self._get_mention() is not None and self._get_parents() is not None
+        return self._get_mention() and self._get_parents()
 
     def _is_footnote(self):
         # Check that the footnote parent is a DB with the "Footnotes" suffix in the title.
