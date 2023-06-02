@@ -103,7 +103,7 @@ def test_simple_database_to_yaml(tmpdir):
     assert len(database) == 3
     assert database[0]["Name"] == "A"
     assert database[0]["Tags"] == ["a", "b"]
-    assert database[0]["Content"] is None
+    assert database[0]["Content"] == "A\n"
 
 
 def test_big_database_to_yaml(tmpdir):

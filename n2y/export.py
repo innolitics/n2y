@@ -66,14 +66,13 @@ def export_page(
 ):
     pandoc_ast = page.to_pandoc()
 
-    if (number_empty_headers := _count_headerless_tables(pandoc_ast)) > 0 and (
-        "markdown" in pandoc_format or "gfm" in pandoc_format
-    ):
-        logger.warning(
-            "%d table(s) will present empty headers to maintain Markdown spec (%r)",
-            number_empty_headers,
-            page.notion_url,
-        )
+    if (number_empty_headers := _count_headerless_tables(pandoc_ast)) > 0:
+        if "markdown" in pandoc_format or "gfm" in pandoc_format:
+            logger.warning(
+                "%d table(s) will present empty headers to maintain Markdown spec (%r)",
+                number_empty_headers,
+                page.notion_url,
+            )
 
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
     if isinstance(page_content, str) and yaml_front_matter:
@@ -196,7 +195,8 @@ def write_document(document, path):
         file_mode = "wb"
     else:
         file_mode = "w"
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if os.path.dirname(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, file_mode) as f:
         f.write(document)
 
