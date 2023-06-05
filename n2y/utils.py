@@ -133,14 +133,14 @@ def yaml_map_to_meta(data):
 def pandoc_format_to_file_extension(format):
     # split on '-' or '+' to handle formats like 'markdown+raw_tex'
     base_type = re.split(r'[-+]', format)[0]
-    if format in [
+    if base_type in [
         'markdown', 'gfm', 'commonmark', 'commonmark_x', 'markdown_github',
         'markdown_mmd', 'markdown_phpextra', 'markdown_strict'
     ]:
         return 'md'
-    elif format in ['html', 'html5', 'html4']:
+    elif base_type in ['html', 'html5', 'html4']:
         return 'html'
-    elif format in ['latex']:
+    elif base_type in ['latex']:
         return 'tex'
     else:
         return base_type
