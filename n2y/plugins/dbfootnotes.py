@@ -31,7 +31,7 @@ class PageMentionFootnote(PageMention):
         self.mentioned_page_parent_parent = self.mentioned_page_parent.parent
         return (
             self.mentioned_page_parent is not None
-            and self.mentioned_page_parent_parent is not None
+            and self.mentioned_page_parent_parent is not None  # noqa: W503
         )
 
     def _references_correct(self):
@@ -48,7 +48,7 @@ class PageMentionFootnote(PageMention):
             # we explicitly do not support.
             if (
                 not self.mentioned_page_parent_parent.notion_data["id"]
-                == self.block.page.notion_data["id"]
+                == self.block.page.notion_data["id"]  # noqa: W503
             ):
                 try:
                     footnote_identifier = (
