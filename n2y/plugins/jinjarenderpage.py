@@ -113,9 +113,9 @@ def join_to(foreign_keys, table, primary_key='id'):
 
 def list_matches(string, text):
     return list(re.finditer(
-            '(?<![a-zA-Z])' + _canonicalize(string) + '(?![a-zA-Z])',
-            _canonicalize(text))
-        )
+        '(?<![a-zA-Z])' + _canonicalize(string) + '(?![a-zA-Z])',
+        _canonicalize(text))
+    )
 
 
 def remove_words(words, text):
