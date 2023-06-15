@@ -123,8 +123,7 @@ def _export_node_from_config(client, export):
                 property_map=export["property_map"],
             )
             result = yaml.dump(result, sort_keys=False)
-            with open(export["output"], "w") as f:
-                f.write(result)
+            write_document(result, export["output"])
         elif node_type == "database_as_files":
             database_to_files(
                 database=database,

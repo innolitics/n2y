@@ -111,7 +111,35 @@ def join_to(foreign_keys, table, primary_key='id'):
     return joined
 
 
-def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
+def list_matches(string, text):
+    return list(re.finditer(
+            '(?<![a-zA-Z])' + _canonicalize(string) + '(?![a-zA-Z])',
+            _canonicalize(text))
+        )
+
+
+def remove_words(words, text):
+    for word in words:
+        span = word.span()
+        text = text[:span[0]] + ' ' * (span[1] - span[0]) + text[span[1]:]
+    return text
+
+
+def _fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
+    found = []
+    key_filter = lambda d: len(d[key]) if by_length else d[key]
+    sorted_term_list = sorted(term_list, key=key_filter, reverse=reverse)
+    if key in term_list[0]:
+        for term in sorted_term_list:
+            if key in term and term[key] != '':
+                matches = list_matches(term[key], text)
+                if matches != []:
+                    found.append(term)
+                    text = remove_words(matches, text)
+    return found
+
+
+def fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
     """
     Used to search a markdown string, which may have been modified using pandoc's smart extension,
     for the value at a specified key in a dicionary for all dictionaries in a given list of them.
@@ -119,19 +147,13 @@ def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     see https://pandoc.org/MANUAL.html#extension-smart
     """
     found = []
-    key_filter = lambda d: len(d[key]) if by_length else d[key]
-    sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
-    for term in sorted_dict_list:
-        if term[key] != '':
-            matches = list(re.finditer(
-                '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
-                _canonicalize(string))
-            )
-            if matches != []:
-                found.append(term)
-                for match in matches:
-                    span = match.span()
-                    string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
+    if isinstance(key, str):
+        found = _fuzzy_find_in(term_list, text, key, by_length, reverse)
+    elif isinstance(key, list):
+        keys = key
+        for key in keys:
+            terms_found = fuzzy_find_in(term_list, text, key, by_length, reverse)
+            found.extend(terms_found)
     return found
 
 
