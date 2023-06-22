@@ -117,8 +117,6 @@ class ChildPageBlock(Block):
                 properties = self.page.properties_to_values()
             else:
                 properties = {}
-            if 'title' not in properties:
-                properties['title'] = self.title
             meta = yaml_map_to_meta(properties)
             return Pandoc(meta, children)
         else:

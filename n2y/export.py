@@ -208,8 +208,6 @@ def _page_filename(page, pandoc_format, filename_template=None):
         return sanitize_filename(f"{page_title}.{extension}")
     else:
         page_properties = page.properties_to_values()
-        if "TITLE" not in page_properties:
-            page_properties["TITLE"] = page_title
         try:
             return sanitize_filename(filename_template.format(**page_properties))
         except KeyError:
