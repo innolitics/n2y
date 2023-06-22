@@ -17,7 +17,7 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
+from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens, pool
 from n2y.config import merge_default_config
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
@@ -330,7 +330,8 @@ class Client:
 
     def get_child_blocks(self, block_id, page, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
+        # return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
+        return pool(self.wrap_notion_block, [[b, page, get_children] for b in child_notion_blocks])
 
     @retry_api_call
     def get_child_notion_blocks(self, block_id):

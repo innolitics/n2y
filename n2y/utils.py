@@ -5,6 +5,8 @@ import yaml
 import logging
 from datetime import datetime
 import numbers
+import multiprocessing
+import multiprocessing.pool
 
 import pandoc
 from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
@@ -281,3 +283,29 @@ def retry_api_call(api_call):
             else:
                 raise err
     return wrapper
+
+
+def pool(func, args_list):
+    processes = []
+    count = 0
+    process_manager = multiprocessing.Manager()
+    return_dict = process_manager.dict()
+    for args in args_list:
+        process = Process(count, func, args, return_dict)
+        process.start()
+        processes.append(process)
+        count += 1
+    for process in processes:
+        process.join()
+    return return_dict.values()
+
+class Process(multiprocessing.Process):
+    def __init__(self, id, func, args, return_dict):
+        super(Process, self).__init__()
+        self.id = id
+        self.func = func
+        self.args = args
+        self.return_dict = return_dict
+
+    def run(self):
+        self.return_dict[self.id] = self.func(*self.args)
