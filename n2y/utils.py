@@ -174,9 +174,48 @@ def header_id_from_text(header_text, existing_ids=None):
 
     See https://pandoc.org/MANUAL.html#extension-auto_identifiers
     """
-    # TODO: Actually implement the proper algorithm; this is only partially
-    # implemented; see the test cases marked xfail
-    return re.sub(r"[^a-zA-Z0-9]+", "-", header_text.lower())
+    have_struck_letter = False
+
+    def do_special(potential_special):
+        if potential_special == "_" or potential_special == "-" or potential_special == ".":
+            return potential_special
+        return ""
+
+    def do_spacing(potential_spacing):
+        if potential_spacing == " " or potential_spacing == "\n":
+            return "-"
+        return do_special(potential_spacing)
+
+    def do_decimal(potential_decimal):
+        if potential_decimal.isdecimal():
+            return potential_decimal
+        return do_spacing(potential_decimal)
+
+    def do_letter(potential_letter):
+        nonlocal have_struck_letter
+        if potential_letter.isalpha():
+            have_struck_letter = True
+            return potential_letter.lower()
+        if not have_struck_letter:
+            return ""
+        return do_decimal(potential_letter)
+
+    new_header_text = ""
+    for symbol in header_text:
+        new_header_text += do_letter(symbol)
+
+    if len(new_header_text) == 0:
+        new_header_text = "section"
+
+    if existing_ids is not None:
+        counter = 0
+        duplicate_header_text = new_header_text
+        while duplicate_header_text in existing_ids:
+            counter += 1
+            duplicate_header_text = f"{new_header_text}-{counter}"
+        new_header_text = duplicate_header_text
+
+    return new_header_text
 
 
 def id_from_share_link(share_link):

@@ -147,10 +147,9 @@ def test_header_id_from_text_basic():
     assert header_id_from_text("Hello Goodbye") == 'hello-goodbye'
 
 
-@pytest.mark.xfail(reason='not implemented')
 def test_header_id_from_text():
     """
-    These test cases were taken from the pandoc documentation. See:
+    Most of these test cases were taken from the pandoc documentation. See:
     https://pandoc.org/MANUAL.html#extension-auto_identifiers
     """
     assert header_id_from_text('Heading identifiers in HTML') == 'heading-identifiers-in-html'
@@ -158,12 +157,16 @@ def test_header_id_from_text():
     assert header_id_from_text('*Dogs*?--in *my* house?') == 'dogs--in-my-house'
     assert header_id_from_text('[HTML], [S5], or [RTF]?') == 'html-s5-or-rtf'
     assert header_id_from_text('3. Applications') == 'applications'
+    assert header_id_from_text('33') == 'section'
+
+    # These are additional tests constructed by us.
     assert header_id_from_text('33 section') == 'section'
+    assert header_id_from_text('') == 'section'
+    assert header_id_from_text('newlines\nare hyphens') == 'newlines-are-hyphens'
 
 
-@pytest.mark.xfail(reason='not implemented')
 def test_header_id_from_text_existing_ids():
-    # TODO: Note that this behavior should match how pandoc works if that's easy
-    # to implement, and theses assertions may need to be updated
     assert header_id_from_text('a', {'a'}) == 'a-1'
     assert header_id_from_text('a', {'a', 'a-1'}) == 'a-2'
+    assert header_id_from_text('', {'section', 'section-1'}) == 'section-2'
+    assert header_id_from_text('', {'section', 'a', 'a-1'}) == 'section-1'
