@@ -207,9 +207,9 @@ def header_id_from_text(header_text, existing_ids=None):
     if len(new_header_text) == 0:
         new_header_text = "section"
 
-    duplicate_header_text = new_header_text
     if existing_ids is not None:
         counter = 0
+        duplicate_header_text = new_header_text
         while duplicate_header_text in existing_ids:
             counter += 1
             duplicate_header_text = f"{new_header_text}-{counter}"
