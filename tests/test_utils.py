@@ -165,7 +165,6 @@ def test_header_id_from_text():
     assert header_id_from_text('newlines\nare hyphens') == 'newlines-are-hyphens'
 
 
-@pytest.mark.xfail(reason='not implemented')
 def test_header_id_from_text_existing_ids():
     # TODO: Note that this behavior should match how pandoc works if that's easy
     # to implement, and theses assertions may need to be updated

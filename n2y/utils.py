@@ -205,7 +205,16 @@ def header_id_from_text(header_text, existing_ids=None):
         new_header_text += do_letter(symbol)
 
     if len(new_header_text) == 0:
-        return "section"
+        new_header_text = "section"
+
+    duplicate_header_text = new_header_text
+    if existing_ids is not None:
+        counter = 0
+        while duplicate_header_text in existing_ids:
+            counter += 1
+            duplicate_header_text = f"{new_header_text}-{counter}"
+        new_header_text = duplicate_header_text
+
     return new_header_text
 
 
