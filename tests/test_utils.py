@@ -170,3 +170,5 @@ def test_header_id_from_text_existing_ids():
     # to implement, and theses assertions may need to be updated
     assert header_id_from_text('a', {'a'}) == 'a-1'
     assert header_id_from_text('a', {'a', 'a-1'}) == 'a-2'
+    assert header_id_from_text('', {'section', 'section-1'}) == 'section-2'
+    assert header_id_from_text('', {'section', 'a', 'a-1'}) == 'section-1'
