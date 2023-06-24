@@ -248,6 +248,8 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "<https://innolitics.com>" in lines
     assert "[Bookmark caption](https://innolitics.com)" in lines
 
+    # TODO: Add assertions about audio blocks and video blocks
+
     # the word "caption" is bolded
     assert "![Image **caption**](media/All_Blocks_Test_Page-5f1b0813453.jpeg)" in lines
 

@@ -546,10 +546,14 @@ class EmbedBlock(WarningBlock):
     pass
 
 
-class VideoBlock(Block):
+class ContentBlock(Block):
+    """
+    Generic base class for blocks that contain file-based content that should be
+    downloaded and then linked to.
+    """
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.file = client.wrap_notion_file(notion_data['video'])
+        self.file = client.wrap_notion_file(self.notion_type_data)
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
@@ -562,7 +566,16 @@ class VideoBlock(Block):
         if self.caption:
             caption_ast = self.caption.to_pandoc()
             return render_with_caption(content_ast, caption_ast)
-        return Para(content_ast)
+        else:
+            return Para(content_ast)
+
+
+class AudioBlock(ContentBlock):
+    pass
+
+
+class VideoBlock(ContentBlock):
+    pass
 
 
 class PdfBlock(Block):
@@ -672,6 +685,7 @@ DEFAULT_BLOCKS = {
     "child_database": ChildDatabaseBlock,
     "embed": EmbedBlock,
     "image": ImageBlock,
+    "audio": AudioBlock,
     "video": VideoBlock,
     "file": FileBlock,
     "pdf": PdfBlock,

@@ -390,15 +390,16 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
-### v0.9.0
+### v0.8.1
+
+- Add basic support for undocumented "audio" block type
+
+### v0.8.0
 
 - Replace the `filename_property` configuration option with the more generic `filename_template`.
 - Make it so we can render pages into any pandoc format
 - Include properties as pandoc meta values
 - Add export config option to indicate if we should export YAML front matter
-
-### v0.8.0
-
 - Add requests cache to speed up dev loop
 - Update `jinjarenderpage` so that it no pulls databases mentioned in the
   caption, instead of relying on the exports list. Also, make the
