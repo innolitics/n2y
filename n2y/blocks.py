@@ -3,11 +3,13 @@ from itertools import groupby
 from urllib.parse import urljoin
 
 from pandoc.types import (
-    Period, Meta, Pandoc, Link, HorizontalRule, BlockQuote, Image, MetaString,
-    Table, TableHead, TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan,
-    Str, Para, Plain, Header, CodeBlock, BulletList, OrderedList, Decimal, Space,
-    ColSpan, ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
+    Period, Pandoc, Link, HorizontalRule, BlockQuote, Image, Table, TableHead,
+    TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan, Str, Para, Plain,
+    Header, CodeBlock, BulletList, OrderedList, Decimal, Space, ColSpan,
+    ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
+
+from n2y.utils import yaml_map_to_meta, header_id_from_text
 
 
 logger = logging.getLogger(__name__)
@@ -111,7 +113,14 @@ class ChildPageBlock(Block):
         assert self.children is not None
         if self.children:
             children = self.children_to_pandoc()
-            return Pandoc(Meta({'title': MetaString(self.title)}), children)
+            if self.page:
+                properties = self.page.properties_to_values()
+            else:
+                properties = {}
+            if 'title' not in properties:
+                properties['title'] = self.title
+            meta = yaml_map_to_meta(properties)
+            return Pandoc(meta, children)
         else:
             return None
 
@@ -218,7 +227,8 @@ class HeadingBlock(Block):
             rich_text.bold = False
 
     def to_pandoc(self):
-        return Header(self.level, ('', [], []), self.rich_text.to_pandoc())
+        section_id = header_id_from_text(self.rich_text.to_plain_text())
+        return Header(self.level, (section_id, [], []), self.rich_text.to_pandoc())
 
 
 class HeadingOneBlock(HeadingBlock):
@@ -530,10 +540,14 @@ class EmbedBlock(WarningBlock):
     pass
 
 
-class VideoBlock(Block):
+class ContentBlock(Block):
+    """
+    Generic base class for blocks that contain file-based content that should be
+    downloaded and then linked to.
+    """
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.file = client.wrap_notion_file(notion_data['video'])
+        self.file = client.wrap_notion_file(self.notion_type_data)
         self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
 
     def to_pandoc(self):
@@ -546,7 +560,16 @@ class VideoBlock(Block):
         if self.caption:
             caption_ast = self.caption.to_pandoc()
             return render_with_caption(content_ast, caption_ast)
-        return Para(content_ast)
+        else:
+            return Para(content_ast)
+
+
+class AudioBlock(ContentBlock):
+    pass
+
+
+class VideoBlock(ContentBlock):
+    pass
 
 
 class PdfBlock(Block):
@@ -621,7 +644,7 @@ class LinkToPageBlock(Block):
             raise NotImplementedError(f"Unknown link type: {self.link_type}")
 
         if node is None:
-            msg = "Permission denied when attempting to access linked node [%s]"
+            msg = "Permission denied when attempting to access linked node (%r)"
             logger.warning(msg, self.notion_url)
             return None
         else:
@@ -656,6 +679,7 @@ DEFAULT_BLOCKS = {
     "child_database": ChildDatabaseBlock,
     "embed": EmbedBlock,
     "image": ImageBlock,
+    "audio": AudioBlock,
     "video": VideoBlock,
     "file": FileBlock,
     "pdf": PdfBlock,

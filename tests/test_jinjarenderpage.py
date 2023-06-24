@@ -5,7 +5,7 @@ from pytest import raises
 from n2y.page import Page
 from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
-from n2y.utils import pandoc_ast_to_markdown
+from n2y.utils import pandoc_ast_to_markdown, pandoc_write_or_log_errors
 from n2y.plugins.jinjarenderpage import (
     render_from_string, join_to, fuzzy_find_in,
     JinjaFencedCodeBlock, JinjaRenderPage,
@@ -149,3 +149,13 @@ def test_jinja_render_with_database():
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert markdown == "ab\n"
+
+
+def test_jinja_render_plain():
+    client = Client('')
+    caption = mock_rich_text_array('{jinja=plain}')
+    jinja_code = "# <h1> asdf23"
+    page = process_jinja_block(client, caption, jinja_code)
+    pandoc_ast = page.to_pandoc()
+    text = pandoc_write_or_log_errors(pandoc_ast, 'plain', [])
+    assert text == "# <h1> asdf23\n"

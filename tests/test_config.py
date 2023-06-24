@@ -2,7 +2,7 @@ import copy
 import yaml
 
 from n2y.config import (
-    _valid_id, merge_config, load_config, _valid_notion_filter,
+    valid_notion_id, merge_config, load_config, _valid_notion_filter,
     _validate_config_item, EXPORT_DEFAULTS
 )
 from n2y.notion_mocks import mock_id
@@ -75,11 +75,16 @@ def test_merge_config_defaults():
 
 
 def test_valid_id_valid():
-    assert _valid_id(mock_id())
+    assert valid_notion_id(mock_id())
 
 
 def test_valid_id_invalid():
-    assert not _valid_id(mock_id() + 'a')
+    assert not valid_notion_id(mock_id() + 'a')
+
+
+def test_valid_id_invalid_due_to_special():
+    bad_id = 'https://' + mock_id()[8:]
+    assert not valid_notion_id(bad_id)
 
 
 def test_valid_notion_filter_simple():
@@ -114,6 +119,12 @@ def test_valid_config_item_invalid_node_type():
     assert not _validate_config_item(config_item)
 
 
-def test_valid_config_item_missing_filename_property():
+def test_valid_config_item_missing_filename_template():
     config_item = mock_config_item("database_as_files")
+    assert not _validate_config_item(config_item)
+
+
+def test_valid_config_item_malformed_filename_template():
+    config_item = mock_config_item("database_as_files")
+    config_item["filename_template"] = "{"
     assert not _validate_config_item(config_item)

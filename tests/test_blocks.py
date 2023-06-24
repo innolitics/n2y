@@ -120,7 +120,7 @@ def test_heading_1():
         "heading_1", {"rich_text": [mock_rich_text("Heading One")]}
     )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])
+    assert pandoc_ast == Header(1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")])
     assert markdown == "# Heading One\n"
 
 
@@ -129,7 +129,7 @@ def test_heading_1_bolding_stripped():
         "heading_1", {"rich_text": [mock_rich_text("Heading One", ["bold"])]}
     )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Header(1, ("", [], []), [Str("Heading"), Space(), Str("One")])
+    assert pandoc_ast == Header(1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")])
     assert markdown == "# Heading One\n"
 
 
@@ -138,7 +138,7 @@ def test_heading_2():
         "heading_2", {"rich_text": [mock_rich_text("Heading Two")]}
     )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Header(2, ("", [], []), [Str("Heading"), Space(), Str("Two")])
+    assert pandoc_ast == Header(2, ("heading-two", [], []), [Str("Heading"), Space(), Str("Two")])
     assert markdown == "## Heading Two\n"
 
 
@@ -148,7 +148,7 @@ def test_heading_3():
     )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(
-        3, ("", [], []), [Str("Heading"), Space(), Str("Three")]
+        3, ("heading-three", [], []), [Str("Heading"), Space(), Str("Three")]
     )
     assert markdown == "### Heading Three\n"
 

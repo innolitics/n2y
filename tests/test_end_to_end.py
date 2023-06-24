@@ -1,8 +1,7 @@
-from os import listdir
+import logging
 import os
-
+from os import listdir
 from os.path import isfile, join
-import pytest
 
 import yaml
 try:
@@ -104,7 +103,7 @@ def test_simple_database_to_yaml(tmpdir):
     assert len(database) == 3
     assert database[0]["Name"] == "A"
     assert database[0]["Tags"] == ["a", "b"]
-    assert database[0]["Content"] is None
+    assert database[0]["Content"] == "A\n"
 
 
 def test_big_database_to_yaml(tmpdir):
@@ -123,7 +122,7 @@ def test_simple_database_to_markdown_files(tmpdir):
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     object_id = "176fa24d4b7f4256877e60a1035b45a4"
-    output_directory = run_n2y_database_as_files(tmpdir, object_id, filename_property="Name")
+    output_directory = run_n2y_database_as_files(tmpdir, object_id, filename_template="{Name}.md")
     generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
     assert generated_files == {"A.md", "B.md", "C.md"}
     document = open(join(output_directory, "A.md"), "r").read()
@@ -133,7 +132,6 @@ def test_simple_database_to_markdown_files(tmpdir):
     assert "content" not in metadata
 
 
-@pytest.mark.xfail(reason="There are still issues with direct docx rendering")
 def test_simple_database_to_docx_files(tmpdir):
     """
     The database can be seen here:
@@ -148,7 +146,6 @@ def test_simple_database_to_docx_files(tmpdir):
                 "pandoc_options": ["--standalone"],
                 "node_type": "database_as_files",
                 "output": "database",
-                "filename_property": "Name",
             }
         ]
     }
@@ -250,6 +247,8 @@ def test_all_blocks_page_to_markdown(tmpdir):
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
     assert "[Bookmark caption](https://innolitics.com)" in lines
+
+    # TODO: Add assertions about audio blocks and video blocks
 
     # the word "caption" is bolded
     assert "![Image **caption**](media/All_Blocks_Test_Page-5f1b0813453.jpeg)" in lines
@@ -382,3 +381,89 @@ def test_jinja_render_plugin(tmpdir):
     assert "## pink is a color" in document
     assert "## red is a color" in document
     assert "Page with JinjaCodeBlock" in document
+
+
+def test_dbfootnote_plugin(tmpdir):
+    """
+    This test exercises our database footnote. It involves a simple page with
+    an inline database containing content for 3 footnotes.
+
+    The page can be seen here:
+    https://www.notion.so/Advanced-DB-Footnote-8a1a17c7ef3043f4bd9fb041ef31ba7
+    """
+    object_id = "8a1a17c7ef3043f4bd9fb041ef31ba7d"
+    document = run_n2y_page(tmpdir, object_id, plugins=[
+        "n2y.plugins.dbfootnotes",
+    ])
+
+    assert "some text [^1]." in document
+    assert "like so [^2] and" in document
+    assert "so [^3]." in document
+    assert "[^1]: Inline DB content for footnote 1." in document
+    assert "[^2]: Inline DB content for footnote 2." in document
+    assert "[^3]: Inline DB content for footnote 3." in document
+
+
+def test_simple_table_headers(caplog, tmp_path):
+    """
+    Simply show what flattened Markdown content is expected if the input
+    contains tables without headers.
+
+    Relies on https://www.notion.so/Simple-Tables-9b1dd705f61647b6a10032ec7671402f?pvs=4
+    """
+    object_id = "9b1dd705f61647b6a10032ec7671402f"
+
+    content = run_n2y_page(tmp_path, object_id, pandoc_format="gfm")
+    captured_messages = [
+        r.message for r in caplog.records if r.levelno >= logging.WARNING
+    ]
+
+    number_expected_table_warnings = 0
+    if (
+        """\
+Some text
+
+|      |         |
+|------|---------|
+| This | has     |
+| no   | headers |
+"""
+        in content
+    ):
+        number_expected_table_warnings += 1
+    assert (
+        """\
+More text
+
+|        | header | row     |
+|--------|--------|---------|
+| header | This   | has     |
+| column | both   | headers |
+|        |        |         |
+| and    | an     | empty   |
+"""
+        in content
+    )
+    if (
+        """\
+Yakkity yakkity yakkity yak
+
+|        |        |
+|--------|--------|
+| header | Fiddle |
+| column | Faddle |
+"""
+        in content
+    ):
+        number_expected_table_warnings += 1
+    assert """\
+| header | row    |
+|--------|--------|
+| Nutter | Butter |
+"""
+    if number_expected_table_warnings > 0:
+        expected_blurb = (
+            f"{number_expected_table_warnings} table(s) will present empty "
+            "headers to maintain Markdown spec"
+        )
+        assert any(expected_blurb in m for m in captured_messages)

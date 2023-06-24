@@ -8,15 +8,13 @@ We use it at [Innolitics](https://innolitics.com) to generate pages for our webs
 
 ## Installation
 
-To install the tool, just run:
+Install first `pandoc` and `mermaid` CLIs. Please note that `n2y` has only been tested with `pandoc 2.19.2` and `mermaid-cli 9.4.0`. This [pandoc](https://github.com/jgm/pandoc/releases/tag/2.19.2) link will take you to their `2.19.2` github releases page. This [mermaid](https://github.com/mermaid-js/mermaid-cli) link will take you to their github page where you will find installation instructions. If using `npm` to install `mermaid`, append `@9.4.0` to the `npm` command to install that specific version.
+
+Finally, install `n2y`:
 
 ```
 pip install n2y
 ```
-
-You'll also need to install [pandoc](https://github.com/jgm/pandoc/releases/).
-
-Note: n2y has only been tested with `pandoc 2.19.2` and `mermaid-cli 8.11`.
 
 ## Authorization
 
@@ -47,9 +45,10 @@ The export configuration items may contain the following keys:
 | pandoc_format | The [pandoc format](https://pandoc.org/MANUAL.html#general-options) that we're generating. |
 | pandoc_options | A list of strings that are [writer options](https://pandoc.org/MANUAL.html#general-writer-options) for pandoc. |
 | content_property | When set, it indicates the property name that will contain the content of the notion pages in that databse. If set to `None`, then only the page's properties will be included in the export. (Only applies to the `database_as_files` node type.) |
+| yaml_front_matter | Only used when exporting to text files. Indicates if the page properties should be exported as yaml front matter. |
 | id_property | When set, this indicates the property name in which to place the page's underlying notion ID. |
 | url_property | When set, this indicates the property name in which to place the page's underlying notion url. |
-| filename_property | This key is required for the "database_as_files" node type; when set, it indicates which property to use when generating the file name. |
+| filename_template | This key is only used for the "database_as_files" node type; when set, it provides a [format string](https://docs.python.org/3/library/string.html#formatstrings) that is evaluated against the page's properties to generate the file name. Note that the filenames are sanitized. When not set, the title property is used and the extension is deduced from the `pandoc_format`. A special "TITLE" property may be used to access the title property in the template string. |
 | plugins | A list of python modules to use as plugins. |
 | notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
 | notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
@@ -79,10 +78,10 @@ exports:
 - id: 176fa24d4b7f4256877e60a1035b45a4
   node_type: database_as_files
   output: directory
-  filename_property: "Name"
+  filename_template: "{Name}.md"
 ```
 
-Each page in the database will generate a single markdown file, named according to the `filename_property`. This process will automatically skip pages whose "Name" property is empty.
+Each page in the database will generate a single markdown file, named according to the `filename_template`. This process will automatically skip pages whose "Name" property is empty.
 
 ### Convert a Page to a Markdown File
 
@@ -123,7 +122,7 @@ export_defaults:
 exports:
   - output: "documents/dhf"
     node_type: "database_as_files"
-    filename_property: "Name"
+    filename_template: "{Name}.md"
     id: e24f839e724848d69342d43c07cb5f3e
     plugins:
       - "n2y.plugins.mermaid"
@@ -138,7 +137,7 @@ exports:
       multi_select: { "contains": "DHF" }
   - output: "documents/510k"
     id: e24f839e724848d69342d43c07cb5f3e
-    filename_property: "Name"
+    filename_template: "{Name}.md"
     node_type: "database_as_files"
     plugins:
       - "n2y.plugins.mermaid"
@@ -241,13 +240,39 @@ Most of the Notion blocks can generate their pandoc AST from _only_ their own da
 
 ## Built-in Plugins
 
-N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/rich-text-extensions/n2y/plugins) for details.
+N2y provides a few builtin plugins. These plugins are all turned off by default. Brief descriptions are provided below, but see [the code](https://github.com/innolitics/n2y/tree/main/n2y/plugins) for details.
 
-### Render
+### Jinja Render Page
 
-When CodeBlocks are captioned "{template}", the block is rendered as jinja using yaml data previously cached by n2y.
+CodeBlocks whose caption begins with "{jinja=pandocformat}" will be rendered using [Jinja](https://jinja.palletsprojects.com/en/3.1.x/templates/) into text and then read into the AST using the specified pandoc input format. Note that, other than the special "plain" format, the pandocformat must be available both for reading and writing.
 
-The jinja context has a few special filters available to it. See the code for details.
+Any databases that are [mentioned](https://www.notion.so/help/comments-mentions-and-reminders) in the codeblock's caption will be made available in the jinja render context within the `databases` dictionary.
+
+Take the following code block for example:
+
+```
+<table>
+  <tr><th>Name</th><th>Email</th></tr>
+  {% for person in databases["People"] %}
+  <tr><td>{{person.Name}}</td><td>{{person.Email}}</td></tr>
+  {% endfor %}
+</table>
+```
+
+The caption would be, "{jinja=html} @People," where "Name" and "Email" are properties in the "People" database.
+
+Note that any rich text properties are rendered into the pandoc input format specified.
+
+The codeblock's parent page's properties are made available in the `page` context variable.
+
+The jinja context has a few special filters available to it:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `join_to` | filter | Make it possible to join notion databases together. |
+| `first_pass_output` | object | Makes it possible to access the full text of the initial page's render. Useful if you want to render a glossary of terms that are used on the page. |
+
+See the [code](https://github.com/innolitics/n2y/blob/main/n2y/plugins/jinjarenderpage.py) for details.
 
 ### Deep Headers
 
@@ -259,7 +284,7 @@ Completely remove all callout blocks. It's often helpful to include help text in
 
 ### Raw Fenced Code Blocks
 
-Any code block whose caption begins with "{=language}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other formats. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
+Any code block whose caption begins with "{=pandocformat}" will be made into a raw block for pandoc to parse. This is useful if you need to drop into Raw HTML or other output formats that pandoc supports. See [the pandoc documentation](https://pandoc.org/MANUAL.html#generic-raw-attribute) for more details on the raw code blocks.
 
 ### Mermaid Fenced Code Blocks
 
@@ -276,6 +301,9 @@ Replace headers with links back to the originating notion block.
 ### Footnotes
 
 Adds support for Pandoc-style footnotes. Any `text` rich texts that contain footnote references in the format `[^NUMBER]` (eg: `...some claim [^2].`) will be linked to the corresponding footnote paragraph block starting with `[NUMBER]:` (eg: `[2]: This is a footnote.`).
+
+### DB Footnotes
+Adds general footnote support (not specialized for markdown) with the expectation that all footnote content is placed in an inline database on the original page wherein footnote references are made. Specific footnote references are made with Notion's page mention feature, mentioning a specific footnote page in the database. For example, each page in the database can simply be titled with a footnote number and contain the footnote text as the page content. The inline database must have a title that ends with "Footnotes."
 
 ### Expand Link To Page Blocks
 
@@ -333,6 +361,24 @@ flake8 .
 pytest tests
 ```
 
+## Developer Tools
+
+### Pandoc
+
+`n2y` is built on top of [`pandoc`](https://pandoc.org/MANUAL.html), using it to build intermediate representations and for output generation. Being familiar with the pandoc AST is important as an `n2y` developer. Documentation is available for the [native Haskell AST](https://hackage.haskell.org/package/pandoc-types-1.23) and for the corresponding [Python wrapper library](https://boisgera.github.io/pandoc/document/) used directly by `n2y`.
+
+As part of a typical development cycle, you can use the `pandoc` CLI to inspect the relationship between, for example, GitHub-flavored Markdown and the native `pandoc` AST. The following CLI invocation of `pandoc` takes in the GitHub-flavored Markdown file "example.md", converts it to the `pandoc` AST in JSON format, and pipes this output to the command line `jq` JSON processor program for viewing in the terminal:
+
+```
+pandoc -f gfm -t json example.md | jq .
+```
+
+The following command performs a full round-trip from GitHub-flavored Markdown to the `pandoc` AST and back to GitHub-flavored Markdown:
+
+```
+pandoc -f gfm -t json example.md | pandoc -f json -t gfm
+```
+
 ## Roadmap
 
 Here are some features we're planning to add in the future:
@@ -344,8 +390,16 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.8.1
+
+- Add basic support for undocumented "audio" block type
+
 ### v0.8.0
 
+- Replace the `filename_property` configuration option with the more generic `filename_template`.
+- Make it so we can render pages into any pandoc format
+- Include properties as pandoc meta values
+- Add export config option to indicate if we should export YAML front matter
 - Add requests cache to speed up dev loop
 - Update `jinjarenderpage` so that it no pulls databases mentioned in the
   caption, instead of relying on the exports list. Also, make the

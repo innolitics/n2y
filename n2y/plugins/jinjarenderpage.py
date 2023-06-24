@@ -29,13 +29,14 @@ import re
 import logging
 
 import pandoc
+from pandoc.types import Plain, Str
 import jinja2
 from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
+
 from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.errors import UseNextClass
 from n2y.mentions import DatabaseMention
-
 from n2y.page import Page
 from n2y.rich_text import MentionRichText
 from n2y.utils import pandoc_ast_to_markdown
@@ -43,6 +44,19 @@ from n2y.export import database_to_yaml
 
 
 logger = logging.getLogger(__name__)
+
+
+class JinjaDatabaseCache(dict):
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return super().__getitem__(key)
+        elif isinstance(key, int):
+            return super().__getitem__(list(self)[key])
+        logger.error((
+            'Jinja template database must be '
+            'selected using a string or an integer'
+        ))
+        raise KeyError(key)
 
 
 class FirstPassOutput:
@@ -97,7 +111,35 @@ def join_to(foreign_keys, table, primary_key='notion_id'):
     return joined
 
 
-def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
+def list_matches(string, text):
+    return list(re.finditer(
+        '(?<![a-zA-Z])' + _canonicalize(string) + '(?![a-zA-Z])',
+        _canonicalize(text))
+    )
+
+
+def remove_words(words, text):
+    for word in words:
+        span = word.span()
+        text = text[:span[0]] + ' ' * (span[1] - span[0]) + text[span[1]:]
+    return text
+
+
+def _fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
+    found = []
+    key_filter = lambda d: len(d[key]) if by_length else d[key]
+    sorted_term_list = sorted(term_list, key=key_filter, reverse=reverse)
+    if key in term_list[0]:
+        for term in sorted_term_list:
+            if key in term and term[key] != '':
+                matches = list_matches(term[key], text)
+                if matches != []:
+                    found.append(term)
+                    text = remove_words(matches, text)
+    return found
+
+
+def fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
     """
     Used to search a markdown string, which may have been modified using pandoc's smart extension,
     for the value at a specified key in a dicionary for all dictionaries in a given list of them.
@@ -106,20 +148,14 @@ def fuzzy_find_in(dict_list, string, key='Name', by_length=True, reverse=True):
     """
     found = []
 
-    def key_filter(d):
-        return len(d[key]) if by_length else d[key]
+    if isinstance(key, str):
+        found = _fuzzy_find_in(term_list, text, key, by_length, reverse)
+    elif isinstance(key, list):
+        keys = key
+        for key in keys:
+            terms_found = fuzzy_find_in(term_list, text, key, by_length, reverse)
+            found.extend(terms_found)
 
-    sorted_dict_list = sorted(dict_list, key=key_filter, reverse=reverse)
-    for term in sorted_dict_list:
-        matches = list(re.finditer(
-            '(?<![a-zA-Z])' + _canonicalize(term[key]) + '(?![a-zA-Z])',
-            _canonicalize(string))
-        )
-        if matches != []:
-            found.append(term)
-            for match in matches:
-                span = match.span()
-                string = string[:span[0]] + ' ' * (span[1] - span[0]) + string[span[1]:]
     return found
 
 
@@ -195,7 +231,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         else:
             raise UseNextClass()
         self.rendered_text = ''
-        self.databases = {}
+        self.databases = JinjaDatabaseCache()
 
     def _get_database_ids_from_mentions(self):
         for rich_text in self.caption:
@@ -215,10 +251,18 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             # defaults and it could provide a mechanism to access the page
             # content from within the Jinja templates, which isn't possible
             # right now.
-            self.databases[database.title.to_plain_text()] = database_to_yaml(
+            database_name = database.title.to_plain_text()
+            if database_name in self.databases:
+                msg = (
+                    f'Duplicate database name "{database_name}"'
+                    f' when rendering [{self.notion_url}]'
+                )
+                logger.error(msg)
+                raise ValueError(msg)
+            self.databases[database_name] = database_to_yaml(
                 database=database,
                 pandoc_format=self.pandoc_format,
-                pandoc_options=export_defaults["pandoc_options"],  # maybe shouldn't use this
+                pandoc_options=[],
                 id_property=export_defaults["id_property"],
                 url_property=export_defaults["url_property"],
             )
@@ -242,7 +286,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 content = pandoc.write(
                     ast,
                     format=self.pandoc_format,
-                    options=self.client.export_defaults["pandoc_options"],
+                    options=[],
                 )
                 return content
             self.client.plugin_data['jinjarenderpage'][self.page.notion_id][
@@ -251,7 +295,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             self.rendered_text = render_from_string(jinja_code, context, jinja_environment)
         except (UndefinedError, TemplateSyntaxError):
             logger.error(
-                "Error rendering Jinja template on %s [%s]",
+                "Error rendering Jinja template on %s (%r)",
                 self.page.title.to_plain_text() if self.page else "unknown",
                 self.notion_url,
                 exc_info=True,
@@ -260,17 +304,22 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             raise
 
     def to_pandoc(self):
-        self._get_yaml_from_mentions()
-        self._render_text()
-        # pandoc.read includes Meta data, which isn't relevant here; we just
-        # want the AST for the content
-        document_ast = pandoc.read(
-            self.rendered_text,
-            format=self.pandoc_format,
-            options=self.client.export_defaults["pandoc_options"],
-        )
-        children_ast = document_ast[1]
-        return children_ast
+        if not len(self.databases):
+            self._get_yaml_from_mentions()
+            self._render_text()
+        if self.pandoc_format != "plain":
+            # pandoc.read includes Meta data, which isn't relevant here; we just
+            # want the AST for the content
+            document_ast = pandoc.read(self.rendered_text, format=self.pandoc_format)
+            children_ast = document_ast[1]
+            return children_ast
+        else:
+            # Pandoc doesn't support reading "plain" text into it's AST (since
+            # if it was just plain text, why would you need pandoc to parse it!)
+            # That said, sometimes it is useful to create plain text from the
+            # jinja rendering (e.g., when producing a site map or something
+            # similar from Notion databases).
+            return Plain([Str(self.rendered_text)])
 
     def _print_context_debug(self, context):
         logger.info("Databases")

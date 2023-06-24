@@ -28,7 +28,7 @@ def test_rich_text_annotated():
     notion_data = mock_property_value('rich_text', mock_rich_text_array([
         ('Hello', ['bold']), (' ', []), ('Goodbye', 'italic')
     ]))
-    assert process_property_value(notion_data) == '**Hello** *Goodbye*'
+    assert process_property_value(notion_data) == '**Hello** *Goodbye*\n'
 
 
 def test_number_empty():

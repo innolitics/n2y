@@ -21,7 +21,7 @@ def process_test_toggle_block(color):
 def test_only_children_of_blue_toggles_are_rendered():
     pandoc_ast, markdown = process_test_toggle_block("blue_background")
     assert pandoc_ast == [
-        Header(1, ("", [], []), [Str("Heading"), Space(), Str("text")]),
+        Header(1, ("heading-text", [], []), [Str("Heading"), Space(), Str("text")]),
         Para([Str("Paragraph"), Space(), Str("text")]),
     ]
     assert (
@@ -44,7 +44,7 @@ def test_non_blue_toggles_are_rendered_regularly_with_bullet_list():
                 ),
                 Header(
                     1,
-                    ('', [], []),
+                    ('heading-text', [], []),
                     [Str('Heading'), Space(), Str('text')]
                 ),
                 Para(
@@ -55,7 +55,7 @@ def test_non_blue_toggles_are_rendered_regularly_with_bullet_list():
         pandoc_2 = [
             Header(
                 1,
-                ('', [], []),
+                ('heading-text', [], []),
                 [Str('Heading'), Space(), Str('text')]
             ),
             Para(
