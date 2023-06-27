@@ -17,7 +17,7 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens, pool
+from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
 from n2y.config import merge_default_config
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,

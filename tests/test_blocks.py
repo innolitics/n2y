@@ -23,7 +23,6 @@ from pandoc.types import (
     HorizontalRule,
     BlockQuote,
     Image,
-    MetaString,
     Table,
     TableHead,
     TableBody,

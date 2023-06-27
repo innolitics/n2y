@@ -5,8 +5,6 @@ import yaml
 import logging
 from datetime import datetime
 import numbers
-import multiprocessing
-import multiprocessing.pool
 
 import pandoc
 from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
