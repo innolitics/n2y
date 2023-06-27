@@ -330,8 +330,7 @@ class Client:
 
     def get_child_blocks(self, block_id, page, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        # return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
-        return pool(self.wrap_notion_block, [[b, page, get_children] for b in child_notion_blocks])
+        return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
     @retry_api_call
     def get_child_notion_blocks(self, block_id):
@@ -501,18 +500,20 @@ class Client:
 
         for i, child in enumerate(children):
             if object_is_database(child) or type_is_database(child):
-                children_appended = self._append_blocks(
-                    block_id, children, children_appended, previous_i, i
-                )
+                if previous_i != i:
+                    children_appended = self._append_blocks(
+                        block_id, children, children_appended, previous_i, i
+                    )
                 child_database = self._copy_notion_database_child_database(
                     parent, parent_type, child
                 )
                 children_appended.append(child_database)
                 previous_i = i + 1
             elif object_is_page(child) or type_is_page(child):
-                children_appended = self._append_blocks(
-                    block_id, children, children_appended, previous_i, i
-                )
+                if previous_i != i:
+                    children_appended = self._append_blocks(
+                        block_id, children, children_appended, previous_i, i
+                    )
                 child_page = self._copy_notion_database_child_page(parent, parent_type, child)
                 children_appended.append(child_page)
                 previous_i = i + 1
