@@ -1,6 +1,5 @@
 import logging
 import os
-import pytest
 from os import listdir
 from os.path import isfile, join
 
