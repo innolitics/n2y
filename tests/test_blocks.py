@@ -23,7 +23,6 @@ from pandoc.types import (
     HorizontalRule,
     BlockQuote,
     Image,
-    MetaString,
     Table,
     TableHead,
     TableBody,
@@ -197,7 +196,7 @@ def test_page():
     children = [mock_paragraph_block([("Simple page", [])])]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == Pandoc(
-        Meta({"title": MetaString("Simple Page")}),
+        Meta({}),
         [Para([Str("Simple"), Space(), Str("page")])],
     )
     assert markdown == "Simple page\n"
