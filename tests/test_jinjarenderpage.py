@@ -7,7 +7,7 @@ from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
 from n2y.utils import pandoc_ast_to_markdown, pandoc_write_or_log_errors
 from n2y.plugins.jinjarenderpage import (
-    render_from_string, join_to, fuzzy_find_in,
+    render_from_string, join_to, fuzzy_find_in, list_matches,
     JinjaFencedCodeBlock, JinjaRenderPage,
 )
 from n2y.notion_mocks import (
@@ -159,3 +159,23 @@ def test_jinja_render_plain():
     pandoc_ast = page.to_pandoc()
     text = pandoc_write_or_log_errors(pandoc_ast, 'plain', [])
     assert text == "# <h1> asdf23\n"
+
+
+def test_list_matches_special_characters():
+    text = 'somthing (id_num) [category] note* $tag (?!question)'
+    string = (
+        'fdsfds dwefwe 342t45lsfd fdds f34244 dgd somthing '
+        '(id_num) [category] note* $tag (?!question) dsfsa '
+        'sdfasdfsad'
+    )
+    assert len(list_matches(text, string)) == 1
+
+
+def test_list_matches_no_space_fail():
+    text = 'somthing (id_num) [category] note* $tag (?!question)'
+    string = (
+        'fdsfds dwefwe 342t45lsfd fdds f34244 dgd sfdasomthing '
+        '(id_num) [category] note* $tag (?!question) dsfsa '
+        'sdfasdfsad'
+    )
+    assert len(list_matches(text, string)) == 0
