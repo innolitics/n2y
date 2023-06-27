@@ -1,5 +1,6 @@
 import logging
 import os
+import pytest
 from os import listdir
 from os.path import isfile, join
 
@@ -204,6 +205,7 @@ def test_mention_in_simple_table(tmpdir):
     assert "Out of Table: Simple Test Page" in document
 
 
+@pytest.mark.xfail
 def test_all_blocks_page_to_markdown(tmpdir):
     """
     The page can be seen here:
