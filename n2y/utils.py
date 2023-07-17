@@ -257,7 +257,7 @@ def retry_api_call(api_call):
         try:
             return api_call(*args, **kwargs)
         except HTTPResponseError as err:
-            should_retry = err.status in [409, 429, 500, 502, 504, 503]
+            should_retry = err.status in [409, 429, 500, 502, 504, 503, 104]
             if not should_retry:
                 raise err
             elif retry_count < max_api_retries:
