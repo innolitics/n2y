@@ -27,6 +27,7 @@ of the codeblock may be accessed via the database name.
 """
 import re
 import logging
+import traceback
 
 import pandoc
 from pandoc.types import Plain, Str
