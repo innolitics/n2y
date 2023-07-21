@@ -111,16 +111,13 @@ class ChildPageBlock(Block):
 
     def to_pandoc(self):
         assert self.children is not None
-        if self.children:
-            children = self.children_to_pandoc()
-            if self.page:
-                properties = self.page.properties_to_values()
-            else:
-                properties = {}
-            meta = yaml_map_to_meta(properties)
-            return Pandoc(meta, children)
+        children = self.children_to_pandoc()
+        if self.page:
+            properties = self.page.properties_to_values()
         else:
-            return None
+            properties = {}
+        meta = yaml_map_to_meta(properties)
+        return Pandoc(meta, children)
 
 
 class EquationBlock(Block):

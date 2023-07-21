@@ -10,7 +10,7 @@ from n2y.config import load_config, merge_default_config
 from n2y.utils import share_link_from_id
 from n2y.export import export_page, database_to_yaml, database_to_files, write_document
 
-logger = None
+logger = logging.getLogger(__name__)
 
 
 def cli_main():
@@ -38,8 +38,7 @@ def main(raw_args, access_token, n2y_cache=None):
     args = parser.parse_args(raw_args)
 
     logging_level = logging.__dict__[args.verbosity]
-    stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    logging.basicConfig(level=logging_level, handlers=[stdout_handler])
+    logging.basicConfig(level=logging_level)
     global logger
     logger = logging.getLogger(__name__)
 
