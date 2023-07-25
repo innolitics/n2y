@@ -232,6 +232,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         else:
             raise UseNextClass()
         self.rendered_text = ''
+        self.error = None
         self.databases = JinjaDatabaseCache()
 
     def _get_database_ids_from_mentions(self):
@@ -311,16 +312,24 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         if self.pandoc_format != "plain":
             # pandoc.read includes Meta data, which isn't relevant here; we just
             # want the AST for the content
-            document_ast = pandoc.read(self.rendered_text, format=self.pandoc_format)
-            children_ast = document_ast[1]
-            return children_ast
+            try:
+                document_ast = pandoc.read(self.rendered_text, format=self.pandoc_format)
+                children_ast = document_ast[1]
+            except ...:
+                # TODO: Add test case that tests this branch
+                self.error = ...
         else:
             # Pandoc doesn't support reading "plain" text into it's AST (since
             # if it was just plain text, why would you need pandoc to parse it!)
             # That said, sometimes it is useful to create plain text from the
             # jinja rendering (e.g., when producing a site map or something
             # similar from Notion databases).
-            return Plain([Str(self.rendered_text)])
+            children_ast = Plain([Str(self.rendered_text)])
+
+        if self.error:
+            children_ast = Code([Str(self.error)]) # prob need to fix this
+
+        return children_ast
 
     def _print_context_debug(self, context):
         logger.info("Databases")
