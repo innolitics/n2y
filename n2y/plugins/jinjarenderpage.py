@@ -297,7 +297,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             )
         else:
             specific_msg = None
-        
+
         if specific_msg:
             self.error += specific_msg + block_ref
         else:
@@ -335,7 +335,6 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             self._render_error(err)
         self.render_count += 1
 
-
     def to_pandoc(self):
         if not self.mentions_processed:
             self._get_yaml_from_mentions()
@@ -358,7 +357,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             children_ast = Plain([Str(self.rendered_text)])
 
         if self.error:
-            children_ast = Plain([Code(('', [], []), self.error)]) # prob need to fix this
+            children_ast = Plain([Code(('', [], []), self.error)])
 
         return children_ast
 

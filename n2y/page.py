@@ -8,8 +8,10 @@ from n2y.property_values import TitlePropertyValue
 
 logger = logging.getLogger(__name__)
 
+
 class PageProperties(dict):
     ...
+
 
 class Page:
     def __init__(self, client, notion_data):

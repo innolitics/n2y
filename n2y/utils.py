@@ -253,7 +253,7 @@ def stringify_list(array, wrap_in_quotes=False):
         return f'{array[0]} and {array[1]}'
     else:
         return ', '.join(array[:-1]) + ", and " + array[-1]
-    
+
 
 def available_from_list(collection, singular, plural):
     if len(collection) == 0:
