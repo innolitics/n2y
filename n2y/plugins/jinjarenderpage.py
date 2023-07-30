@@ -94,7 +94,7 @@ class FirstPassOutput:
         return self._source
 
 
-def join_to(foreign_keys, table, primary_key='id'):
+def join_to(foreign_keys, table, primary_key='notion_id'):
     '''
     Given a set of ids for an object, and a list of the objects these ids refer
     to, select out the objects by joining using the specified primary key
@@ -147,6 +147,7 @@ def fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
     see https://pandoc.org/MANUAL.html#extension-smart
     """
     found = []
+
     if isinstance(key, str):
         found = _fuzzy_find_in(term_list, text, key, by_length, reverse)
     elif isinstance(key, list):
@@ -154,6 +155,7 @@ def fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
         for key in keys:
             terms_found = fuzzy_find_in(term_list, text, key, by_length, reverse)
             found.extend(terms_found)
+
     return found
 
 
@@ -298,6 +300,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 self.notion_url,
                 exc_info=True,
             )
+            self._print_context_debug(context)
             raise
 
     def to_pandoc(self):
@@ -317,6 +320,17 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             # jinja rendering (e.g., when producing a site map or something
             # similar from Notion databases).
             return Plain([Str(self.rendered_text)])
+
+    def _print_context_debug(self, context):
+        logger.info("Databases")
+        for database_name, database in context["databases"].items():
+            logger.info("  %s [%d]", database_name, len(database))
+            if len(database) > 0:
+                for key in database[0]:
+                    logger.info("    %s", key)
+        logger.info("page")
+        for key, value in context["page"].items():
+            logger.info("  %s: %r", key, value)
 
 
 notion_classes = {

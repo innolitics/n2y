@@ -528,13 +528,7 @@ class WarningBlock(NoopBlock):
 
 
 class ChildDatabaseBlock(NoopBlock):
-    def to_pandoc(self):
-        msg = (
-            'Skipping unsupported "%s" block (%s). '
-            'Perhaps you can convert the database into a simple table?'
-        )
-        logger.warning(msg, self.notion_type, self.notion_url)
-        return None
+    pass
 
 
 class EmbedBlock(WarningBlock):
