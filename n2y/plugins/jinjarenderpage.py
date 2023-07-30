@@ -30,7 +30,7 @@ import logging
 import traceback
 
 import pandoc
-from pandoc.types import Plain, Str
+from pandoc.types import Plain, Str, Code
 import jinja2
 from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
@@ -40,7 +40,7 @@ from n2y.errors import UseNextClass
 from n2y.mentions import DatabaseMention
 from n2y.page import Page
 from n2y.rich_text import MentionRichText
-from n2y.utils import pandoc_ast_to_markdown
+from n2y.utils import pandoc_ast_to_markdown, available_from_list
 from n2y.export import database_to_yaml
 
 
@@ -213,7 +213,6 @@ class JinjaRenderPage(Page):
         if first_pass_output.second_pass_is_requested:
             first_pass_output_text = pandoc_ast_to_markdown(first_pass_ast)
             first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
-            super().__init__(self.client, self.notion_data)
             second_pass_ast = super().to_pandoc()
             jinja2.clear_caches()
             return second_pass_ast
@@ -231,8 +230,10 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             self.pandoc_format = result.group(1)
         else:
             raise UseNextClass()
-        self.rendered_text = ''
         self.error = None
+        self.render_count = 0
+        self.rendered_text = ''
+        self.mentions_processed = False
         self.databases = JinjaDatabaseCache()
 
     def _get_database_ids_from_mentions(self):
@@ -268,14 +269,35 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 id_property=export_defaults["id_property"],
                 url_property=export_defaults["url_property"],
             )
+        self.mentions_processed = True
+
+    def _render_error(self, err):
+        self.error = (
+            'Error rendering Jinja template on {page_name} page: ' +
+            self.page.title.to_plain_text() if self.page else "unknown page" +
+            f' ({self.notion_url}).'
+        )
+        message = str(err)
+
+        if (db_err := "JinjaDatabaseCache object' has no attribute '") in message:
+            partitions = message.split(db_err)
+            self.error += f'\nYou attempted to access the "{partitions[1][:-1]}" database. {available_from_list(list(self.databases.keys()), "database", "databases")}. Note that databases must be mentioned in the caption for the codeblock to be available. Also note the plugin must have permissions to read the database via the NOTION_ACCESS_TOKEN.'
+        elif (pg_err := "PageProperties object' has no attribute '") in message:
+            partitions = message.split(pg_err)
+            self.error += f'\nYou attempted to access the "{partitions[1][:-1]}" page property. {available_from_list(list(self.page_props.keys()), "property", "properties")}.'
+        else:
+            self.error += f'\n{message}'
+        self.error += f'\nSee [{self.notion_url}](the Notion code block).\n{traceback.format_exc()}'
+        logger.error(self.error)
 
     def _render_text(self):
+        self.page_props = self.page.properties_to_values(self.pandoc_format)
         jinja_environment = self.client.plugin_data[
             'jinjarenderpage'][self.page.notion_id]['environment']
         jinja_code = self.rich_text.to_plain_text()
         context = {
             "databases": self.databases,
-            "page": self.page.properties_to_values(self.pandoc_format),
+            "page": self.page_props,
         }
         if 'render_content' in jinja_code:
             def render_content(notion_id, level_adjustment=0):
@@ -295,19 +317,15 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 'environment'].filters['render_content'] = render_content
         try:
             self.rendered_text = render_from_string(jinja_code, context, jinja_environment)
-        except (UndefinedError, TemplateSyntaxError):
-            logger.error(
-                "Error rendering Jinja template on %s (%r)",
-                self.page.title.to_plain_text() if self.page else "unknown",
-                self.notion_url,
-                exc_info=True,
-            )
-            self._print_context_debug(context)
-            raise
+        except (UndefinedError, TemplateSyntaxError) as err:
+            self._render_error(err)
+        self.render_count += 1
+
 
     def to_pandoc(self):
-        if not len(self.databases):
+        if not self.mentions_processed:
             self._get_yaml_from_mentions()
+        if self.render_count < 2:
             self._render_text()
         if self.pandoc_format != "plain":
             # pandoc.read includes Meta data, which isn't relevant here; we just
@@ -315,9 +333,8 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             try:
                 document_ast = pandoc.read(self.rendered_text, format=self.pandoc_format)
                 children_ast = document_ast[1]
-            except ...:
-                # TODO: Add test case that tests this branch
-                self.error = ...
+            except Exception as err:
+                self._render_error(err)
         else:
             # Pandoc doesn't support reading "plain" text into it's AST (since
             # if it was just plain text, why would you need pandoc to parse it!)
@@ -327,7 +344,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             children_ast = Plain([Str(self.rendered_text)])
 
         if self.error:
-            children_ast = Code([Str(self.error)]) # prob need to fix this
+            children_ast = Plain([Code(('', [], []), self.error)]) # prob need to fix this
 
         return children_ast
 

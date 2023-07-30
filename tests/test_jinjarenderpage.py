@@ -5,7 +5,9 @@ from pytest import raises
 from n2y.page import Page
 from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
-from n2y.utils import pandoc_ast_to_markdown, pandoc_write_or_log_errors
+from n2y.utils import (
+    pandoc_ast_to_markdown, pandoc_write_or_log_errors, pandoc_ast_to_html
+)
 from n2y.plugins.jinjarenderpage import (
     render_from_string, join_to, fuzzy_find_in, list_matches,
     JinjaFencedCodeBlock, JinjaRenderPage,
