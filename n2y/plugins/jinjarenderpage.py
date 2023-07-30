@@ -272,22 +272,36 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         self.mentions_processed = True
 
     def _render_error(self, err):
+        message = str(err)
+        block_ref = f'\nSee [{self.notion_url}](the Notion code block).'
         self.error = (
             'Error rendering Jinja template on {page_name} page: ' +
             self.page.title.to_plain_text() if self.page else "unknown page" +
             f' ({self.notion_url}).'
         )
-        message = str(err)
 
         if (db_err := "JinjaDatabaseCache object' has no attribute '") in message:
-            partitions = message.split(db_err)
-            self.error += f'\nYou attempted to access the "{partitions[1][:-1]}" database. {available_from_list(list(self.databases.keys()), "database", "databases")}. Note that databases must be mentioned in the caption for the codeblock to be available. Also note the plugin must have permissions to read the database via the NOTION_ACCESS_TOKEN.'
+            split_msg = message.split(db_err)
+            specific_msg = (
+                f'\nYou attempted to access the "{split_msg[1][:-1]}" database. '
+                f'{available_from_list(list(self.databases.keys()), "database", "databases")}.'
+                ' Note that databases must be mentioned in the caption for the codeblock to be'
+                ' available. Also note the plugin must have permissions to read the database '
+                'via the NOTION_ACCESS_TOKEN.'
+            )
         elif (pg_err := "PageProperties object' has no attribute '") in message:
-            partitions = message.split(pg_err)
-            self.error += f'\nYou attempted to access the "{partitions[1][:-1]}" page property. {available_from_list(list(self.page_props.keys()), "property", "properties")}.'
+            split_msg = message.split(pg_err)
+            specific_msg = (
+                f'\nYou attempted to access the "{split_msg[1][:-1]}" page property. '
+                f'{available_from_list(list(self.page_props.keys()), "property", "properties")}.'
+            )
         else:
-            self.error += f'\n{message}'
-        self.error += f'\nSee [{self.notion_url}](the Notion code block).\n{traceback.format_exc()}'
+            specific_msg = None
+        
+        if specific_msg:
+            self.error += specific_msg + block_ref
+        else:
+            self.error += f'\n{message}' + block_ref + f'\n{traceback.format_exc()}'
         logger.error(self.error)
 
     def _render_text(self):
