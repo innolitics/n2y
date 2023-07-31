@@ -26,14 +26,12 @@ used to access Notion databases. Any database that is @-mentioned in the caption
 of the codeblock may be accessed via the database name.
 """
 import re
-import logging
 import traceback
 
 import pandoc
-from pandoc.types import Plain, Str, Code
 import jinja2
-from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
+from pandoc.types import Plain, Str, Code, Pandoc, Meta, MetaString
 
 from n2y.page import Page
 from n2y.logger import logger

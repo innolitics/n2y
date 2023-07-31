@@ -1,4 +1,3 @@
-import logging
 from itertools import groupby
 from urllib.parse import urljoin
 
