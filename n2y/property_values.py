@@ -1,10 +1,7 @@
 from datetime import datetime
-import logging
 
+from n2y.logger import logger
 from n2y.utils import fromisoformat, process_notion_date, processed_date_to_plain_text
-
-
-logger = logging.getLogger(__name__)
 
 
 class PropertyValue:

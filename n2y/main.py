@@ -5,12 +5,11 @@ import argparse
 import pkg_resources
 import yaml
 
+import n2y.logger
 from n2y import notion
 from n2y.config import load_config, merge_default_config
 from n2y.utils import share_link_from_id
 from n2y.export import export_page, database_to_yaml, database_to_files, write_document
-
-logger = logging.getLogger(__name__)
 
 
 def cli_main():
@@ -38,23 +37,21 @@ def main(raw_args, access_token, n2y_cache=None):
     args = parser.parse_args(raw_args)
 
     logging_level = logging.__dict__[args.verbosity]
-    logging.basicConfig(level=logging_level)
-    global logger
-    logger = logging.getLogger(__name__)
+    n2y.logger.logger.setLevel(logging_level)
 
     if n2y_cache is not None:
         try:
             import requests_cache
             requests_cache.install_cache(n2y_cache, backend='sqlite', expire_after=-1)
-            logger.info("Using cache at %s", n2y_cache)
+            n2y.logger.logger.info("Using cache at %s", n2y_cache)
         except ImportError:
-            logger.warning(
+            n2y.logger.logger.warning(
                 "The requests_cache module is not installed. "
                 "Ignoring N2Y_CACHE %s", n2y_cache,
             )
 
     if access_token is None:
-        logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
+        n2y.logger.logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
     config = load_config(args.config)
@@ -71,7 +68,7 @@ def main(raw_args, access_token, n2y_cache=None):
 
     error_occurred = False
     for export in config['exports']:
-        logger.info("Exporting to %s", export['output'])
+        n2y.logger.logger.info("Exporting to %s", export['output'])
         client.load_plugins(export["plugins"])
         export_completed = _export_node_from_config(client, export)
         if not export_completed:
@@ -79,7 +76,9 @@ def main(raw_args, access_token, n2y_cache=None):
     return 0 if not error_occurred else 3
 
 
-def _export_node_from_config(client, export):
+def _export_node_from_config(client, export, log=n2y.logger.logger):
+    if log != n2y.logger.logger:
+        n2y.logger.update_logger(log)
     node_type = export["node_type"]
     if node_type == "page":
         page = client.get_page(export['id'])
@@ -88,7 +87,7 @@ def _export_node_from_config(client, export):
                 "Unable to find page with id '%s' (%s). "
                 "Perhaps the integration doesn't have permission to access this page?"
             )
-            logger.error(msg, export['id'], share_link_from_id(export['id']))
+            n2y.logger.logger.error(msg, export['id'], share_link_from_id(export['id']))
             return False
         document = export_page(
             page,
@@ -107,7 +106,7 @@ def _export_node_from_config(client, export):
                 "Unable to find database with id '%s' (%s). "
                 "Perhaps the integration doesn't have permission to access this database?"
             )
-            logger.error(msg, export['id'], share_link_from_id(export['id']))
+            n2y.logger.logger.error(msg, export['id'], share_link_from_id(export['id']))
             return False
         if node_type == "database_as_yaml":
             result = database_to_yaml(
@@ -138,7 +137,7 @@ def _export_node_from_config(client, export):
                 property_map=export["property_map"],
             )
         else:
-            logger.error("Unknown node_type '%s'", node_type)
+            n2y.logger.logger.error("Unknown node_type '%s'", node_type)
             return False
     return True
 

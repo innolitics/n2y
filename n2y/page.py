@@ -1,12 +1,7 @@
-import logging
-
-from .blocks import ChildDatabaseBlock, ChildPageBlock
-
+from n2y.logger import logger
 from n2y.utils import fromisoformat
 from n2y.property_values import TitlePropertyValue
-
-
-logger = logging.getLogger(__name__)
+from n2y.blocks import ChildDatabaseBlock, ChildPageBlock
 
 
 class PageProperties(dict):

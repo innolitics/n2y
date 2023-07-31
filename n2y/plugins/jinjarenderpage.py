@@ -35,16 +35,14 @@ import jinja2
 from pandoc.types import Pandoc, Meta, MetaString
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
 
-from n2y.blocks import FencedCodeBlock, HeadingBlock
-from n2y.errors import UseNextClass
-from n2y.mentions import DatabaseMention
 from n2y.page import Page
-from n2y.rich_text import MentionRichText
-from n2y.utils import pandoc_ast_to_markdown, available_from_list
+from n2y.logger import logger
+from n2y.errors import UseNextClass
 from n2y.export import database_to_yaml
-
-
-logger = logging.getLogger(__name__)
+from n2y.mentions import DatabaseMention
+from n2y.rich_text import MentionRichText
+from n2y.blocks import FencedCodeBlock, HeadingBlock
+from n2y.utils import pandoc_ast_to_markdown, available_from_list
 
 
 class JinjaDatabaseCache(dict):

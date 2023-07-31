@@ -3,15 +3,14 @@ import sys
 import logging
 import argparse
 
+import n2y.logger
 from n2y import notion
-from n2y.database import Database
-from n2y.blocks import LinkToPageBlock
-from n2y.errors import UseNextClass
 from n2y.page import Page
-from n2y.utils import id_from_share_link
+from n2y.database import Database
 from n2y.mentions import PageMention
-
-logger = None
+from n2y.errors import UseNextClass
+from n2y.blocks import LinkToPageBlock
+from n2y.utils import id_from_share_link
 
 
 plugin_key = "audit"
@@ -60,19 +59,19 @@ def main(raw_args, access_token):
         help="Level to set the root logging module to",
     )
     parser.add_argument(
-        "--logging-format", default='%(asctime)s - %(levelname)s: %(message)s',
+        "--logging-format", default='%(asctime)s - %(levelname)s - n2y.%(module)s: %(message)s',
         help="Default format used when logging",
     )
 
     args = parser.parse_args(raw_args)
 
     logging_level = logging.__dict__[args.verbosity]
-    logging.basicConfig(format=args.logging_format, level=logging_level)
-    global logger
-    logger = logging.getLogger(__name__)
+    new_formatter = logging.Formatter(args.logging_format)
+    n2y.logger.logger.setLevel(logging_level)
+    n2y.logger.HANDLER.setFormatter(new_formatter)
 
     if access_token is None:
-        logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
+        n2y.logger.logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
         return 1
 
     object_id = id_from_share_link(args.object_id)
@@ -103,7 +102,7 @@ def main(raw_args, access_token):
             "Unable to find database or page with id %s. "
             "Perhaps its not shared with the integration?"
         )
-        logger.error(msg, object_id)
+        n2y.logger.logger.error(msg, object_id)
         return 2
 
     references = {}
@@ -142,13 +141,13 @@ def audit_node(node, references, depth):
 
 
 def audit_database(database, references, depth):
-    logger.info("%sDatabase %s", " " * depth, database.title.to_plain_text())
+    n2y.logger.logger.info("%sDatabase %s", " " * depth, database.title.to_plain_text())
     for page in database.children:
         audit_page(page, references, depth + 1)
 
 
 def audit_page(page, references, depth):
-    logger.info("%sAuditing %s", " " * depth, page.title.to_plain_text())
+    n2y.logger.logger.info("%sAuditing %s", " " * depth, page.title.to_plain_text())
     assert page.notion_id not in references  # expect that each page is visited once
     page.block  # load all of the blocks
     references[page.notion_id] = page.plugin_data.get(plugin_key, [])

@@ -3,18 +3,16 @@ This module contains all the code responsible for exporting `page.Page` and
 `database.Database` objects into the various supported file formats.
 """
 import os
-import logging
 
 from pandoc.types import Table
 import yaml
 
+from n2y.logger import logger
 from n2y.utils import (
     pandoc_format_to_file_extension,
     pandoc_write_or_log_errors,
     sanitize_filename,
 )
-
-logger = logging.getLogger(__name__)
 
 
 def _page_properties(

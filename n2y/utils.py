@@ -1,19 +1,17 @@
 import functools
 import re
-from time import sleep
 import yaml
-import logging
-from datetime import datetime
 import numbers
+from time import sleep
+from datetime import datetime
 
 import pandoc
-from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
 from plumbum import ProcessExecutionError
+from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
 
 from n2y.errors import HTTPResponseError, PandocASTParseError
+from n2y.logger import logger
 
-
-logger = logging.getLogger(__name__)
 # see https://pandoc.org/MANUAL.html#exit-codes
 PANDOC_PARSE_ERROR = 64
 

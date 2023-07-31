@@ -1,12 +1,8 @@
-import logging
-
 from n2y.blocks import ToggleBlock
 from n2y.errors import UseNextClass
 
 
 plugin_data_key = "n2y.plugins.hiddenjinjatoggles"
-
-logger = logging.getLogger(__name__)
 
 
 class ExpandBlueToggleBlock(ToggleBlock):

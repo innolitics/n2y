@@ -9,10 +9,8 @@ from pandoc.types import (
     ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
 )
 
+from n2y.logger import logger
 from n2y.utils import yaml_map_to_meta, header_id_from_text
-
-
-logger = logging.getLogger(__name__)
 
 
 class Block:
