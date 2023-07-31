@@ -299,12 +299,12 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             self.error += f' {message}' + block_ref + f'\n{traceback.format_exc()}'
         logger.error(self.error)
 
-    def _render_error(self, err):
+    def _render_error(self, err, during_render=True):
         jinja_environment = self.client.plugin_data[
             'jinjarenderpage'][self.page.notion_id]['environment']
         first_pass_output = jinja_environment.globals["first_pass_output"]
         only_one_pass = self.render_count == 0 and not first_pass_output.second_pass_is_requested
-        if only_one_pass or self.render_count == 1:
+        if during_render and only_one_pass or self.render_count == 1:
             self._log_jinja_error(err)
 
     def _error_ast(self):
@@ -356,7 +356,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                     document_ast = pandoc.read(self.rendered_text, format=self.pandoc_format)
                     children_ast = document_ast[1]
                 except Exception as err:
-                    self._render_error(err)
+                    self._render_error(err, during_render=False)
                     children_ast = self._error_ast()
             else:
                 # Pandoc doesn't support reading "plain" text into it's AST (since
@@ -365,8 +365,6 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 # jinja rendering (e.g., when producing a site map or something
                 # similar from Notion databases).
                 children_ast = Plain([Str(self.rendered_text)])
-
-
         return children_ast
 
     def _print_context_debug(self, context):
