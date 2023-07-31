@@ -86,7 +86,7 @@ class Client:
     def get_default_classes(self):
         notion_classes = {}
         for notion_object, object_types in DEFAULT_NOTION_CLASSES.items():
-            if type(object_types) == dict:
+            if type(object_types) is dict:
                 notion_classes[notion_object] = {k: [v] for k, v in object_types.items()}
             else:
                 notion_classes[notion_object] = [object_types]
