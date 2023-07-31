@@ -1,16 +1,14 @@
 import re
-import logging
 
 from pandoc.types import Note, Str, Para
 
-from n2y.rich_text import TextRichText
-from n2y.blocks import ParagraphBlock
+from n2y.logger import logger
 from n2y.errors import UseNextClass
+from n2y.blocks import ParagraphBlock
+from n2y.rich_text import TextRichText
 
 
 plugin_data_key = "n2y.plugins.footnotes"
-
-logger = logging.getLogger(__name__)
 
 
 class ParagraphWithFootnoteBlock(ParagraphBlock):

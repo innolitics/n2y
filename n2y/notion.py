@@ -1,5 +1,4 @@
 import json
-import logging
 import requests
 import importlib.util
 from os import path, makedirs
@@ -9,16 +8,17 @@ from n2y.user import User
 from n2y.file import File
 from n2y.page import Page
 from n2y.emoji import Emoji
+from n2y.logger import logger
 from n2y.comment import Comment
 from n2y.database import Database
 from n2y.blocks import DEFAULT_BLOCKS
 from n2y.mentions import DEFAULT_MENTIONS
+from n2y.config import merge_default_config
 from n2y.properties import DEFAULT_PROPERTIES
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
-from n2y.config import merge_default_config
 from n2y.errors import (
     HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
     UseNextClass, is_api_error_code, APIErrorCode
@@ -41,9 +41,6 @@ DEFAULT_NOTION_CLASSES = {
     "mentions": DEFAULT_MENTIONS,
     "comment": Comment,
 }
-
-
-logger = logging.getLogger(__name__)
 
 
 class Client:
@@ -89,7 +86,7 @@ class Client:
     def get_default_classes(self):
         notion_classes = {}
         for notion_object, object_types in DEFAULT_NOTION_CLASSES.items():
-            if type(object_types) == dict:
+            if type(object_types) is dict:
                 notion_classes[notion_object] = {k: [v] for k, v in object_types.items()}
             else:
                 notion_classes[notion_object] = [object_types]

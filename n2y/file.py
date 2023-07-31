@@ -1,7 +1,4 @@
-import logging
-
-
-logger = logging.getLogger(__name__)
+from n2y.logger import logger
 
 
 class File:

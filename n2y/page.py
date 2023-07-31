@@ -1,12 +1,11 @@
-import logging
-
-from .blocks import ChildDatabaseBlock, ChildPageBlock
-
+from n2y.logger import logger
 from n2y.utils import fromisoformat
 from n2y.property_values import TitlePropertyValue
+from n2y.blocks import ChildDatabaseBlock, ChildPageBlock
 
 
-logger = logging.getLogger(__name__)
+class PageProperties(dict):
+    ...
 
 
 class Page:
@@ -104,4 +103,4 @@ class Page:
         return self.block.to_pandoc()
 
     def properties_to_values(self, pandoc_format=None):
-        return {k: v.to_value(pandoc_format) for k, v in self.properties.items()}
+        return PageProperties({k: v.to_value(pandoc_format) for k, v in self.properties.items()})

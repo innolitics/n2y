@@ -1,17 +1,14 @@
 import os
 import json
-import logging
 import tempfile
 import subprocess
 from pathlib import Path
 
 from pandoc.types import Para, Image
 
-from n2y.blocks import FencedCodeBlock
+from n2y.logger import logger
 from n2y.errors import UseNextClass
-
-
-logger = logging.getLogger(__name__)
+from n2y.blocks import FencedCodeBlock
 
 mermaid_config = {
     "flowchart": {

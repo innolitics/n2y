@@ -1,5 +1,4 @@
 import re
-import logging
 from collections import deque
 
 from pandoc.types import (
@@ -7,11 +6,9 @@ from pandoc.types import (
     Underline, Math, InlineMath
 )
 
-from n2y.utils import pandoc_write_or_log_errors
+from n2y.logger import logger
 from n2y.notion_mocks import mock_rich_text
-
-
-logger = logging.getLogger(__name__)
+from n2y.utils import pandoc_write_or_log_errors
 
 
 class RichText:

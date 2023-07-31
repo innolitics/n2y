@@ -1,5 +1,3 @@
-import logging
-
 from pandoc.types import Note
 
 from n2y.database import Database
@@ -7,8 +5,6 @@ from n2y.errors import PluginError, UseNextClass
 from n2y.mentions import PageMention
 
 plugin_data_key = "n2y.plugins.dbfootnotes"
-
-logger = logging.getLogger(__name__)
 
 
 class PageMentionFootnote(PageMention):
@@ -47,8 +43,8 @@ class PageMentionFootnote(PageMention):
             # This could occur if the user referenced a Footnotes DB on a different page, which
             # we explicitly do not support.
             if (
-                not self.mentioned_page_parent_parent.notion_data["id"]
-                == self.block.page.notion_data["id"]
+                self.mentioned_page_parent_parent.notion_data["id"]
+                != self.block.page.notion_data["id"]
             ):
                 try:
                     footnote_identifier = (

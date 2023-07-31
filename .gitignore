@@ -6,6 +6,5 @@ build/
 dist/
 .vscode
 venv
-requirements.txt
 .tool-versions
 _debug_pkg

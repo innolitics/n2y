@@ -48,8 +48,8 @@ def test_get_class_fallthrough():
     client.load_plugin({"blocks": {"paragraph": SometimesParagraph}})
     sometimes = client.wrap_notion_block(mock_paragraph_block([("sometimes", {})]), None, False)
     othertimes = client.wrap_notion_block(mock_paragraph_block([("othertimes", {})]), None, False)
-    assert type(sometimes) == SometimesParagraph
-    assert type(othertimes) == ParagraphBlock
+    assert type(sometimes) is SometimesParagraph
+    assert type(othertimes) is ParagraphBlock
 
 
 def test_load_plugin_invalid_page_class():

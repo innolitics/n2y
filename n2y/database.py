@@ -1,9 +1,5 @@
-import logging
-
+from n2y.logger import logger
 from n2y.utils import fromisoformat, sanitize_filename
-
-
-logger = logging.getLogger(__name__)
 
 
 class Database:

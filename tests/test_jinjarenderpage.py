@@ -82,8 +82,9 @@ def test_jinja_syntax_err():
     caption = mock_rich_text_array('{jinja=gfm}')
     jinja_code = "{% huhwhat 'hotel', 'california' %}"
     page = process_jinja_block(client, caption, jinja_code)
-    with raises(TemplateSyntaxError):
-        page.to_pandoc()
+    pandoc_ast = page.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert 'jinja2.exceptions.TemplateSyntaxError' in markdown
 
 
 def test_jinja_render_gfm():
@@ -149,6 +150,52 @@ def test_jinja_render_with_database():
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert markdown == "ab\n"
+
+
+def test_jinja_render_with_missing_database():
+    client = Client('')
+    database_notion_data = mock_database(title='My DB')
+    mention_notion_data = mock_database_mention(database_notion_data['id'])
+    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
+    caption = [
+        mock_rich_text('{jinja=gfm} '),
+        mock_rich_text('My DB', mention=mention_notion_data),
+    ]
+    jinja_code = "{{ databases['MISSING'] }}"
+
+    with patch.object(Client, "get_notion_database") as mock_get_notion_database:
+        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+            mock_get_notion_database.return_value = database_notion_data
+            mock_get_database_notion_pages.return_value = database_pages_notion_data
+            page = process_jinja_block(client, caption, jinja_code)
+            pandoc_ast = page.to_pandoc()
+
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert 'You attempted to access the "MISSING" database.' in markdown
+    assert 'The only available database is "My DB".' in markdown
+
+
+def test_jinja_render_with_missing_page_property():
+    client = Client('')
+    database_notion_data = mock_database(title='My DB')
+    mention_notion_data = mock_database_mention(database_notion_data['id'])
+    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
+    caption = [
+        mock_rich_text('{jinja=gfm} '),
+        mock_rich_text('My DB', mention=mention_notion_data),
+    ]
+    jinja_code = "{{ page['MISSING'] }}"
+
+    with patch.object(Client, "get_notion_database") as mock_get_notion_database:
+        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+            mock_get_notion_database.return_value = database_notion_data
+            mock_get_database_notion_pages.return_value = database_pages_notion_data
+            page = process_jinja_block(client, caption, jinja_code)
+            pandoc_ast = page.to_pandoc()
+
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert 'You attempted to access the "MISSING" page property.' in markdown
+    assert 'The only available property is "title".' in markdown
 
 
 def test_jinja_render_plain():

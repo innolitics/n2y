@@ -1,19 +1,17 @@
 import functools
 import re
-from time import sleep
 import yaml
-import logging
-from datetime import datetime
 import numbers
+from time import sleep
+from datetime import datetime
 
 import pandoc
-from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
 from plumbum import ProcessExecutionError
+from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
 
 from n2y.errors import HTTPResponseError, PandocASTParseError
+from n2y.logger import logger
 
-
-logger = logging.getLogger(__name__)
 # see https://pandoc.org/MANUAL.html#exit-codes
 PANDOC_PARSE_ERROR = 64
 
@@ -45,7 +43,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
     # slow) for basic cases with just spaces and strings
     if pandoc_ast is None or pandoc_ast == []:
         return ""
-    elif type(pandoc_ast) == list and all(type(n) in [Str, Space] for n in pandoc_ast):
+    elif type(pandoc_ast) is list and all(type(n) in [Str, Space] for n in pandoc_ast):
         # TODO: optimize performance for some other basic cases
         return ''.join(
             ' ' if isinstance(n, Space) else n[0]
@@ -239,6 +237,29 @@ def share_link_from_id(id):
 
 def strip_hyphens(string):
     return string.replace("-", "")
+
+
+def stringify_list(array, wrap_in_quotes=False):
+    if wrap_in_quotes:
+        array = [f'"{item}"' for item in array]
+    length = len(array)
+    if length == 0:
+        return ''
+    elif length == 1:
+        return array[0]
+    elif length == 2:
+        return f'{array[0]} and {array[1]}'
+    else:
+        return ', '.join(array[:-1]) + ", and " + array[-1]
+
+
+def available_from_list(collection, singular, plural):
+    if len(collection) == 0:
+        return f'There are no available {plural}'
+    elif len(collection) == 1:
+        return f'The only available {singular} is "{collection[0]}"'
+    else:
+        return f'The available {plural} are {stringify_list(collection, wrap_in_quotes=True)}'
 
 
 def load_yaml(data):

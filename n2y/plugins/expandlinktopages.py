@@ -1,8 +1,5 @@
-import logging
-
+from n2y.logger import logger
 from n2y.blocks import LinkToPageBlock
-
-logger = logging.getLogger(__name__)
 
 
 class ExpandingLinkToPageBlock(LinkToPageBlock):
