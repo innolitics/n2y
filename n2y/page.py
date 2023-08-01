@@ -5,7 +5,7 @@ from n2y.blocks import ChildDatabaseBlock, ChildPageBlock
 
 
 class PageProperties(dict):
-    ...
+    pass
 
 
 class Page:

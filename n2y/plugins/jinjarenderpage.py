@@ -269,10 +269,10 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
 
     def _log_jinja_error(self, err):
         message = str(err)
-        block_ref = f'\nSee the Notion code block here: {self.notion_url}.'
+        block_ref = f'\nSee the Notion code block here: {self.notion_url}'
         self.error = (
-            'Error rendering Jinja template on page: ' +
-            f'{self.page.title.to_plain_text()}.' if self.page else 'Unknown'
+            'Error rendering Jinja template on page: '
+            f'{self.page.title.to_plain_text()}.' if self.page else 'Unknown.'
         )
 
         if (db_err := "JinjaDatabaseCache object' has no attribute '") in message:
@@ -282,7 +282,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 f'{available_from_list(list(self.databases.keys()), "database", "databases")}.'
                 " Note that databases must be mentioned in the Notion code block's caption to "
                 'be available. Also, note that the plugin must have permission to read the '
-                'database via the NOTION_ACCESS_TOKEN'
+                'database via the NOTION_ACCESS_TOKEN.'
             )
         elif (pg_err := "PageProperties object' has no attribute '") in message:
             split_msg = message.split(pg_err)

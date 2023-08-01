@@ -142,7 +142,7 @@ def database_to_yaml(
                 )
             else:
                 result[content_property] = None
-        results.append(result)
+        results.append(dict(result))
     return results
 
 
