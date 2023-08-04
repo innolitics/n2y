@@ -362,10 +362,11 @@ class ImageBlock(Block):
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page, self.notion_id)
         caption = []
+        fig_flag = ''
         if self.caption:
+            fig_flag = 'fig:'
             caption = self.caption.to_pandoc()
-        return Para([Image(('', [], []), caption, (url, ''))])
-
+        return Para([Image(('', [], []), caption, (url, fig_flag))])
 
 class TableBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
