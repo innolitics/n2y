@@ -368,6 +368,7 @@ class ImageBlock(Block):
             caption = self.caption.to_pandoc()
         return Para([Image(('', [], []), caption, (url, fig_flag))])
 
+
 class TableBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
