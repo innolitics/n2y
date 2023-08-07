@@ -307,7 +307,7 @@ def test_image_internal_with_caption(mock_download):
     mock_download.return_value = "image.png"
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para(
-        [Image(("", [], []), [Str("test"), Space(), Str("image")], ("image.png", ""))]
+        [Image(("", [], []), [Str("test"), Space(), Str("image")], ("image.png", "fig:"))]
     )
     assert markdown == "![test image](image.png)\n"
 
