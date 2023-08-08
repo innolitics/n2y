@@ -70,7 +70,12 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                             'Syntax Error In Graph'
                         )
                 url = self.client.save_file(content, self.page, '.png', self.notion_id)
-            return Para([Image(('', [], []), self.caption.to_pandoc(), (url, ''))])
+                caption = []
+                fig_flag = ''
+                if self.caption:
+                    fig_flag = 'fig:'
+                    caption = self.caption.to_pandoc()
+            return Para([Image(('', [], []), caption, (url, fig_flag))])
         except subprocess.CalledProcessError as exc:
             # as of now, mmdc does not ever return a non-zero error code, so
             # this won't ever be hit
