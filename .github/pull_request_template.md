@@ -1,3 +1,7 @@
+# Describe Your Changes
+
+# How Did You Test It
+
 # Author's Checklist
 
 Before assigning reviewers, step through the following checklist. Check each item once it's completed. If an item is skipped, write an explanation below the item.
