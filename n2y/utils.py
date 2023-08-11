@@ -16,12 +16,6 @@ from n2y.logger import logger
 PANDOC_PARSE_ERROR = 64
 
 
-def custom_representer(dumper, data):
-    return dumper.represent_mapping(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.__dict__
-    )
-
-
 def process_notion_date(notion_date):
     if notion_date is None:
         return None

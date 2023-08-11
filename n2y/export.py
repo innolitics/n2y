@@ -11,7 +11,6 @@ from n2y.logger import logger
 from n2y.utils import (
     pandoc_format_to_file_extension,
     pandoc_write_or_log_errors,
-    custom_representer,
     sanitize_filename,
 )
 
@@ -51,7 +50,7 @@ def _page_properties(
         else:
             msg = "Property %s not found in page %s; skipping remapping from %s to %s"
             logger.warning(msg, original, page.notion_url, original, new)
-    return properties
+    return dict(properties)
 
 
 def export_page(
@@ -75,7 +74,6 @@ def export_page(
 
     page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
     if isinstance(page_content, str) and yaml_front_matter:
-        yaml.representer.SafeRepresenter.add_representer(None, custom_representer)
         page_properties = _page_properties(
             page,
             pandoc_format,
