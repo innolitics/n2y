@@ -7,8 +7,8 @@ import yaml
 
 import n2y.logger
 from n2y import notion
-from n2y.config import load_config, merge_default_config
 from n2y.utils import share_link_from_id
+from n2y.config import load_config, merge_default_config
 from n2y.export import export_page, database_to_yaml, database_to_files, write_document
 
 
