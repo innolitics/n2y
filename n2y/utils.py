@@ -18,7 +18,7 @@ PANDOC_PARSE_ERROR = 64
 
 def custom_representer(dumper, data):
     return dumper.represent_mapping(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, dict(data)
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.__dict__
     )
 
 
