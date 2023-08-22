@@ -335,7 +335,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 'environment'].filters['render_content'] = render_content
         try:
             self.rendered_text = render_from_string(jinja_code, context, jinja_environment)
-        except (UndefinedError, TemplateSyntaxError) as err:
+        except Exception as err:
             self._render_error(err)
         self.render_count += 1
 
