@@ -72,7 +72,6 @@ class Page:
         return self._children
 
     def get_children(self):
-        self.block.get_children()
         self._children = []
         for block in self.block.children:
             self._append_children(block)

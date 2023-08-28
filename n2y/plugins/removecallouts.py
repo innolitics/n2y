@@ -10,7 +10,7 @@ class RemoveCalloutBlock(CalloutBlock):
     """
 
     def __init__(self, client, notion_data, page, get_children=True):
-        pass
+        self.children = None
 
     def to_pandoc(self):
         # It should be possible to return `pandoc.types.Null`, but that didn't

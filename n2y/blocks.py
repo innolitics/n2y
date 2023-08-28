@@ -9,6 +9,7 @@ from pandoc.types import (
 )
 
 from n2y.logger import logger
+from n2y.notion_mocks import mock_block
 from n2y.utils import yaml_map_to_meta, header_id_from_text
 
 
@@ -206,11 +207,14 @@ class NumberedListItemBlock(ListItemBlock):
 
 
 class HeadingBlock(Block):
+    level = None
+
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
         )
+        self.section_id = header_id_from_text(self.rich_text.to_plain_text())
 
         # The Notion UI allows one to bold the text in a header, but the bold
         # styling isn't displayed. Thus, to avoid unexpected appearances of
@@ -219,8 +223,7 @@ class HeadingBlock(Block):
             rich_text.bold = False
 
     def to_pandoc(self):
-        section_id = header_id_from_text(self.rich_text.to_plain_text())
-        return Header(self.level, (section_id, [], []), self.rich_text.to_pandoc())
+        return Header(self.level, (self.section_id, [], []), self.rich_text.to_pandoc())
 
 
 class HeadingOneBlock(HeadingBlock):
@@ -233,6 +236,71 @@ class HeadingTwoBlock(HeadingBlock):
 
 class HeadingThreeBlock(HeadingBlock):
     level = 3
+
+
+class TableOfContentsBlock(NumberedListItemBlock):
+    def __init__(self, client, notion_data, page, get_children=False):
+        super(ListItemBlock, self).__init__(client, notion_data, page, False)
+
+    def get_children(self):
+        self.get_subheaders()
+        children: list[TableOfContentsItemBlock] = []
+        subsections: list[list[HeadingBlock]] = []
+        index: int = -1
+        for header in self.subheaders:
+            if header.level == 1:
+                index += 1
+                subsections.append([header])
+            if header.level > 1:
+                subsections[index].append(header)
+        for subsection in subsections:
+            children.append(TableOfContentsItemBlock(self.client, subsection, self.page))
+        if children:
+            self.has_children = True
+        self.children = children
+
+    def get_subheaders(self):
+        self.subheaders: list[HeadingBlock] = []
+        for i, child in enumerate(self.page.block.children):
+            if isinstance(child, HeadingBlock):
+                self.subheaders.append(child)
+
+    def to_pandoc(self):
+        self.get_children()
+        if not self.children:
+            return None
+        else:
+            content = []
+            children = self.children_to_pandoc()
+            for child in children:
+                content.append(child)
+            return content
+
+
+class TableOfContentsItemBlock(NumberedListItemBlock):
+    def __init__(self, client, section: list[HeadingBlock], page, get_children=True):
+        notion_data = mock_block('table_of_contents_item', None)
+        self.header = section.pop(0)
+        self.subheaders = section
+        self.rich_text = self.header.rich_text
+        self.rich_text.href = self.header.section_id
+        super(ListItemBlock, self).__init__(client, notion_data, page, get_children)
+
+    def get_children(self):
+        children: list[TableOfContentsItemBlock] = []
+        subsections: list[list[HeadingBlock]] = []
+        index: int = -1
+        for header in self.subheaders:
+            if header.level == self.header.level + 1:
+                index += 1
+                subsections.append([header])
+            if header.level > self.header.level + 1:
+                subsections[index].append(header)
+        for subsection in subsections:
+            children.append(TableOfContentsItemBlock(self.client, subsection, self.page))
+        if children:
+            self.has_children = True
+        self.children = children
 
 
 class DividerBlock(Block):
@@ -504,10 +572,6 @@ class NoopBlock(Block):
         return None
 
 
-class TableOfContentsBlock(NoopBlock):
-    pass
-
-
 class BreadcrumbBlock(NoopBlock):
     pass
 
@@ -683,7 +747,7 @@ DEFAULT_BLOCKS = {
     "equation": EquationBlock,
     "divider": DividerBlock,
     "table_of_contents": TableOfContentsBlock,
-    "breadcrumb": TableOfContentsBlock,
+    "breadcrumb": BreadcrumbBlock,
     "column": ColumnBlock,
     "column_list": ColumnListBlock,
     "link_preview": LinkPreviewBlock,
