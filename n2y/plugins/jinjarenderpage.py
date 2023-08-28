@@ -122,7 +122,7 @@ def remove_words(words, text):
     return text
 
 
-def _fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
+def _fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=False):
     found = []
     key_filter = lambda d: len(d[key]) if by_length else d[key]
     sorted_term_list = sorted(term_list, key=key_filter, reverse=reverse)
@@ -136,7 +136,7 @@ def _fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
     return found
 
 
-def fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=True):
+def fuzzy_find_in(term_list, text, key='Name', by_length=True, reverse=False):
     """
     Used to search a markdown string, which may have been modified using pandoc's smart extension,
     for the value at a specified key in a dicionary for all dictionaries in a given list of them.
