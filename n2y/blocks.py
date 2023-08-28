@@ -9,8 +9,8 @@ from pandoc.types import (
 )
 
 from n2y.logger import logger
-from n2y.notion_mocks import mock_block
-from n2y.utils import yaml_map_to_meta, header_id_from_text
+from n2y.notion_mocks import mock_block, mock_rich_text
+from n2y.utils import yaml_map_to_meta, header_id_from_text, pandoc_write_or_log_errors
 
 
 class Block:
@@ -206,6 +206,80 @@ class NumberedListItemBlock(ListItemBlock):
         return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in items])
 
 
+class TableOfContentsBlock(Block):
+    def __init__(self, client, notion_data, page, get_children=False):
+        super().__init__(client, notion_data, page, False)
+
+    def get_children(self):
+        children: list[TableOfContentsItemBlock] = []
+        subsections: list[list[Header]] = []
+        index: int = -1
+        for header in self.subheaders:
+            if header[0] == 1:
+                index += 1
+                subsections.append([header])
+            if header[0] > 1:
+                subsections[index].append(header)
+        for subsection in subsections:
+            children.append(TableOfContentsItemBlock(self.client, subsection, self.page))
+        if children:
+            self.has_children = True
+        self.children = children
+
+    def get_subheaders(self, page_ast):
+        self.subheaders: list[Header] = []
+        for child in page_ast:
+            if isinstance(child, Header):
+                self.subheaders.append(child)
+
+    def to_pandoc(self):
+        if not self.children:
+            return None
+        else:
+            return self.children_to_pandoc()
+
+    def render_toc(self, page_ast):
+        self.get_subheaders(page_ast)
+        self.get_children()
+        return self.to_pandoc()
+
+
+class TableOfContentsItemBlock(NumberedListItemBlock):
+    def __init__(self, client, section: list[Header], page, get_children=True):
+        notion_data = mock_block('table_of_contents_item', None)
+        self.header = section.pop(0)
+        self.level = self.header[0]
+        self.subheaders = section
+        header_text = pandoc_write_or_log_errors(
+            self.header[2],
+            format='gfm',
+            options=[],
+        )[:-1]
+        rich_text_block = mock_rich_text(header_text, href=f"#{self.header[1][0]}")
+        self.rich_text = client.wrap_notion_rich_text(rich_text_block)
+        super(ListItemBlock, self).__init__(client, notion_data, page, get_children)
+
+    def get_children(self):
+        children: list[TableOfContentsItemBlock] = []
+        subsections: list[list[Header]] = []
+        index: int = -1
+        for header in self.subheaders:
+            if header[0] == self.level + 1:
+                index += 1
+                subsections.append([header])
+            if header[0] > self.level + 1:
+                subsections[index].append(header)
+        for subsection in subsections:
+            children.append(TableOfContentsItemBlock(self.client, subsection, self.page))
+        if children:
+            self.has_children = True
+        self.children = children
+
+    @classmethod
+    def list_to_pandoc(klass, items):
+        return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in items])
+
+
 class HeadingBlock(Block):
     level = None
 
@@ -236,71 +310,6 @@ class HeadingTwoBlock(HeadingBlock):
 
 class HeadingThreeBlock(HeadingBlock):
     level = 3
-
-
-class TableOfContentsBlock(NumberedListItemBlock):
-    def __init__(self, client, notion_data, page, get_children=False):
-        super(ListItemBlock, self).__init__(client, notion_data, page, False)
-
-    def get_children(self):
-        self.get_subheaders()
-        children: list[TableOfContentsItemBlock] = []
-        subsections: list[list[HeadingBlock]] = []
-        index: int = -1
-        for header in self.subheaders:
-            if header.level == 1:
-                index += 1
-                subsections.append([header])
-            if header.level > 1:
-                subsections[index].append(header)
-        for subsection in subsections:
-            children.append(TableOfContentsItemBlock(self.client, subsection, self.page))
-        if children:
-            self.has_children = True
-        self.children = children
-
-    def get_subheaders(self):
-        self.subheaders: list[HeadingBlock] = []
-        for i, child in enumerate(self.page.block.children):
-            if isinstance(child, HeadingBlock):
-                self.subheaders.append(child)
-
-    def to_pandoc(self):
-        self.get_children()
-        if not self.children:
-            return None
-        else:
-            content = []
-            children = self.children_to_pandoc()
-            for child in children:
-                content.append(child)
-            return content
-
-
-class TableOfContentsItemBlock(NumberedListItemBlock):
-    def __init__(self, client, section: list[HeadingBlock], page, get_children=True):
-        notion_data = mock_block('table_of_contents_item', None)
-        self.header = section.pop(0)
-        self.subheaders = section
-        self.rich_text = self.header.rich_text
-        self.rich_text.href = self.header.section_id
-        super(ListItemBlock, self).__init__(client, notion_data, page, get_children)
-
-    def get_children(self):
-        children: list[TableOfContentsItemBlock] = []
-        subsections: list[list[HeadingBlock]] = []
-        index: int = -1
-        for header in self.subheaders:
-            if header.level == self.header.level + 1:
-                index += 1
-                subsections.append([header])
-            if header.level > self.header.level + 1:
-                subsections[index].append(header)
-        for subsection in subsections:
-            children.append(TableOfContentsItemBlock(self.client, subsection, self.page))
-        if children:
-            self.has_children = True
-        self.children = children
 
 
 class DividerBlock(Block):
@@ -747,6 +756,7 @@ DEFAULT_BLOCKS = {
     "equation": EquationBlock,
     "divider": DividerBlock,
     "table_of_contents": TableOfContentsBlock,
+    "table_of_contents_item": TableOfContentsItemBlock,
     "breadcrumb": BreadcrumbBlock,
     "column": ColumnBlock,
     "column_list": ColumnListBlock,
