@@ -103,7 +103,7 @@ class Page:
         """
         Generate a table of contents for the page.
         """
-        if type(toc := self.block.children[0]) == TableOfContentsBlock:
+        if type(toc := self.block.children[0]) is TableOfContentsBlock:
             toc_ast = toc.render_toc(ast[1])
             toc_ast.extend(ast[1])
             ast[1] = toc_ast
