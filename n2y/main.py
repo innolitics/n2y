@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import argparse
-import pkg_resources
+from importlib.metadata import version
 import yaml
 
 import n2y.logger
@@ -30,7 +30,7 @@ def main(raw_args, access_token, n2y_cache=None):
         help="Level to set the root logging module to",
     )
     parser.add_argument(
-        "--version", action='version', version=pkg_resources.require("n2y")[0].version,
+        "--version", action='version', version=version('n2y'),
         help="The version of n2y installed",
     )
 
