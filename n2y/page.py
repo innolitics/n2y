@@ -103,14 +103,21 @@ class Page:
         """
         Generate a table of contents for the page.
         """
-        if type(toc := self.block.children[0]) is TableOfContentsBlock:
-            toc_ast = toc.render_toc(ast[1])
-            toc_ast.extend(ast[1])
-            ast[1] = toc_ast
+        toc_indecies = []
+        def is_toc(i, block):
+            if type(block) is TableOfContentsBlock:
+                toc_indecies.append(i)
+                return True
+            return False
+        if any(is_toc(*t) for t in enumerate(self.block.children)):
+            child_ast = ast[1]
+            for i in toc_indecies:
+                self.block.children[i].render_toc(child_ast)
+            ast = self.block.to_pandoc()
         return ast
 
-    def to_pandoc(self):
-        return self.generate_toc(self.block.to_pandoc())
+    def to_pandoc(self, ignore_toc=False):
+        return (ast := self.block.to_pandoc()) if ignore_toc else self.generate_toc(ast)
 
     def properties_to_values(self, pandoc_format=None):
         return PageProperties({k: v.to_value(pandoc_format) for k, v in self.properties.items()})

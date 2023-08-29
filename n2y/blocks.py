@@ -226,11 +226,11 @@ class TableOfContentsBlock(Block):
             self.has_children = True
         self.children = children
 
-    def get_subheaders(self, page_ast):
+    def get_subheaders(self, ast_list):
         self.subheaders: list[Header] = []
-        for child in page_ast:
-            if isinstance(child, Header):
-                self.subheaders.append(child)
+        for block in ast_list:
+            if isinstance(block, Header):
+                self.subheaders.append(block)
 
     def to_pandoc(self):
         if not self.children:
@@ -238,10 +238,9 @@ class TableOfContentsBlock(Block):
         else:
             return self.children_to_pandoc()
 
-    def render_toc(self, page_ast):
-        self.get_subheaders(page_ast)
+    def render_toc(self, ast_list):
+        self.get_subheaders(ast_list)
         self.get_children()
-        return self.to_pandoc()
 
 
 class TableOfContentsItemBlock(NumberedListItemBlock):

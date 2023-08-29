@@ -201,17 +201,17 @@ class JinjaRenderPage(Page):
                 'environment': _create_jinja_environment(),
             }
 
-    def to_pandoc(self):
-        ast = super().to_pandoc()
+    def to_pandoc(self, ignore_toc=False):
+        ast = super().to_pandoc(ignore_toc=True)
         jinja_environment = self.client.plugin_data[
             'jinjarenderpage'][self.notion_id]['environment']
         first_pass_output = jinja_environment.globals["first_pass_output"]
         if first_pass_output.second_pass_is_requested:
             first_pass_output_text = pandoc_ast_to_markdown(ast)
             first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
-            ast = super().to_pandoc()
+            ast = super().to_pandoc(ignore_toc=True)
             jinja2.clear_caches()
-        return self.generate_toc(ast)
+        return ast if ignore_toc else self.generate_toc(ast)
 
 
 class JinjaFencedCodeBlock(FencedCodeBlock):
