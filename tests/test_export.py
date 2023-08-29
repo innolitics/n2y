@@ -4,6 +4,8 @@ from n2y.export import _page_properties, _page_filename
 from n2y.notion_mocks import mock_page, mock_rich_text_property_value
 from n2y import notion
 
+pdf = "T.pdf"
+
 
 @pytest.fixture
 def page():
@@ -34,10 +36,10 @@ def test_page_properties_mapping(page):
 
 
 def test_page_filename_no_template(page):
-    assert _page_filename(page, "pdf") == "T.pdf"
-    assert _page_filename(page, "pdf+extra") == "T.pdf"
-    assert _page_filename(page, "pdf-extra") == "T.pdf"
-    assert _page_filename(page, "pdf-extra+other") == "T.pdf"
+    assert _page_filename(page, "pdf") == pdf
+    assert _page_filename(page, "pdf+extra") == pdf
+    assert _page_filename(page, "pdf-extra") == pdf
+    assert _page_filename(page, "pdf-extra+other") == pdf
 
 
 def test_page_filename_template(page):
@@ -47,4 +49,4 @@ def test_page_filename_template(page):
 
 
 def test_page_filename_template_malformed(page):
-    assert _page_filename(page, "pdf", "{missing}.p") == "T.pdf"
+    assert _page_filename(page, "pdf", "{missing}.p") == pdf

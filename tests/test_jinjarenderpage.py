@@ -15,6 +15,9 @@ from n2y.notion_mocks import (
     mock_rich_text_array, mock_block,
 )
 
+format_def = '{jinja=gfm}'
+spaced_format_def = '{jinja=gfm} '
+
 
 def test_join_to_basic():
     foreign_keys = ['1', '3']
@@ -79,7 +82,7 @@ def process_jinja_block(client, caption, jinja_code):
 
 def test_jinja_syntax_err():
     client = Client('')
-    caption = mock_rich_text_array('{jinja=gfm}')
+    caption = mock_rich_text_array(format_def)
     jinja_code = "{% huhwhat 'hotel', 'california' %}"
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
@@ -89,7 +92,7 @@ def test_jinja_syntax_err():
 
 def test_jinja_render_gfm():
     client = Client('')
-    caption = mock_rich_text_array('{jinja=gfm}')
+    caption = mock_rich_text_array(format_def)
     jinja_code = "{% for v in ['a', 'b'] %}{{v}}{% endfor %}"
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
@@ -99,7 +102,7 @@ def test_jinja_render_gfm():
 
 def test_jinja_render_gfm_with_second_pass():
     client = Client('')
-    caption = mock_rich_text_array('{jinja=gfm}')
+    caption = mock_rich_text_array(format_def)
     jinja_code = "a{% for v in first_pass_output.lines %}{{v}}{% endfor %}"
     page = process_jinja_block(client, caption, jinja_code)
     page_block = page.block
@@ -136,7 +139,7 @@ def test_jinja_render_with_database():
     mention_notion_data = mock_database_mention(database_notion_data['id'])
     database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
     caption = [
-        mock_rich_text('{jinja=gfm} '),
+        mock_rich_text(spaced_format_def),
         mock_rich_text('My DB', mention=mention_notion_data),
     ]
     jinja_code = "{% for v in databases['My DB'] %}{{v.title}}{% endfor %}"
@@ -158,7 +161,7 @@ def test_jinja_render_with_missing_database():
     mention_notion_data = mock_database_mention(database_notion_data['id'])
     database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
     caption = [
-        mock_rich_text('{jinja=gfm} '),
+        mock_rich_text(spaced_format_def),
         mock_rich_text('My DB', mention=mention_notion_data),
     ]
     jinja_code = "{{ databases['MISSING'] }}"
@@ -181,7 +184,7 @@ def test_jinja_render_with_missing_page_property():
     mention_notion_data = mock_database_mention(database_notion_data['id'])
     database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
     caption = [
-        mock_rich_text('{jinja=gfm} '),
+        mock_rich_text(spaced_format_def),
         mock_rich_text('My DB', mention=mention_notion_data),
     ]
     jinja_code = "{{ page['MISSING'] }}"

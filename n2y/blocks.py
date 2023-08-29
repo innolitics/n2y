@@ -98,7 +98,7 @@ class Block:
 
 class ListItemBlock(Block):
     @classmethod
-    def list_to_pandoc(klass, items):
+    def list_to_pandoc(cls, items):
         raise NotImplementedError()
 
 
@@ -170,7 +170,7 @@ class BulletedListItemBlock(ListItemBlock):
         return content
 
     @classmethod
-    def list_to_pandoc(klass, items):
+    def list_to_pandoc(cls, items):
         return BulletList([b.to_pandoc() for b in items])
 
 
@@ -202,7 +202,7 @@ class NumberedListItemBlock(ListItemBlock):
         return content
 
     @classmethod
-    def list_to_pandoc(klass, items):
+    def list_to_pandoc(cls, items):
         return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in items])
 
 
@@ -275,7 +275,7 @@ class TableOfContentsItemBlock(NumberedListItemBlock):
         self.children = children
 
     @classmethod
-    def list_to_pandoc(klass, items):
+    def list_to_pandoc(cls, items):
         return OrderedList((1, Decimal(), Period()), [b.to_pandoc() for b in items])
 
 
