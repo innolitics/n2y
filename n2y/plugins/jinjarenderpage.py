@@ -39,7 +39,7 @@ from n2y.errors import UseNextClass
 from n2y.export import database_to_yaml
 from n2y.mentions import DatabaseMention
 from n2y.rich_text import MentionRichText
-from n2y.blocks import FencedCodeBlock, HeadingBlock, TableOfContentsBlock
+from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.utils import pandoc_ast_to_markdown, available_from_list
 
 

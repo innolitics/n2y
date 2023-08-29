@@ -98,7 +98,7 @@ class Page:
         else:
             assert parent_type == "database_id"
             return self.client.get_database(self.notion_parent["database_id"])
-    
+
     def generate_toc(self, ast):
         """
         Generate a table of contents for the page.
