@@ -104,6 +104,7 @@ class Page:
         Generate a table of contents for the page.
         """
         toc_indecies = []
+
         def is_toc(i, block):
             if type(block) is TableOfContentsBlock:
                 toc_indecies.append(i)
