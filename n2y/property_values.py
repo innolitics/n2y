@@ -39,7 +39,7 @@ class TextPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.rich_text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
 
-    def to_value(self, pandoc_format):
+    def to_value(self, pandoc_format='gfm'):
         if pandoc_format is None:
             return self.rich_text.to_plain_text()
         else:
@@ -214,7 +214,7 @@ class RollupPropertyValue(PropertyValue):
             self.value = notion_rollup[notion_rollup["type"]]
         # TODO: handle arrays of dates
 
-    def to_value(self, pandoc_format):
+    def to_value(self, pandoc_format='gfm'):
         if self.rollup_type == "date":
             return self.value
         elif self.rollup_type == "string":
