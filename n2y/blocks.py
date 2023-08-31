@@ -191,7 +191,7 @@ class NumberedListItemBlock(BulletedListItemBlock):
 
 class TableOfContentsBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
-        self.subheaders: list[Header]|None = \
+        self.subheaders: list[Header] | None = \
             notion_data[notion_data["type"]].get('subheaders', None)
         super().__init__(client, notion_data, page, get_children)
 
@@ -216,7 +216,7 @@ class TableOfContentsBlock(Block):
             self.children = None
 
     def get_subheaders(self, ast_list):
-        self.subheaders: list[Header]|None = []
+        self.subheaders: list[Header] | None = []
         for block in ast_list:
             if isinstance(block, Header):
                 self.subheaders.append(block)

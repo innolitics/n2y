@@ -220,7 +220,15 @@ def test_all_blocks_page_to_markdown(tmpdir):
         "Column 1.2" in lines,
         "Column 2" in lines,
     ]
-
+    assert lines[5:12] == [
+        '1.  [Heading 1](#heading-1)',
+        '    1.  [Heading 2](#heading-2)',
+        '        1.  [Heading 3](#heading-3)',
+        '2.  [Header One](#header-one)',
+        '    1.  [Header Two](#header-two)',
+        '        1.  [Header Three](#header-three)',
+        '3.  [Columns](#columns)'
+    ]
     assert "Text block" in lines
     assert "Text *italics* too" in lines
     assert "-   [ ] To do list block" in lines
