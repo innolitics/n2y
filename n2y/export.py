@@ -50,7 +50,7 @@ def _page_properties(
         else:
             msg = "Property %s not found in page %s; skipping remapping from %s to %s"
             logger.warning(msg, original, page.notion_url, original, new)
-    return dict(properties)
+    return properties
 
 
 def export_page(
