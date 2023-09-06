@@ -27,6 +27,7 @@ of the codeblock may be accessed via the database name.
 """
 import re
 import traceback
+import functools
 
 import pandoc
 import jinja2
@@ -179,8 +180,10 @@ class JinjaCacheObject(dict):
 class JinjaDatabaseItem(JinjaCacheObject):
     ...
 
+
 class PageProperties(JinjaCacheObject):
     ...
+
 
 class JinjaDatabaseCache(JinjaCacheObject):
     def __getitem__(self, __key):
@@ -201,8 +204,9 @@ class JinjaDatabaseCache(JinjaCacheObject):
         raise err
 
     def __setitem__(self, __key: str, __value: list):
-        return super().__setitem__(__key, [JinjaDatabaseItem(item, block=self.block) for item in __value])
-
+        return super().__setitem__(__key, [
+            JinjaDatabaseItem(item, block=self.block) for item in __value
+        ])
 
 
 class FirstPassOutput:
@@ -251,8 +255,8 @@ class JinjaRenderPage(Page):
                 'environment': self.jinja_environment,
             }
         else:
-            self.jinja_environment = client.plugin_data['jinjarenderpage']\
-                [self.notion_id]['environment']
+            self.jinja_environment = client.plugin_data[
+                'jinjarenderpage'][self.notion_id]['environment']
 
     def to_pandoc(self, ignore_toc=False):
         ast = super().to_pandoc(ignore_toc=True)
@@ -294,7 +298,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         self.databases = JinjaDatabaseCache(block=self)
         export_defaults = self.client.export_defaults
         for i, database_id in enumerate(self._get_database_ids_from_mentions()):
-            notion_database = self.client.get_database(database_id)
+            database = self.client.get_database(database_id)
             # TODO: Rethink about the database data is accessed from within the
             # templates; perhaps it should be something more like Django's ORM
             # where we can filter and sort the databases via the API, instead of
@@ -303,118 +307,72 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             # defaults and it could provide a mechanism to access the page
             # content from within the Jinja templates, which isn't possible
             # right now.
-            if (database_name := notion_database.title.to_plain_text()) in self.databases:
+            if (database_name := database.title.to_plain_text()) in self.databases:
                 msg = (
                     f'Duplicate database name "{database_name}"'
                     f' when rendering [{self.notion_url}]'
                 )
                 logger.error(msg)
                 raise ValueError(msg)
-            database = database_to_yaml(
-                database=notion_database,
+            db_yaml = database_to_yaml(
+                database=database,
                 pandoc_format=self.pandoc_format,
                 pandoc_options=[],
                 id_property=export_defaults["id_property"],
                 url_property=export_defaults["url_property"],
             )
-            if database is None:
-                ordinal = lambda x: [
-                    "first",
-                    "second",
-                    "third",
-                    "fourth",
-                    "fifth",
-                    "sixth",
-                    "seventh",
-                    "eighth",
-                    "ninth",
-                    "tenth",
-                    "eleventh",
-                    "twelfth"
-                ][x]
-                logger.error(
-                    ' Error retrieving databases for a Jinja template on ' + \
-                    self.page.title.to_plain_text() + '.' + f'The {ordinal(i)}' + \
-                    ' database attemted to access was not found. See the Notion' + \
-                    f' code block here: {self.notion_url}.'
-                )
-            self.databases[database_name] = database
+            self.databases[database_name] = db_yaml
 
-    def _specify_err_msg(self, msg):
-        block_ref:str = f' See the Notion code block here: {self.notion_url}.'
-        line_num: str = traceback.format_exc().split('\n  File "<template>", line ')[1][0]
-        message: str = msg
+    def _specify_err_msg(self, err: Exception):
+        block_ref: str = f'See the Notion code block here: {self.notion_url}.'
+        line_num: str = traceback.format_exc().split('>", line ')[1][0]
+
         if self.exc_info is not None:
-            if type(self.exc_info.object) is JinjaDatabaseCache:
-                if type(self.exc_info.err) is KeyError:
-                    available_props = available_from_list(
+            if type(self.exc_info.err) is KeyError:
+                if type(self.exc_info.object) is JinjaDatabaseCache:
+                    available_props: str = available_from_list(
                         list(self.exc_info.object),
                         'database', 'databases'
                     )
-                    return f' You attempted to access the "{self.exc_info.args[0]}" database on ' + \
-                        f'line {line_num} of said template, but ' + available_props + '. Note ' + \
+                    return f' You attempted to access the "{self.exc_info.args[0]}" database on' + \
+                        f' line {line_num} of said template, but ' + available_props + '. Note ' + \
                         "that databases must be mentioned in the Notion code block's caption to" + \
                         ' be available and the plugin must have permission to read the database' + \
-                        ' via the NOTION_ACCESS_TOKEN.' + block_ref
-            elif type(self.exc_info.object) is JinjaDatabaseItem:
-                if type(self.exc_info.err) is KeyError:
-                    available_props = available_from_list(
+                        ' via the NOTION_ACCESS_TOKEN. ' + block_ref
+                elif type(self.exc_info.object) is JinjaDatabaseItem:
+                    available_props: str = available_from_list(
                         list(self.exc_info.object),
                         'property', 'properties'
                     )
                     return f' You attempted to access the "{self.exc_info.args[0]}" property ' + \
                         f'of a database item on line {line_num} of said template, but ' + \
-                        available_props + '.' + block_ref
-            elif type(self.exc_info.object) is PageProperties:
-                if type(self.exc_info.err) is KeyError:
-                    available_props = available_from_list(
+                        available_props + '. ' + block_ref
+                elif type(self.exc_info.object) is PageProperties:
+                    available_props: str = available_from_list(
                         list(self.exc_info.object),
                         'property', 'properties'
                     )
                     return f' You attempted to access the "{self.exc_info.args[0]}" property' + \
                         f' of this page on line {line_num} of said template, but ' + \
-                        available_props + '.' + block_ref
-        if (db_err := "JinjaDatabaseCache object' has no attribute '") in message:
-            split_msg = msg.split(db_err)
-            available_props = available_from_list(
-                list(self.databases.keys()),
-                "database", "databases"
-            )
-            return f' You attempted to access the "{split_msg[1][:-1]}" database. ' + \
-                available_props + '.  Note that databases must be mentioned in the' + \
-                " Notion code block's caption to be available. Also, note that the" + \
-                ' plugin must have permission to read the database via the' + \
-                ' NOTION_ACCESS_TOKEN.' + block_ref
-        elif (pg_err := "PageProperties object' has no attribute '") in msg:
-            split_msg = msg.split(pg_err)
-            available_props = available_from_list(
-                list(self.page_props.keys()),
-                "property", "properties"
-            )
-            return f' You attempted to access the "{split_msg[1][:-1]}" page property. ' + \
-                available_props + '.' + block_ref
+                        available_props + '. ' + block_ref
+            elif self.exc_info.object in ['test', 'filter']:
+                return f' Recieved the message "{str(err)}" when evaluating line {line_num}. ' + \
+                    f'The Jinja {self.exc_info.object} "{self.exc_info.method}" raised ' + \
+                    'this error when called with the following argument(s): {\n\t"args": ' + \
+                    f'{self.exc_info.args},\n\t"kwargs": {self.exc_info.kwargs}\n' + '}\n' + \
+                    block_ref
+        elif type(err) is jinja2.exceptions.TemplateSyntaxError:
+            return ' There is a syntax error in the Jinja template on line {line_num}.' + \
+                f' Recieved the message {str(err)}. ' + block_ref
 
-        traceback_msg = traceback.format_exc()
-        # if (dict_err := "dict object' has no attribute '") in msg:
-        #     split_msg = msg.split(dict_err)
-        #     target_attr = split_msg[1][:-1]
-        #     line_index = int(traceback_msg.split('\n  File "<template>", line ')[1][0]) - 1
-        #     line = self.jinja_code.splitlines()[line_index]
-        #     available_props = available_from_list(
-        #         list(self.context.keys()),
-        #         "variable", "variables"
-        #     )
-        #     return f' You attempted to access the "{split_msg[1][:-1]}" variable. ' + \
-        #         available_props + '.' + block_ref
-        return ' ' + msg + block_ref + '\n' + traceback_msg
+        return f' Received the message "{str(err)}" when evaluating line {line_num}. ' + block_ref
 
-    def _log_jinja_error(self, err):
-        message = str(err)
+    def _log_jinja_error(self, err: Exception):
         self.error = (
             'Error rendering a Jinja template on '
-            f'{self.page.title.to_plain_text()}.' if self.page else 'Unknown Page'
+            f'{self.page.title.to_plain_text()}.' if self.page else 'Unknown Page.'
         )
-        self.error += self._specify_err_msg(message)
+        self.error += self._specify_err_msg(err)
         logger.error(self.error)
 
     def _render_error(self, err, during_render=True):
@@ -427,6 +385,14 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         return [Para([Code(('', ['markdown'], []), self.error)])]
 
     def _render_text(self):
+        self.jinja_environment.filters = {
+            k: self._debug_assist(v, 'filter', k)
+            for k, v in self.jinja_environment.filters.items()
+        }
+        self.jinja_environment.tests = {
+            k: self._debug_assist(v, 'test', k)
+            for k, v in self.jinja_environment.tests.items()
+        }
         if not getattr(self, 'jinja_code', None):
             self.jinja_code = self.rich_text.to_plain_text()
         if not getattr(self, 'context', None):
@@ -483,16 +449,20 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 children_ast = Plain([Str(self.rendered_text)])
         return children_ast
 
-    def _print_context_debug(self, context):
-        logger.info("Databases")
-        for database_name, database in context["databases"].items():
-            logger.info("  %s [%d]", database_name, len(database))
-            if len(database) > 0:
-                for key in database[0]:
-                    logger.info("    %s", key)
-        logger.info("page")
-        for key, value in context["page"].items():
-            logger.info("  %s: %r", key, value)
+    def _debug_assist(self, func, jinja_type, jinja_ref):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as err:
+                if self.exc_info is None:
+                    if type(args[0]) is jinja2.Environment:
+                        args = list(args[1:])
+                    self.exc_info = JinjaExceptionInfo(
+                        jinja_type, err, jinja_ref, args, kwargs
+                    )
+                raise
+        return wrapper
 
 
 notion_classes = {
