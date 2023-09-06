@@ -297,7 +297,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
     def _get_yaml_from_mentions(self):
         self.databases = JinjaDatabaseCache(block=self)
         export_defaults = self.client.export_defaults
-        for i, database_id in enumerate(self._get_database_ids_from_mentions()):
+        for database_id in self._get_database_ids_from_mentions():
             database = self.client.get_database(database_id)
             # TODO: Rethink about the database data is accessed from within the
             # templates; perhaps it should be something more like Django's ORM
@@ -314,14 +314,13 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 )
                 logger.error(msg)
                 raise ValueError(msg)
-            db_yaml = database_to_yaml(
+            self.databases[database_name] = database_to_yaml(
                 database=database,
                 pandoc_format=self.pandoc_format,
                 pandoc_options=[],
                 id_property=export_defaults["id_property"],
                 url_property=export_defaults["url_property"],
             )
-            self.databases[database_name] = db_yaml
 
     def _specify_err_msg(self, err: Exception):
         block_ref: str = f'See the Notion code block here: {self.notion_url}.'
