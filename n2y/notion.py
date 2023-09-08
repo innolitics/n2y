@@ -471,6 +471,13 @@ class Client:
                     del item['id']
         return prop
 
+    def _notion_block_type_is(self, block, type):
+        return 'type' in block and block['type'] == type
+
+    def _notion_block_object_is(self, block, object):
+        return 'object' in block and block['object'] == object
+
+
     @retry_api_call
     def append_child_notion_blocks(self, block_id, children):
         '''
@@ -483,20 +490,9 @@ class Client:
         parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
         parent_type = parent.notion_data["object"]
 
-        def type_is_database(child):
-            return 'type' in child and child['type'] == 'child_database'
-
-        def object_is_database(child):
-            return child['object'] == 'database'
-
-        def type_is_page(child):
-            return 'type' in child and child['type'] == 'child_page'
-
-        def object_is_page(child):
-            return child['object'] == 'page'
-
         for i, child in enumerate(children):
-            if object_is_database(child) or type_is_database(child):
+            if self._notion_block_object_is(child, 'database') \
+                    or self._notion_block_type_is(child, 'child_database'):
                 if previous_i != i:
                     children_appended = self._append_blocks(
                         block_id, children, children_appended, previous_i, i
@@ -506,7 +502,8 @@ class Client:
                 )
                 children_appended.append(child_database)
                 previous_i = i + 1
-            elif object_is_page(child) or type_is_page(child):
+            elif self._notion_block_object_is(child, 'page') \
+                    or self._notion_block_type_is(child, 'child_page'):
                 if previous_i != i:
                     children_appended = self._append_blocks(
                         block_id, children, children_appended, previous_i, i
