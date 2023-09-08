@@ -51,6 +51,9 @@ from n2y.notion_mocks import (
     mock_page,
 )
 
+innolitics_website = "https://innolitics.com"
+example_img = "https://example.com/image.png"
+
 
 def generate_block(notion_block, plugins=None):
     with mock.patch.object(Client, "get_notion_block") as mock_get_notion_block:
@@ -207,12 +210,12 @@ def test_bookmark_with_caption():
         "bookmark",
         {
             "caption": [mock_rich_text("Innolitics")],
-            "url": "https://innolitics.com",
+            "url": innolitics_website,
         },
     )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para(
-        [Link(("", [], []), [Str("Innolitics")], ("https://innolitics.com", ""))]
+        [Link(("", [], []), [Str("Innolitics")], (innolitics_website, ""))]
     )
     assert markdown == "[Innolitics](https://innolitics.com)\n"
 
@@ -222,7 +225,7 @@ def test_bookmark_without_caption():
         "bookmark",
         {
             "caption": [],
-            "url": "https://innolitics.com",
+            "url": innolitics_website,
         },
     )
     pandoc_ast, markdown = process_block(notion_block)
@@ -230,8 +233,8 @@ def test_bookmark_without_caption():
         [
             Link(
                 ("", [], []),
-                [Str("https://innolitics.com")],
-                ("https://innolitics.com", ""),
+                [Str(innolitics_website)],
+                (innolitics_website, ""),
             )
         ]
     )
@@ -301,7 +304,7 @@ def test_image_internal_with_caption(mock_download):
         {
             "type": "file",
             "caption": [mock_rich_text("test image")],
-            "file": mock_file("https://example.com/image.png"),
+            "file": mock_file(example_img),
         },
     )
     mock_download.return_value = "image.png"
@@ -318,7 +321,7 @@ def test_image_external_without_caption():
         {
             "type": "external",
             "caption": [],
-            "external": {"url": "https://example.com/image.png"},
+            "external": {"url": example_img},
         },
     )
     pandoc_ast, markdown = process_block(notion_block)
@@ -327,7 +330,7 @@ def test_image_external_without_caption():
             Image(
                 ("", [], []),
                 [],
-                ("https://example.com/image.png", ""),
+                (example_img, ""),
             )
         ]
     )
@@ -506,7 +509,7 @@ def test_toggle():
             ]
         ]
     )
-    assert markdown == ("-   Toggle Header\n" "\n" "    Toggle Content\n")
+    assert markdown == "-   Toggle Header\n\n    Toggle Content\n"
 
 
 def test_todo_in_paragraph():
@@ -537,7 +540,7 @@ def test_todo_in_paragraph():
             ]
         ),
     ]
-    assert markdown == ("Task List\n" "\n" "-   [x] Task One\n" "-   [ ] Task Two\n")
+    assert markdown == "Task List\n\n-   [x] Task One\n-   [ ] Task Two\n"
 
 
 @pytest.mark.xfail(reason="Its unclear how to represent empty todos in pandoc")
@@ -554,7 +557,7 @@ def test_callout():
     children = [mock_paragraph_block([("Children", [])])]
     pandoc_ast, markdown = process_parent_block(parent, children)
     assert pandoc_ast == [Para([Str("Callout")]), Para([Str("Children")])]
-    assert markdown == ("Callout\n" "\n" "Children\n")
+    assert markdown == "Callout\n\nChildren\n"
 
 
 def test_synced_block_shared():
