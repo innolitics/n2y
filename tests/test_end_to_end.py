@@ -460,7 +460,7 @@ Yakkity yakkity yakkity yak
 | header | row    |
 |--------|--------|
 | Nutter | Butter |
-"""
+""" in content
     if number_expected_table_warnings > 0:
         expected_blurb = (
             f"{number_expected_table_warnings} table(s) will present empty "

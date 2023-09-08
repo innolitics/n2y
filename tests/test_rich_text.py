@@ -8,6 +8,10 @@ from n2y.rich_text import RichTextArray, MentionRichText
 from n2y.mentions import PageMention
 from n2y.notion_mocks import mock_rich_text_array, mock_annotations, mock_rich_text, mock_id
 
+word = 'word.'
+spaced_word = ' word.'
+bold_word = 'A bold word.'
+
 
 def process_rich_text_array(notion_data):
     client = Client('')
@@ -19,40 +23,40 @@ def process_rich_text_array(notion_data):
 
 
 def test_bold_word():
-    notion_data = mock_rich_text_array([('A ', []), ('bold', ['bold']), (' word.', [])])
+    notion_data = mock_rich_text_array([('A ', []), ('bold', ['bold']), (spaced_word, [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [
-        Str("A"), Space(), Strong([Str("bold")]), Space(), Str("word.")
+        Str("A"), Space(), Strong([Str("bold")]), Space(), Str(word)
     ]
     assert markdown == "A **bold** word.\n"
-    assert plain_text == "A bold word."
+    assert plain_text == bold_word
 
 
 def test_bold_letter():
     notion_data = mock_rich_text_array([('A ', []), ('b', ['bold']), ('old word.', [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [
-        Str("A"), Space(), Strong([Str("b")]), Str("old"), Space(), Str("word.")
+        Str("A"), Space(), Strong([Str("b")]), Str("old"), Space(), Str(word)
     ]
     assert markdown == "A **b**old word.\n"
-    assert plain_text == "A bold word."
+    assert plain_text == bold_word
 
 
 def test_bold_spaces():
-    notion_data = mock_rich_text_array([('A', []), (' bold ', ['bold']), ('word.', [])])
+    notion_data = mock_rich_text_array([('A', []), (' bold ', ['bold']), (word, [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [
-        Str("A"), Space(), Strong([Str("bold")]), Space(), Str("word.")
+        Str("A"), Space(), Strong([Str("bold")]), Space(), Str(word)
     ]
     assert markdown == "A **bold** word.\n"
-    assert plain_text == "A bold word."
+    assert plain_text == bold_word
 
 
 def test_italic_word():
-    notion_data = mock_rich_text_array([('An ', []), ('italic', ['italic']), (' word.', [])])
+    notion_data = mock_rich_text_array([('An ', []), ('italic', ['italic']), (spaced_word, [])])
     pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
     assert pandoc_ast == [
-        Str("An"), Space(), Emph([Str("italic")]), Space(), Str("word.")
+        Str("An"), Space(), Emph([Str("italic")]), Space(), Str(word)
     ]
     assert markdown == "An *italic* word.\n"
 
@@ -60,7 +64,7 @@ def test_italic_word():
 def test_italic_letter():
     notion_data = mock_rich_text_array([('An ', []), ('i', ['italic']), ('talic word.', [])])
     pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
-    assert pandoc_ast == [Str("An"), Space(), Emph([Str("i")]), Str("talic"), Space(), Str("word.")]
+    assert pandoc_ast == [Str("An"), Space(), Emph([Str("i")]), Str("talic"), Space(), Str(word)]
     assert markdown == "An *i*talic word.\n"
 
 
@@ -68,7 +72,7 @@ def test_bold_italic_word():
     notion_data = mock_rich_text_array([
         ('A ', []),
         ('bold-italic', ['bold', 'italic']),
-        (' word.', []),
+        (spaced_word, []),
     ])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [
@@ -76,7 +80,7 @@ def test_bold_italic_word():
         Space(),
         Emph([Strong([Str('bold-italic')])]),
         Space(),
-        Str('word.'),
+        Str(word),
     ]
     assert markdown == "A ***bold-italic*** word.\n"
     assert plain_text == "A bold-italic word."
@@ -91,25 +95,27 @@ def test_bold_space():
 
 
 def test_italic_spaces():
-    notion_data = mock_rich_text_array([('An', []), (' italic ', ['italic']), ('word.', [])])
+    notion_data = mock_rich_text_array([('An', []), (' italic ', ['italic']), (word, [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
-    assert pandoc_ast == [Str('An'), Space(), Emph([Str('italic')]), Space(), Str('word.')]
+    assert pandoc_ast == [Str('An'), Space(), Emph([Str('italic')]), Space(), Str(word)]
     assert markdown == "An *italic* word.\n"
     assert plain_text == "An italic word."
 
 
 def test_strikeout_word():
-    notion_data = mock_rich_text_array([('A ', []), ('deleted', ['strikethrough']), (' word.', [])])
+    notion_data = mock_rich_text_array(
+        [('A ', []), ('deleted', ['strikethrough']), (spaced_word, [])]
+    )
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
-    assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")]
+    assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str(word)]
     assert markdown == "A ~~deleted~~ word.\n"
     assert plain_text == "A deleted word."
 
 
 def test_strikeout_spaces():
-    notion_data = mock_rich_text_array([('A', []), (' deleted ', ['strikethrough']), ('word.', [])])
+    notion_data = mock_rich_text_array([('A', []), (' deleted ', ['strikethrough']), (word, [])])
     pandoc_ast, markdown, _ = process_rich_text_array(notion_data)
-    assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str("word.")]
+    assert pandoc_ast == [Str("A"), Space(), Strikeout([Str("deleted")]), Space(), Str(word)]
     assert markdown == "A ~~deleted~~ word.\n"
 
 
@@ -175,9 +181,9 @@ def test_equation_inline():
 
 
 def test_code_inline():
-    notion_data = mock_rich_text_array([('A ', []), ('code', ['code']), (' word.', [])])
+    notion_data = mock_rich_text_array([('A ', []), ('code', ['code']), (spaced_word, [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
-    assert pandoc_ast == [Str("A"), Space(), Code(("", [], []), "code"), Space(), Str("word.")]
+    assert pandoc_ast == [Str("A"), Space(), Code(("", [], []), "code"), Space(), Str(word)]
     assert markdown == "A `code` word.\n"
     assert plain_text == "A code word."
 
