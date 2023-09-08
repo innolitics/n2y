@@ -1,7 +1,7 @@
 from n2y.logger import logger
 from n2y.utils import fromisoformat
 from n2y.property_values import TitlePropertyValue
-from n2y.blocks import ChildDatabaseBlock, ChildPageBlock
+from n2y.blocks import ChildDatabaseBlock, ChildPageBlock, TableOfContentsBlock
 
 
 class PageProperties(dict):
@@ -100,8 +100,27 @@ class Page:
             assert parent_type == "database_id"
             return self.client.get_database(self.notion_parent["database_id"])
 
-    def to_pandoc(self):
-        return self.block.to_pandoc()
+    def generate_toc(self, ast):
+        """
+        Generate a table of contents for the page.
+        """
+        toc_indecies = []
+
+        def is_toc(i, block):
+            if type(block) is TableOfContentsBlock:
+                toc_indecies.append(i)
+                return True
+            return False
+        if any(is_toc(*t) for t in enumerate(self.block.children)):
+            child_ast = ast[1]
+            for i in toc_indecies:
+                self.block.children[i].render_toc(child_ast)
+            ast = self.block.to_pandoc()
+        return ast
+
+    def to_pandoc(self, ignore_toc=False):
+        ast = self.block.to_pandoc()
+        return ast if ignore_toc else self.generate_toc(ast)
 
     def properties_to_values(self, pandoc_format=None):
         return PageProperties({k: v.to_value(pandoc_format) for k, v in self.properties.items()})
