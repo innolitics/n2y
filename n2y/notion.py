@@ -477,7 +477,6 @@ class Client:
     def _notion_block_object_is(self, block, object):
         return 'object' in block and block['object'] == object
 
-
     @retry_api_call
     def append_child_notion_blocks(self, block_id, children):
         '''

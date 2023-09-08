@@ -54,6 +54,7 @@ from n2y.notion_mocks import (
 innolitics_website = "https://innolitics.com"
 example_img = "https://example.com/image.png"
 
+
 def generate_block(notion_block, plugins=None):
     with mock.patch.object(Client, "get_notion_block") as mock_get_notion_block:
         mock_get_notion_block.return_value = notion_block
