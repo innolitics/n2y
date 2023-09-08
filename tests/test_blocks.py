@@ -681,7 +681,6 @@ def test_column_list_block(mock_get_child_notion_blocks):
     assert markdown == 'child1\n\nchild2\n'
 
 
-
 def test_toc_item_block():
     contents = {
         'header': toc_headers[0],
@@ -693,6 +692,7 @@ def test_toc_item_block():
     assert pandoc_ast == toc_item_ast
     assert markdown == '''\
 [Foo Items Header](#foo-items-header)
+
 1.  [Foo: Bar](#foo-bar)
 2.  [Foo: Ski](#foo-ski)
     1.  [First Foo Ski](#first-foo-ski)
