@@ -160,11 +160,11 @@ class Client:
 
     def instantiate_class(self, notion_object, object_type, *args, **kwargs):
         class_list = self.get_class_list(notion_object, object_type)
-        for klass in reversed(class_list):
+        for cls in reversed(class_list):
             try:
-                return klass(*args, **kwargs)
+                return cls(*args, **kwargs)
             except UseNextClass:
-                logger.debug("Skipping %s due to UseNextClass exception", klass.__name__)
+                logger.debug("Skipping %s due to UseNextClass exception", cls.__name__)
 
     def _wrap_notion_page(self, notion_data):
         """

@@ -48,7 +48,7 @@ class RichText:
         )
 
     @classmethod
-    def plain_text_to_pandoc(klass, plain_text):
+    def plain_text_to_pandoc(cls, plain_text):
         ast = []
         match = re.findall(r"( +)|(\xa0+)|(\S+)|(\n+)|(\t+)", plain_text)
         for m in match:
@@ -139,9 +139,9 @@ class EquationRichText(RichText):
 
 class TextRichText(RichText):
     @classmethod
-    def from_plain_text(klass, client, string, block=None):
+    def from_plain_text(cls, client, string, block=None):
         notion_data = mock_rich_text(string)
-        return klass(client, notion_data, block)
+        return cls(client, notion_data, block)
 
     def __init__(self, client, notion_data, block=None):
         super().__init__(client, notion_data, block)
