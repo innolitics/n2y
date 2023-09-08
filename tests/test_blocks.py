@@ -42,17 +42,66 @@ from pandoc.types import (
 from n2y.notion import Client
 from n2y.utils import pandoc_ast_to_markdown
 from n2y.notion_mocks import (
+    mock_rich_text_array,
+    mock_paragraph_block,
+    mock_page_mention,
+    mock_rich_text,
     mock_block,
+    mock_page,
     mock_file,
     mock_id,
-    mock_paragraph_block,
-    mock_rich_text,
-    mock_page_mention,
-    mock_page,
 )
 
 innolitics_website = "https://innolitics.com"
 example_img = "https://example.com/image.png"
+toc_headers = [
+    Header(
+        1,
+        ('foo-items-header', [], []),
+        [Str('Foo'), Space(), Str('Items'), Space(), Str('Header')]
+    ),
+    Header(
+        2,
+        ('foo-bar', [], []),
+        [Str('Foo:'), Space(), Str('Bar')]
+    ),
+    Header(
+        2,
+        ('foo-ski', [], []),
+        [Str('Foo:'), Space(), Str('Ski')]
+    ),
+    Header(
+        3,
+        ('first-foo-ski', [], []),
+        [Str('First'), Space(), Str('Foo'), Space(), Str('Ski')]
+    ),
+]
+toc_item_ast = [
+    Plain([Link(
+        ('', [], []),
+        [Str('Foo'), Space(), Str('Items'), Space(), Str('Header')],
+        ('#foo-items-header', '')
+    )]),
+    OrderedList(
+        (1, Decimal(), Period()),
+        [
+            [Plain([Link(('', [], []), [Str('Foo:'), Space(), Str('Bar')], ('#foo-bar', ''))])],
+            [
+                Plain([Link(('', [], []), [Str('Foo:'), Space(), Str('Ski')], ('#foo-ski', ''))]),
+                OrderedList(
+                    (1, Decimal(), Period()),
+                    [[
+                        Plain([
+                            Link(
+                                ('', [], []),
+                                [Str('First'), Space(), Str('Foo'), Space(), Str('Ski')],
+                                ('#first-foo-ski', '')
+                            )
+                        ])
+                    ]])]
+        ]
+    )
+]
 
 
 def generate_block(notion_block, plugins=None):
@@ -630,3 +679,46 @@ def test_column_list_block(mock_get_child_notion_blocks):
     pandoc_ast, markdown = process_block(column_list_block)
     assert pandoc_ast == [Para([Str('child1')]), Para([Str('child2')])]
     assert markdown == 'child1\n\nchild2\n'
+
+
+def test_toc_item_block():
+    contents = {
+        'header': toc_headers[0],
+        'subheaders': toc_headers[1:],
+        'rich_text': mock_rich_text_array([('Foo Items Header', None, '#foo-items-header')])
+    }
+    toc_item_block = mock_block("table_of_contents_item", contents)
+    pandoc_ast, markdown = process_block(toc_item_block)
+    assert pandoc_ast == toc_item_ast
+    assert markdown == '''\
+[Foo Items Header](#foo-items-header)
+
+1.  [Foo: Bar](#foo-bar)
+2.  [Foo: Ski](#foo-ski)
+    1.  [First Foo Ski](#first-foo-ski)
+'''
+
+
+def test_toc_block():
+    toc_block = mock_block("table_of_contents", {})
+    client = Client("")
+    toc = client.wrap_notion_block(toc_block, None, True)
+    toc.render_toc([*toc_headers, *toc_headers])
+    pandoc_ast = toc.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert pandoc_ast == [
+        OrderedList(
+            (1, Decimal(), Period()),
+            [toc_item_ast, toc_item_ast]
+        )
+    ]
+    assert markdown == '''\
+1.  [Foo Items Header](#foo-items-header)
+    1.  [Foo: Bar](#foo-bar)
+    2.  [Foo: Ski](#foo-ski)
+        1.  [First Foo Ski](#first-foo-ski)
+2.  [Foo Items Header](#foo-items-header)
+    1.  [Foo: Bar](#foo-bar)
+    2.  [Foo: Ski](#foo-ski)
+        1.  [First Foo Ski](#first-foo-ski)
+'''
