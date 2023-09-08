@@ -255,11 +255,11 @@ def stringify_list(array, wrap_in_quotes=False):
 
 def available_from_list(collection, singular, plural):
     if len(collection) == 0:
-        return f'There are no available {plural}'
+        return f'there are no available {plural}'
     elif len(collection) == 1:
-        return f'The only available {singular} is "{collection[0]}"'
+        return f'the only available {singular} is "{collection[0]}"'
     else:
-        return f'The available {plural} are {stringify_list(collection, wrap_in_quotes=True)}'
+        return f'the available {plural} are {stringify_list(collection, wrap_in_quotes=True)}'
 
 
 def load_yaml(data):

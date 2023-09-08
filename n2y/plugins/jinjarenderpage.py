@@ -27,10 +27,10 @@ of the codeblock may be accessed via the database name.
 """
 import re
 import traceback
+import functools
 
 import pandoc
 import jinja2
-from jinja2.exceptions import TemplateSyntaxError, UndefinedError
 from pandoc.types import Plain, Str, Code, Pandoc, Meta, MetaString, Para
 
 from n2y.page import Page
@@ -41,54 +41,6 @@ from n2y.mentions import DatabaseMention
 from n2y.rich_text import MentionRichText
 from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.utils import pandoc_ast_to_markdown, available_from_list
-
-
-class JinjaDatabaseCache(dict):
-    def __getitem__(self, key):
-        if isinstance(key, str):
-            return super().__getitem__(key)
-        elif isinstance(key, int):
-            return super().__getitem__(list(self)[key])
-        logger.error((
-            'Jinja template database must be '
-            'selected using a string or an integer'
-        ))
-        raise KeyError(key)
-
-
-class FirstPassOutput:
-    def __init__(self, lines=None):
-        self._second_pass_is_requested = False
-        self._lines = lines
-        self._source = None
-
-    def __bool__(self):
-        return bool(self._lines)
-
-    def request_second_pass(self):
-        self._second_pass_is_requested = True
-
-    @property
-    def is_second_pass(self):
-        return self._lines is not None
-
-    @property
-    def second_pass_is_requested(self):
-        return not self.is_second_pass and self._second_pass_is_requested
-
-    @property
-    def lines(self):
-        self.is_second_pass or self.request_second_pass()
-        return self._lines or []
-
-    def set_lines(self, lines):
-        self._lines = lines
-
-    @property
-    def source(self):
-        if self._source is None or self.is_second_pass:
-            self._source = '\n'.join(self.lines)
-        return self._source
 
 
 def join_to(foreign_keys, table, primary_key='notion_id'):
@@ -179,10 +131,11 @@ def _create_jinja_environment():
 
 def render_from_string(source, context=None, environment=None):
     if environment is None:
-        environment = _create_jinja_environment()
+        environment: jinja2.Environment = _create_jinja_environment()
     if context is None:
         context = {}
     template = environment.from_string(source)
+    template.root_render_func
     output = template.render(context)
 
     # output string usually loses trailing new line.
@@ -191,20 +144,123 @@ def render_from_string(source, context=None, environment=None):
     return output
 
 
+class JinjaExceptionInfo:
+    err: Exception
+    object: object
+    method: str
+    args: list
+    kwargs: dict | None
+
+    def __init__(self, object, err, method, args, kwargs):
+        self.object = object
+        self.method = method
+        self.kwargs = kwargs
+        self.args = args
+        self.err = err
+
+
+class JinjaCacheObject(dict):
+    def __init__(self, *args, block=None, **kwargs):
+        if block is None:
+            raise ValueError(f'block must be specified when instantiating {self.__class__}.')
+        self.block = block
+        super().__init__(*args, **kwargs)
+
+    def __getitem__(self, __key):
+        try:
+            return super().__getitem__(__key)
+        except Exception as err:
+            self.cache_exception_info(err, '__getitem__', [__key])
+            raise
+
+    def cache_exception_info(self, *args, kwargs=None):
+        self.block.exc_info = JinjaExceptionInfo(self, *args, kwargs)
+
+
+class JinjaDatabaseItem(JinjaCacheObject):
+    ...
+
+
+class PageProperties(JinjaCacheObject):
+    ...
+
+
+class JinjaDatabaseCache(JinjaCacheObject):
+    def __getitem__(self, __key):
+        try:
+            if isinstance(__key, str):
+                return super().__getitem__(__key)
+            elif isinstance(__key, int):
+                return super().__getitem__(list(self)[__key])
+        except Exception as err:
+            self.cache_exception_info(err, '__getitem__', [__key])
+            raise
+        logger.error((
+            'Jinja template database must be '
+            'selected using a string or an integer'
+        ))
+        err = KeyError(__key)
+        self.cache_exception_info(err, '__getitem__', [__key])
+        raise err
+
+    def __setitem__(self, __key: str, __value: list):
+        return super().__setitem__(__key, [
+            JinjaDatabaseItem(item, block=self.block) for item in __value
+        ])
+
+
+class FirstPassOutput:
+    def __init__(self, lines=None):
+        self._second_pass_is_requested = False
+        self._lines = lines
+        self._source = None
+
+    def __bool__(self):
+        return bool(self._lines)
+
+    def request_second_pass(self):
+        self._second_pass_is_requested = True
+
+    @property
+    def is_second_pass(self):
+        return self._lines is not None
+
+    @property
+    def second_pass_is_requested(self):
+        return not self.is_second_pass and self._second_pass_is_requested
+
+    @property
+    def lines(self):
+        self.is_second_pass or self.request_second_pass()
+        return self._lines or []
+
+    def set_lines(self, lines):
+        self._lines = lines
+
+    @property
+    def source(self):
+        if self._source is None or self.is_second_pass:
+            self._source = '\n'.join(self.lines)
+        return self._source
+
+
 class JinjaRenderPage(Page):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
         if 'jinjarenderpage' not in client.plugin_data:
             client.plugin_data['jinjarenderpage'] = {}
-        if self.notion_id not in client.plugin_data:
+        if self.notion_id not in client.plugin_data['jinjarenderpage']:
+            self.jinja_environment = _create_jinja_environment()
             client.plugin_data['jinjarenderpage'][self.notion_id] = {
-                'environment': _create_jinja_environment(),
+                'environment': self.jinja_environment,
             }
+        else:
+            self.jinja_environment = client.plugin_data[
+                'jinjarenderpage'][self.notion_id]['environment']
 
     def to_pandoc(self, ignore_toc=False):
         ast = super().to_pandoc(ignore_toc=True)
-        first_pass_output = self.client.plugin_data['jinjarenderpage'][
-            self.notion_id]['environment'].globals["first_pass_output"]
+        first_pass_output = self.jinja_environment.globals["first_pass_output"]
         if first_pass_output.second_pass_is_requested:
             first_pass_output_text = pandoc_ast_to_markdown(ast)
             first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
@@ -220,14 +276,17 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         super().__init__(client, notion_data, page, get_children)
         result = self.caption.matches(self.trigger_regex)
         if result:
-            self.pandoc_format = result.group(1)
+            self.pandoc_format: str = result.group(1)
         else:
             raise UseNextClass()
-        self.error = None
-        self.render_count = 0
-        self.rendered_text = ''
-        self.mentions_processed = False
-        self.databases = JinjaDatabaseCache()
+        self.render_count: int = 0
+        self.rendered_text: str = ''
+        self.error: str | None = None
+        self.exc_info: JinjaExceptionInfo | None = None
+        self.databases: JinjaDatabaseCache | None = None
+        self.page_props: PageProperties = self.page.properties_to_values(self.pandoc_format)
+        self.jinja_environment: jinja2.Environment = self.client.plugin_data[
+            'jinjarenderpage'][self.page.notion_id]['environment']
 
     def _get_database_ids_from_mentions(self):
         for rich_text in self.caption:
@@ -236,6 +295,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 yield rich_text.mention.notion_database_id
 
     def _get_yaml_from_mentions(self):
+        self.databases = JinjaDatabaseCache(block=self)
         export_defaults = self.client.export_defaults
         for database_id in self._get_database_ids_from_mentions():
             database = self.client.get_database(database_id)
@@ -247,8 +307,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             # defaults and it could provide a mechanism to access the page
             # content from within the Jinja templates, which isn't possible
             # right now.
-            database_name = database.title.to_plain_text()
-            if database_name in self.databases:
+            if (database_name := database.title.to_plain_text()) in self.databases:
                 msg = (
                     f'Duplicate database name "{database_name}"'
                     f' when rendering [{self.notion_url}]'
@@ -262,7 +321,6 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 id_property=export_defaults["id_property"],
                 url_property=export_defaults["url_property"],
             )
-        self.mentions_processed = True
 
     def _log_jinja_error(self, err):
         message = str(err)
@@ -308,15 +366,22 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         return [Para([Code(('', ['markdown'], []), self.error)])]
 
     def _render_text(self):
-        self.page_props = self.page.properties_to_values(self.pandoc_format)
-        jinja_environment = self.client.plugin_data[
-            'jinjarenderpage'][self.page.notion_id]['environment']
-        jinja_code = self.rich_text.to_plain_text()
-        context = {
-            "databases": self.databases,
-            "page": self.page_props,
+        self.jinja_environment.filters = {
+            k: self._debug_assist(v, 'filter', k)
+            for k, v in self.jinja_environment.filters.items()
         }
-        if 'render_content' in jinja_code:
+        self.jinja_environment.tests = {
+            k: self._debug_assist(v, 'test', k)
+            for k, v in self.jinja_environment.tests.items()
+        }
+        if not getattr(self, 'jinja_code', None):
+            self.jinja_code = self.rich_text.to_plain_text()
+        if not getattr(self, 'context', None):
+            self.context = {
+                "databases": self.databases,
+                "page": PageProperties(self.page_props, block=self),
+            }
+        if 'render_content' in self.jinja_code:
             def render_content(notion_id, level_adjustment=0):
                 page = self.client.get_page(notion_id)
                 for child in page.block.children:
@@ -330,16 +395,17 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                     options=[],
                 )
                 return content
-            self.client.plugin_data['jinjarenderpage'][self.page.notion_id][
-                'environment'].filters['render_content'] = render_content
+            self.jinja_environment.filters['render_content'] = render_content
         try:
-            self.rendered_text = render_from_string(jinja_code, context, jinja_environment)
-        except (UndefinedError, TemplateSyntaxError) as err:
+            self.rendered_text = render_from_string(
+                self.jinja_code, self.context, self.jinja_environment
+            )
+        except Exception as err:
             self._render_error(err)
         self.render_count += 1
 
     def to_pandoc(self):
-        if not self.mentions_processed:
+        if self.databases is None:
             self._get_yaml_from_mentions()
         if self.render_count < 2:
             self._render_text()
@@ -364,16 +430,20 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 children_ast = Plain([Str(self.rendered_text)])
         return children_ast
 
-    def _print_context_debug(self, context):
-        logger.info("Databases")
-        for database_name, database in context["databases"].items():
-            logger.info("  %s [%d]", database_name, len(database))
-            if len(database) > 0:
-                for key in database[0]:
-                    logger.info("    %s", key)
-        logger.info("page")
-        for key, value in context["page"].items():
-            logger.info("  %s: %r", key, value)
+    def _debug_assist(self, func, jinja_type, jinja_ref):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as err:
+                if self.exc_info is None:
+                    if type(args[0]) is jinja2.Environment:
+                        args = list(args[1:])
+                    self.exc_info = JinjaExceptionInfo(
+                        jinja_type, err, jinja_ref, args, kwargs
+                    )
+                raise
+        return wrapper
 
 
 notion_classes = {

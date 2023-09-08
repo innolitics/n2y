@@ -4,11 +4,6 @@ from n2y.property_values import TitlePropertyValue
 from n2y.blocks import ChildDatabaseBlock, ChildPageBlock, TableOfContentsBlock
 
 
-class PageProperties(dict):
-    def __dict__(self):
-        return dict(self)
-
-
 class Page:
     def __init__(self, client, notion_data):
         logger.debug("Instantiating page")
@@ -123,4 +118,4 @@ class Page:
         return ast if ignore_toc else self.generate_toc(ast)
 
     def properties_to_values(self, pandoc_format=None):
-        return PageProperties({k: v.to_value(pandoc_format) for k, v in self.properties.items()})
+        return {k: v.to_value(pandoc_format) for k, v in self.properties.items()}
