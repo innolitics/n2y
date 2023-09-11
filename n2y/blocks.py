@@ -269,10 +269,11 @@ class TableOfContentsItemBlock(NumberedListItemBlock, TableOfContentsBlock):
                     subsections[index].append(header)
                 except IndexError:
                     logger.warning((
-                        f'Skipping out-of-order header "{header[1][0]}" in table of contents for page named '
-                        f'{self.page.title.to_plain_text()} ({self.page.notion_url}). Please create headers in '
-                        f'sequence (i.e. proper document formatting dictates that an H{self.level} should '
-                        f'not be immediately followed by an H{header[0]}, but an H{self.level + 1}).'
+                        f'Skipping out-of-order header "{header[1][0]}" in table of contents for '
+                        f'page named {self.page.title.to_plain_text()} ({self.page.notion_url}). '
+                        f'Please create headers in sequence (i.e. proper document formatting '
+                        f'dictates that an H{self.level} should not be immediately followed by an '
+                        f'H{header[0]}, but an H{self.level + 1}).'
                     ))
         for subsection in subsections:
             notion_data = self.generate_item_block(subsection)
