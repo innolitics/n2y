@@ -175,7 +175,7 @@ def test_jinja_render_with_missing_database():
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert 'You attempted to access the "MISSING" database.' in markdown
-    assert 'The only available database is "My DB".' in markdown
+    assert 'the only available database is "My DB".' in markdown
 
 
 def test_jinja_render_with_missing_page_property():
@@ -198,7 +198,7 @@ def test_jinja_render_with_missing_page_property():
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert 'You attempted to access the "MISSING" page property.' in markdown
-    assert 'The only available property is "title".' in markdown
+    assert 'the only available property is "title".' in markdown
 
 
 def test_jinja_render_plain():
