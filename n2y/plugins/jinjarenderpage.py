@@ -322,44 +322,62 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 url_property=export_defaults["url_property"],
             )
 
-    def _log_jinja_error(self, err):
-        message = str(err)
-        block_ref = f'\nSee the Notion code block here: {self.notion_url}.'
+    def _specify_err_msg(self, err: Exception):
+        block_ref: str = f'See the Notion code block here: {self.notion_url}.'
+        line_num: str = traceback.format_exc().split('>", line ')[1][0]
+
+        if self.exc_info is not None:
+            if type(self.exc_info.err) is KeyError:
+                if type(self.exc_info.object) is JinjaDatabaseCache:
+                    available_props: str = available_from_list(
+                        list(self.exc_info.object),
+                        'database', 'databases'
+                    )
+                    return f' You attempted to access the "{self.exc_info.args[0]}" database on' + \
+                        f' line {line_num} of said template, but ' + available_props + '. Note ' + \
+                        "that databases must be mentioned in the Notion code block's caption to" + \
+                        ' be available and the plugin must have permission to read the database' + \
+                        ' via the NOTION_ACCESS_TOKEN. ' + block_ref
+                elif type(self.exc_info.object) is JinjaDatabaseItem:
+                    available_props: str = available_from_list(
+                        list(self.exc_info.object),
+                        'property', 'properties'
+                    )
+                    return f' You attempted to access the "{self.exc_info.args[0]}" property ' + \
+                        f'of a database item on line {line_num} of said template, but ' + \
+                        available_props + '. ' + block_ref
+                elif type(self.exc_info.object) is PageProperties:
+                    available_props: str = available_from_list(
+                        list(self.exc_info.object),
+                        'property', 'properties'
+                    )
+                    return f' You attempted to access the "{self.exc_info.args[0]}" property' + \
+                        f' of this page on line {line_num} of said template, but ' + \
+                        available_props + '. ' + block_ref
+            elif self.exc_info.object in ['test', 'filter']:
+                return f' Recieved the message "{str(err)}" when evaluating line {line_num}. ' + \
+                    f'The Jinja {self.exc_info.object} "{self.exc_info.method}" raised ' + \
+                    'this error when called with the following argument(s): {\n\t"args": ' + \
+                    f'{self.exc_info.args},\n\t"kwargs": {self.exc_info.kwargs}\n' + '}\n' + \
+                    block_ref
+        elif type(err) is jinja2.exceptions.TemplateSyntaxError:
+            return ' There is a syntax error in the Jinja template on line {line_num}.' + \
+                f' Recieved the message {str(err)}. ' + block_ref
+
+        return f' Received the message "{str(err)}" when evaluating line {line_num}. ' + block_ref
+
+    def _log_jinja_error(self, err: Exception):
         self.error = (
-            'Error rendering Jinja template on page: ' +
-            f'{self.page.title.to_plain_text()}.' if self.page else 'Unknown'
+            'Error rendering a Jinja template on '
+            f'{self.page.title.to_plain_text()}.' if self.page else 'Unknown Page.'
         )
-
-        if (db_err := "JinjaDatabaseCache object' has no attribute '") in message:
-            split_msg = message.split(db_err)
-            specific_msg = (
-                f' You attempted to access the "{split_msg[1][:-1]}" database. '
-                f'{available_from_list(list(self.databases.keys()), "database", "databases")}.'
-                " Note that databases must be mentioned in the Notion code block's caption to "
-                'be available. Also, note that the plugin must have permission to read the '
-                'database via the NOTION_ACCESS_TOKEN'
-            )
-        elif (pg_err := "PageProperties object' has no attribute '") in message:
-            split_msg = message.split(pg_err)
-            specific_msg = (
-                f' You attempted to access the "{split_msg[1][:-1]}" page property. '
-                f'{available_from_list(list(self.page_props.keys()), "property", "properties")}.'
-            )
-        else:
-            specific_msg = None
-
-        if specific_msg:
-            self.error += specific_msg + block_ref
-        else:
-            self.error += f' {message}' + block_ref + f'\n{traceback.format_exc()}'
+        self.error += self._specify_err_msg(err)
         logger.error(self.error)
 
     def _render_error(self, err, during_render=True):
-        jinja_environment = self.client.plugin_data[
-            'jinjarenderpage'][self.page.notion_id]['environment']
-        first_pass_output = jinja_environment.globals["first_pass_output"]
-        only_one_pass = self.render_count == 0 and not first_pass_output.second_pass_is_requested
-        if during_render and only_one_pass or self.render_count == 1:
+        first_pass_output = self.jinja_environment.globals["first_pass_output"]
+        if self.render_count == 1 or during_render and self.render_count == 0 and \
+                not first_pass_output.second_pass_is_requested:
             self._log_jinja_error(err)
 
     def _error_ast(self):
