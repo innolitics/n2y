@@ -390,7 +390,7 @@ class Client:
         while True:
             data = request_method(url, params)
             results.extend(data["results"])
-            if (not data["has_more"]) or data['results'][-1]['id'] == results[-1]['id']:
+            if not data["has_more"]:
                 return results
             else:
                 params["start_cursor"] = data["next_cursor"]
