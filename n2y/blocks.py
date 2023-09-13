@@ -676,9 +676,15 @@ class SyncedBlock(Block):
         # (There will always be at least one UnsupportedBlock child)
         self.shared = self.has_children
         self.children = self._get_synced_block_children()
+        self.foo = None
 
     def _get_synced_block_children(self):
-        if not self.original and self.shared:
+        parent = self.notion_data['parent']
+        if not self.original and self.shared and \
+                self.notion_type_data["synced_from"]["block_id"] != parent[parent['type']]:
+                # This last condition is to protect against recursive synced blocks while
+                # still allowing synced blocks that are children of other synced blocks
+                # (once Notion confirms that this bug has been addressed it can be removed)
             return self.client.get_child_blocks(
                 self.notion_type_data["synced_from"]["block_id"],
                 self.page, True,
@@ -687,7 +693,10 @@ class SyncedBlock(Block):
 
     def to_pandoc(self):
         if not self.shared:
-            logger.warning('Skipping un-shared synced block (%s)', self.notion_url)
+            # logger.warning('Skipping un-shared synced block (%s)', self.notion_url)
+            return None
+        elif not self.children:
+            logger.warning('Skipping recursive synced block (%s)', self.notion_url)
             return None
         return self.children_to_pandoc()
 
