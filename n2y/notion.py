@@ -284,7 +284,6 @@ class Client:
         notion_pages = self.get_database_notion_pages(database_id, filter, sorts)
         return [self._wrap_notion_page(np) for np in notion_pages]
 
-    @retry_api_call
     def get_database_notion_pages(self, database_id, filter, sorts):
         url = f"{self.base_url}databases/{database_id}/query"
         request_data = {}
@@ -319,22 +318,18 @@ class Client:
         notion_block = self.get_notion_block(block_id)
         return self.wrap_notion_block(notion_block, page, get_children)
 
-    @retry_api_call
     def get_notion_block(self, block_id):
         url = f"{self.base_url}blocks/{block_id}"
-        response = requests.get(url, headers=self.headers)
-        return self._parse_response(response)
+        return self._get_url(url)
 
     def get_child_blocks(self, block_id, page, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
         return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
 
-    @retry_api_call
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"
         return self._paginated_request(self._get_url, url, {})
 
-    @retry_api_call
     def get_comments(self, block_id):
         url = f"{self.base_url}comments"
         comments = self._paginated_request(self._get_url, url, {"block_id": block_id})
@@ -347,30 +342,46 @@ class Client:
         notion_property = self.get_notion_page_property(page_id, property_id)
         return self.wrap_notion_property(notion_property)
 
-    @retry_api_call
     def get_notion_page_property(self, page_id, property_id):
         url = f"{self.base_url}pages/{page_id}/properties/{property_id}"
-        response = requests.get(url, headers=self.headers)
-        return self._parse_response(response)
+        return self._get_url(url)
 
-    @retry_api_call
     def create_notion_page(self, page_data):
         creation_url = f'{self.base_url}pages'
-        response = requests.post(creation_url, headers=self.headers, json=page_data)
-        return self._parse_response(response)
+        return self._post_url(creation_url, page_data)
 
     @retry_api_call
-    def _get_url(self, url, params=None):
-        if params is None:
+    def _get_url(self, url, params=None, stream=False):
+        if not stream and params is None:
             params = {}
-        response = requests.get(url, headers=self.headers, params=params)
-        return self._parse_response(response)
+        response = requests.get(
+            url,
+            params=params,
+            stream=stream,
+            headers=self.headers if not stream else None
+        )
+        return self._parse_response(response, stream)
 
     @retry_api_call
     def _post_url(self, url, data=None):
         if data is None:
             data = {}
         response = requests.post(url, headers=self.headers, json=data)
+        return self._parse_response(response)
+
+    @retry_api_call
+    def _delete_url(self, url):
+        response = requests.delete(
+            url,
+            headers={k: v for k, v in self.headers.items() if k != 'Content-Type'}
+        )
+        return self._parse_response(response)
+
+    @retry_api_call
+    def _patch_url(self, url, data=None):
+        if data is None:
+            data = {}
+        response = requests.patch(url, headers=self.headers, json=data)
         return self._parse_response(response)
 
     def _paginated_request(self, request_method, url, initial_params):
@@ -384,7 +395,7 @@ class Client:
             else:
                 params["start_cursor"] = data["next_cursor"]
 
-    def _parse_response(self, response):
+    def _parse_response(self, response, stream=False):
         """Taken from https://github.com/ramnes/notion-sdk-py"""
         try:
             response.raise_for_status()
@@ -401,9 +412,8 @@ class Client:
                     response, body["message"], code
                 )
             raise HTTPResponseError(error.response)
-        return response.json()
+        return response.json() if not stream else response.content
 
-    @retry_api_call
     def download_file(self, url, page, block_id):
         """
         Download a file from a given URL into the MEDIA_ROOT.
@@ -413,8 +423,8 @@ class Client:
         """
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
-        request_stream = requests.get(url, stream=True)
-        return self.save_file(request_stream.content, page, extension, block_id)
+        content = self._get_url(url, stream=True)
+        return self.save_file(content, page, extension, block_id)
 
     def save_file(self, content, page, extension, block_id):
         block_id_chars = strip_hyphens(block_id)
@@ -477,7 +487,6 @@ class Client:
     def _notion_block_object_is(self, block, object):
         return 'object' in block and block['object'] == object
 
-    @retry_api_call
     def append_child_notion_blocks(self, block_id, children):
         '''
         Appends each datapoint of a list of notion_data as children to the block specified by id.
@@ -527,11 +536,10 @@ class Client:
                     portion = child_data_list[i:portion_index_stop]
                 else:
                     portion = child_data_list[i:]
-                response = requests.patch(
+                appension_return = self._patch_url(
                     f"{self.base_url}blocks/{block_id}/children",
-                    json={"children": portion}, headers=self.headers
+                    {"children": portion}
                 )
-                appension_return = self._parse_response(response)
                 appension_history_list.extend(appension_return['results'])
         return appension_history_list
 
@@ -594,7 +602,6 @@ class Client:
                 self.copy_notion_database_children(notion_children, child_database)
         return child_database
 
-    @retry_api_call
     def create_notion_comment(self, page_id, text_blocks_descriptors):
         data = {
             "rich_text": mock_rich_text_array(text_blocks_descriptors),
@@ -603,30 +610,13 @@ class Client:
                 "page_id": page_id,
             },
         }
-        response = requests.post(
-            f"{self.base_url}comments",
-            headers=self.headers,
-            json=data
-        )
-        return self._parse_response(response)
+        return self._post_url(f"{self.base_url}comments", data)
 
-    @retry_api_call
     def create_notion_database(self, notion_data):
-        response = requests.post(
-            f'{self.base_url}databases',
-            headers=self.headers,
-            json=notion_data)
-        return self._parse_response(response)
+        return self._post_url(f'{self.base_url}databases', notion_data)
 
-    @retry_api_call
     def delete_notion_block(self, notion_block):
-        block_id = notion_block['id']
-        headers = {**self.headers}
-        del headers['Content-Type']
-        response = requests.delete(
-            f"{self.base_url}blocks/{block_id}", headers=headers
-        )
-        return self._parse_response(response)
+        return self._delete_url(f"{self.base_url}blocks/{notion_block['id']}")
 
     def page_class_is_in_use(self, page):
         '''
