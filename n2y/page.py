@@ -16,7 +16,7 @@ class Page:
         self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
         self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
         self.archived = notion_data['archived']
-        self.emoji = self._init_icon(notion_data['icon'])
+        self.icon = self._init_icon(notion_data['icon'])
         self.cover = notion_data['cover'] and client.wrap_notion_file(notion_data['cover'])
         self.archived = notion_data['archived']
         self.properties = {
