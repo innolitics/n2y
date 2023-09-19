@@ -135,7 +135,6 @@ def render_from_string(source, context=None, environment=None):
     if context is None:
         context = {}
     template = environment.from_string(source)
-    template.root_render_func
     output = template.render(context)
 
     # output string usually loses trailing new line.
@@ -284,6 +283,8 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         self.error: str | None = None
         self.exc_info: JinjaExceptionInfo | None = None
         self.databases: JinjaDatabaseCache | None = None
+        self.jinja_code: str = self.rich_text.to_plain_text()
+        self.uses_first_pass_output: bool = 'first_pass_output' in self.jinja_code
         self.page_props: PageProperties = self.page.properties_to_values(self.pandoc_format)
         self.jinja_environment: jinja2.Environment = self.client.plugin_data[
             'jinjarenderpage'][self.page.notion_id]['environment']
@@ -392,8 +393,6 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             k: self._debug_assist(v, 'test', k)
             for k, v in self.jinja_environment.tests.items()
         }
-        if not getattr(self, 'jinja_code', None):
-            self.jinja_code = self.rich_text.to_plain_text()
         if not getattr(self, 'context', None):
             self.context = {
                 "databases": self.databases,
@@ -413,7 +412,11 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                     options=[],
                 )
                 return content
-            self.jinja_environment.filters['render_content'] = render_content
+            self.jinja_environment.filters['render_content'] = self._debug_assist(
+                render_content,
+                'filter',
+                'render_content'
+            )
         try:
             self.rendered_text = render_from_string(
                 self.jinja_code, self.context, self.jinja_environment
@@ -425,7 +428,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
     def to_pandoc(self):
         if self.databases is None:
             self._get_yaml_from_mentions()
-        if self.render_count < 2:
+        if self.render_count < 1 or self.render_count < 2 and self.uses_first_pass_output:
             self._render_text()
         if self.error:
             children_ast = self._error_ast()
