@@ -3,8 +3,8 @@ import sys
 import logging
 import argparse
 
-import n2y.logger
-from n2y import notion
+from n2y.logger import logger, HANDLER
+from n2y.notion import Client
 from n2y.page import Page
 from n2y.database import Database
 from n2y.mentions import PageMention
@@ -23,11 +23,13 @@ class ReportingPageMention(PageMention):
         super().__init__(client, notion_data, plain_text, block)
         if plugin_key not in block.page.plugin_data:
             block.page.plugin_data[plugin_key] = []
-        block.page.plugin_data[plugin_key].append({
-            "block_url": block.notion_url,
-            "linked_page_id": self.notion_page_id,
-            "type": "page mention",
-        })
+        block.page.plugin_data[plugin_key].append(
+            {
+                "block_url": block.notion_url,
+                "linked_page_id": self.notion_page_id,
+                "type": "page mention",
+            }
+        )
 
 
 class ReportingLinkToPageBlock(LinkToPageBlock):
@@ -35,16 +37,18 @@ class ReportingLinkToPageBlock(LinkToPageBlock):
         super().__init__(client, notion_data, page, get_children)
         if plugin_key not in page.plugin_data:
             page.plugin_data[plugin_key] = []
-        page.plugin_data[plugin_key].append({
-            "block_url": self.notion_url,
-            "linked_page_id": self.linked_node_id,
-            "type": "link to page",
-        })
+        page.plugin_data[plugin_key].append(
+            {
+                "block_url": self.notion_url,
+                "linked_page_id": self.linked_node_id,
+                "type": "link to page",
+            }
+        )
 
 
 def cli_main():
     args = sys.argv[1:]
-    access_token = os.environ.get('NOTION_ACCESS_TOKEN', None)
+    access_token = os.environ.get("NOTION_ACCESS_TOKEN", None)
     sys.exit(main(args, access_token))
 
 
@@ -55,11 +59,14 @@ def main(raw_args, access_token):
     )
     parser.add_argument("object_id", help="The id or url for a Notion database or page")
     parser.add_argument(
-        "--verbosity", '-v', default='INFO',
+        "--verbosity",
+        "-v",
+        default="INFO",
         help="Level to set the root logging module to",
     )
     parser.add_argument(
-        "--logging-format", default='%(asctime)s - %(levelname)s - n2y.%(module)s: %(message)s',
+        "--logging-format",
+        default="%(asctime)s - %(levelname)s - n2y.%(module)s: %(message)s",
         help="Default format used when logging",
     )
 
@@ -67,11 +74,11 @@ def main(raw_args, access_token):
 
     logging_level = logging.__dict__[args.verbosity]
     new_formatter = logging.Formatter(args.logging_format)
-    n2y.logger.logger.setLevel(logging_level)
-    n2y.logger.HANDLER.setFormatter(new_formatter)
+    logger.setLevel(logging_level)
+    HANDLER.setFormatter(new_formatter)
 
     if access_token is None:
-        n2y.logger.logger.critical('No NOTION_ACCESS_TOKEN environment variable is set')
+        logger.critical("No NOTION_ACCESS_TOKEN environment variable is set")
         return 1
 
     object_id = id_from_share_link(args.object_id)
@@ -92,7 +99,7 @@ def main(raw_args, access_token):
         },
     }
 
-    client = notion.Client(access_token)
+    client = Client(access_token)
     client.load_plugin(plugins)
 
     node = client.get_page_or_database(object_id)
@@ -102,7 +109,7 @@ def main(raw_args, access_token):
             "Unable to find database or page with id %s. "
             "Perhaps its not shared with the integration?"
         )
-        n2y.logger.logger.error(msg, object_id)
+        logger.error(msg, object_id)
         return 2
 
     references = {}
@@ -118,7 +125,7 @@ def main(raw_args, access_token):
 def exclude_internal_references(references):
     external_references = {}
     for page_id, links in references.items():
-        external_links = [l for l in links if l['linked_page_id'] not in references]
+        external_links = [l for l in links if l["linked_page_id"] not in references]
         external_references[page_id] = external_links
     return external_references
 
@@ -141,13 +148,13 @@ def audit_node(node, references, depth):
 
 
 def audit_database(database, references, depth):
-    n2y.logger.logger.info("%sDatabase %s", " " * depth, database.title.to_plain_text())
+    logger.info("%sDatabase %s", " " * depth, database.title.to_plain_text())
     for page in database.children:
         audit_page(page, references, depth + 1)
 
 
 def audit_page(page, references, depth):
-    n2y.logger.logger.info("%sAuditing %s", " " * depth, page.title.to_plain_text())
+    logger.info("%sAuditing %s", " " * depth, page.title.to_plain_text())
     assert page.notion_id not in references  # expect that each page is visited once
     page.block  # load all of the blocks
     references[page.notion_id] = page.plugin_data.get(plugin_key, [])

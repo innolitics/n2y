@@ -11,4 +11,4 @@ class Emoji:
 
     def __init__(self, client, notion_data):
         self.client = client
-        self.emoji = notion_data['emoji']
+        self.emoji = notion_data["emoji"]

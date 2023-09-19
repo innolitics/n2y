@@ -25,7 +25,8 @@ def test_only_children_of_blue_toggles_are_rendered():
         Para([Str("Paragraph"), Space(), Str("text")]),
     ]
     assert (
-        markdown == """# Heading text
+        markdown
+        == """# Heading text
 
 Paragraph text
 """
@@ -37,30 +38,22 @@ def test_non_blue_toggles_are_rendered_regularly_with_bullet_list():
     non_blue_colors.remove("blue")
     for color in non_blue_colors:
         pandoc_ast, markdown = process_test_toggle_block(color)
-        pandoc_1 = BulletList([
+        pandoc_1 = BulletList(
             [
-                Para(
-                    [Str('Toggle'), Space(), Str('text')]
-                ),
-                Header(
-                    1,
-                    ('heading-text', [], []),
-                    [Str('Heading'), Space(), Str('text')]
-                ),
-                Para(
-                    [Str('Paragraph'), Space(), Str('text')]
-                )
+                [
+                    Para([Str("Toggle"), Space(), Str("text")]),
+                    Header(
+                        1,
+                        ("heading-text", [], []),
+                        [Str("Heading"), Space(), Str("text")],
+                    ),
+                    Para([Str("Paragraph"), Space(), Str("text")]),
+                ]
             ]
-        ])
+        )
         pandoc_2 = [
-            Header(
-                1,
-                ('heading-text', [], []),
-                [Str('Heading'), Space(), Str('text')]
-            ),
-            Para(
-                [Str('Paragraph'), Space(), Str('text')]
-            )
+            Header(1, ("heading-text", [], []), [Str("Heading"), Space(), Str("text")]),
+            Para([Str("Paragraph"), Space(), Str("text")]),
         ]
         markdown_1 = "# Heading text\n\nParagraph text\n"
         markdown_2 = "-   Toggle text\n\n    # Heading text\n\n    Paragraph text\n"

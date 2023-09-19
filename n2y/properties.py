@@ -1,9 +1,9 @@
 class Property:
     def __init__(self, client, notion_data):
         self.client = client
-        self.notion_id = notion_data['id']
-        self.notion_type = notion_data['type']
-        self.name = notion_data['name']
+        self.notion_id = notion_data["id"]
+        self.notion_type = notion_data["type"]
+        self.name = notion_data["name"]
 
 
 # TODO: eventually add methods for generating SQL type expresions or JSON
@@ -21,28 +21,28 @@ class TextProperty(Property):
 class NumberProperty(Property):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        self.format = notion_data['number']["format"]
+        self.format = notion_data["number"]["format"]
 
 
 class SelectProperty(Property):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        notion_options = notion_data['select']['options']
+        notion_options = notion_data["select"]["options"]
         self.options = [SelectOption(self.client, no) for no in notion_options]
 
 
 class SelectOption:
     def __init__(self, client, notion_option):
         self.client = client
-        self.notion_id = notion_option['id']
-        self.name = notion_option['name']
-        self.color = notion_option['color']
+        self.notion_id = notion_option["id"]
+        self.name = notion_option["name"]
+        self.color = notion_option["color"]
 
 
 class MultiSelectProperty(Property):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
-        notion_options = notion_data['multi_select']['options']
+        notion_options = notion_data["multi_select"]["options"]
         self.options = [MultiSelectOption(self.client, no) for no in notion_options]
 
 
@@ -56,9 +56,9 @@ class MultiSelectOption:
 
     def __init__(self, client, notion_option):
         self.client = client
-        self.notion_id = notion_option['id']
-        self.name = notion_option['name']
-        self.color = notion_option['color']
+        self.notion_id = notion_option["id"]
+        self.name = notion_option["name"]
+        self.color = notion_option["color"]
 
 
 class DateProperty(Property):
@@ -132,23 +132,23 @@ class LastEditedBy(Property):
 
 
 DEFAULT_PROPERTIES = {
-    'title': TitleProperty,
-    'rich_text': TextProperty,
-    'number': NumberProperty,
-    'select': SelectProperty,
-    'multi_select': MultiSelectProperty,
-    'date': DateProperty,
-    'people': PeopleProperty,
-    'files': FilesProperty,
-    'checkbox': CheckboxProperty,
-    'url': UrlProperty,
-    'email': EmailProperty,
-    'phone_number': PhoneNumberProperty,
-    'formula': FormulaProperty,
-    'relation': RelationProperty,
-    'rollup': RollupProperty,
-    'created_time': CreatedTimeProperty,
-    'created_by': CreatedByProperty,
-    'last_edited_time': LastEditedTimeProperty,
-    'last_edited_by': LastEditedBy,
+    "title": TitleProperty,
+    "rich_text": TextProperty,
+    "number": NumberProperty,
+    "select": SelectProperty,
+    "multi_select": MultiSelectProperty,
+    "date": DateProperty,
+    "people": PeopleProperty,
+    "files": FilesProperty,
+    "checkbox": CheckboxProperty,
+    "url": UrlProperty,
+    "email": EmailProperty,
+    "phone_number": PhoneNumberProperty,
+    "formula": FormulaProperty,
+    "relation": RelationProperty,
+    "rollup": RollupProperty,
+    "created_time": CreatedTimeProperty,
+    "created_by": CreatedByProperty,
+    "last_edited_time": LastEditedTimeProperty,
+    "last_edited_by": LastEditedBy,
 }

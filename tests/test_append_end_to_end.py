@@ -13,7 +13,7 @@ def test_append_and_delete_blocks():
             "color": "default",
             "rich_text": [mock_rich_text("m")],
         },
-        has_children=True
+        has_children=True,
     )
     del notion_block["url"]
     creation_response = client.append_child_notion_blocks(page.notion_id, [notion_block])

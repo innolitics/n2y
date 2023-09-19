@@ -10,21 +10,23 @@ class Page:
         self.client = client
 
         self.notion_data = notion_data
-        self.notion_id = notion_data['id']
-        self.created_time = fromisoformat(notion_data['created_time'])
-        self.created_by = client.wrap_notion_user(notion_data['created_by'])
-        self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
-        self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
-        self.archived = notion_data['archived']
-        self.icon = self._init_icon(notion_data['icon'])
-        self.cover = notion_data['cover'] and client.wrap_notion_file(notion_data['cover'])
-        self.archived = notion_data['archived']
+        self.notion_id = notion_data["id"]
+        self.created_time = fromisoformat(notion_data["created_time"])
+        self.created_by = client.wrap_notion_user(notion_data["created_by"])
+        self.last_edited_time = fromisoformat(notion_data["last_edited_time"])
+        self.last_edited_by = client.wrap_notion_user(notion_data["last_edited_by"])
+        self.archived = notion_data["archived"]
+        self.icon = self._init_icon(notion_data["icon"])
+        self.cover = notion_data["cover"] and client.wrap_notion_file(
+            notion_data["cover"]
+        )
+        self.archived = notion_data["archived"]
         self.properties = {
             k: client.wrap_notion_property_value(npv, self)
-            for k, npv in notion_data['properties'].items()
+            for k, npv in notion_data["properties"].items()
         }
-        self.notion_parent = notion_data['parent']
-        self.notion_url = notion_data['url']
+        self.notion_parent = notion_data["parent"]
+        self.notion_url = notion_data["url"]
 
         self._block = None
         self._children = None
@@ -106,6 +108,7 @@ class Page:
                 toc_indecies.append(i)
                 return True
             return False
+
         if any(is_toc(*t) for t in enumerate(self.block.children)):
             child_ast = ast[1]
             for i in toc_indecies:

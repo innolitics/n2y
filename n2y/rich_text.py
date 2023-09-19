@@ -2,8 +2,17 @@ import re
 from collections import deque
 
 from pandoc.types import (
-    Str, Space, LineBreak, Strong, Emph, Strikeout, Code, Link,
-    Underline, Math, InlineMath
+    Str,
+    Space,
+    LineBreak,
+    Strong,
+    Emph,
+    Strikeout,
+    Code,
+    Link,
+    Underline,
+    Math,
+    InlineMath,
 )
 
 from n2y.logger import logger
@@ -25,11 +34,11 @@ class RichText:
         self.client = client
         self.block = block
 
-        self.plain_text = notion_data['plain_text']
-        self.href = notion_data.get('href', None)
-        self.notion_type = notion_data['type']
+        self.plain_text = notion_data["plain_text"]
+        self.href = notion_data.get("href", None)
+        self.notion_type = notion_data["type"]
         self.notion_data = notion_data
-        annotations = notion_data['annotations']
+        annotations = notion_data["annotations"]
         self.bold = annotations["bold"]
         self.italic = annotations["italic"]
         self.strikethrough = annotations["strikethrough"]
@@ -81,9 +90,7 @@ class RichText:
 
         prependages = deque()
         appendages = deque()
-        problematic_annotations = [
-            self.bold, self.italic, self.strikethrough
-        ]
+        problematic_annotations = [self.bold, self.italic, self.strikethrough]
 
         # Notion's data model allows space to be bolded, italicized, or
         # strick through, but markdown's doesn't. Thus, since these annotations
@@ -113,14 +120,18 @@ class MentionRichText(RichText):
         super().__init__(client, notion_data, block)
         if mention is None:
             self.mention = client.wrap_notion_mention(
-                notion_data['mention'], notion_data["plain_text"], block,
+                notion_data["mention"],
+                notion_data["plain_text"],
+                block,
             )
         else:
             self.mention = mention
 
     def to_pandoc(self):
         if self.code:
-            logger.warning('Code formatting is being dropped on mention "%s"', self.plain_text)
+            logger.warning(
+                'Code formatting is being dropped on mention "%s"', self.plain_text
+            )
         mention_ast = self.mention.to_pandoc()
         return self.annotate_pandoc_ast(mention_ast)
 
@@ -128,11 +139,13 @@ class MentionRichText(RichText):
 class EquationRichText(RichText):
     def __init__(self, client, notion_data, block=None):
         super().__init__(client, notion_data, block)
-        self.expression = notion_data['equation']['expression']
+        self.expression = notion_data["equation"]["expression"]
 
     def to_pandoc(self):
         if self.code:
-            logger.warning('Code formatting is being dropped on equation "%s"', self.expression)
+            logger.warning(
+                'Code formatting is being dropped on equation "%s"', self.expression
+            )
         equation_ast = [Math(InlineMath(), self.expression)]
         return self.annotate_pandoc_ast(equation_ast)
 
@@ -154,11 +167,7 @@ class TextRichText(RichText):
             code_ast = [Code(("", [], []), self.plain_text)]
             annotated_ast = self.annotate_pandoc_ast(code_ast)
         if self.href:
-            return [Link(
-                ('', [], []),
-                annotated_ast,
-                (self.href, '')
-            )]
+            return [Link(("", [], []), annotated_ast, (self.href, ""))]
         else:
             return annotated_ast
 
@@ -210,7 +219,7 @@ class RichTextArray:
         )
 
     def to_plain_text(self):
-        return ''.join(item.plain_text for item in self.items)
+        return "".join(item.plain_text for item in self.items)
 
     def matches(self, regexp):
         if len(self.items) > 0:

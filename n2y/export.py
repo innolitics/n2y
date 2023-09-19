@@ -29,8 +29,7 @@ def _page_properties(
     properties = page.properties_to_values(pandoc_format)
     if id_property in properties:
         logger.warning(
-            'The id property "%s" is shadowing an existing '
-            "property with the same name",
+            'The id property "%s" is shadowing an existing property with the same name',
             id_property,
         )
     if id_property:
@@ -38,8 +37,7 @@ def _page_properties(
 
     if url_property in properties:
         logger.warning(
-            'The url property "%s" is shadowing an existing '
-            "property with the same name",
+            'The url property "%s" is shadowing an existing property with the same name',
             url_property,
         )
     if url_property:

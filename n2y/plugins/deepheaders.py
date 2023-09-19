@@ -12,7 +12,8 @@ class DeepHeadersBlock(HeadingThreeBlock):
     replaced with a deeper header. For example, a notion header 3 block that
     begins with "== Header" will become an h5 and the "== " will be stripped.
     """
-    trigger_regex = re.compile(r'^(=+) ')
+
+    trigger_regex = re.compile(r"^(=+) ")
 
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)

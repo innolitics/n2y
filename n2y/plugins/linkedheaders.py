@@ -9,12 +9,8 @@ class LinkedHeadingBlock(HeadingBlock):
     """
 
     def to_pandoc(self):
-        link = [Link(
-            ('', [], []),
-            self.rich_text.to_pandoc(),
-            (self.notion_url, '')
-        )]
-        return Header(self.level, ('', [], []), link)
+        link = [Link(("", [], []), self.rich_text.to_pandoc(), (self.notion_url, ""))]
+        return Header(self.level, ("", [], []), link)
 
 
 class LinkedHeadingThreeBlock(LinkedHeadingBlock):

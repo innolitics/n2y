@@ -11,7 +11,7 @@ pdf = "T.pdf"
 def page():
     property_value = mock_rich_text_property_value("P")
     notion_page = mock_page(title="T", extra_properties={"property": property_value})
-    client = notion.Client('')
+    client = notion.Client("")
     return client._wrap_notion_page(notion_page)
 
 

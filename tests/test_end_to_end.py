@@ -4,6 +4,7 @@ from os import listdir
 from os.path import isfile, join
 
 import yaml
+
 try:
     from yaml import CLoader as Loader
 except ImportError:
@@ -98,7 +99,9 @@ def test_simple_database_to_yaml(tmpdir):
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     object_id = "176fa24d4b7f4256877e60a1035b45a4"
-    unsorted_database = run_n2y_database_as_yaml(tmpdir, object_id, content_property="Content")
+    unsorted_database = run_n2y_database_as_yaml(
+        tmpdir, object_id, content_property="Content"
+    )
     database = sorted(unsorted_database, key=lambda row: row["Name"])
     assert len(database) == 3
     assert database[0]["Name"] == "A"
@@ -122,8 +125,12 @@ def test_simple_database_to_markdown_files(tmpdir):
     https://fresh-pencil-9f3.notion.site/176fa24d4b7f4256877e60a1035b45a4
     """
     object_id = "176fa24d4b7f4256877e60a1035b45a4"
-    output_directory = run_n2y_database_as_files(tmpdir, object_id, filename_template="{Name}.md")
-    generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
+    output_directory = run_n2y_database_as_files(
+        tmpdir, object_id, filename_template="{Name}.md"
+    )
+    generated_files = {
+        f for f in listdir(output_directory) if isfile(join(output_directory, f))
+    }
     assert generated_files == {"A.md", "B.md", "C.md"}
     document = open(join(output_directory, "A.md"), "r").read()
     metadata = parse_yaml_front_matter(document)
@@ -152,7 +159,9 @@ def test_simple_database_to_docx_files(tmpdir):
     status = run_n2y(tmpdir, config)
     assert status == 0
     output_directory = os.path.join(tmpdir, "database")
-    generated_files = {f for f in listdir(output_directory) if isfile(join(output_directory, f))}
+    generated_files = {
+        f for f in listdir(output_directory) if isfile(join(output_directory, f))
+    }
     assert generated_files == {"A.docx", "B.docx", "C.docx"}
 
 
@@ -175,8 +184,10 @@ def test_simple_database_config(tmpdir):
         ]
     }
     database = run_n2y_database_as_yaml(
-        tmpdir, database_id,
-        notion_sort=notion_sorts, notion_filter=notion_filter,
+        tmpdir,
+        database_id,
+        notion_sort=notion_sorts,
+        notion_filter=notion_filter,
     )
     assert len(database) == 2
     assert database[0]["Name"] == "C"
@@ -194,11 +205,11 @@ def test_all_properties_database(tmpdir):
 
 
 def test_mention_in_simple_table(tmpdir):
-    '''
+    """
     The page can be seen here:
     https://fresh-pencil-9f3.notion.site/Simple-Table-with-Mention-Test-e12497428b0e43c3b14e016de6c5a2cf
-    '''
-    object_id = 'e12497428b0e43c3b14e016de6c5a2cf'
+    """
+    object_id = "e12497428b0e43c3b14e016de6c5a2cf"
     document = run_n2y_page(tmpdir, object_id)
     assert "In Table: Simple Test Page" in document
     assert "Out of Table: Simple Test Page" in document
@@ -221,13 +232,13 @@ def test_all_blocks_page_to_markdown(tmpdir):
         "Column 2" in lines,
     ]
     assert lines[5:12] == [
-        '1.  [Heading 1](#heading-1)',
-        '    1.  [Heading 2](#heading-2)',
-        '        1.  [Heading 3](#heading-3)',
-        '2.  [Header One](#header-one)',
-        '    1.  [Header Two](#header-two)',
-        '        1.  [Header Three](#header-three)',
-        '3.  [Columns](#columns)'
+        "1.  [Heading 1](#heading-1)",
+        "    1.  [Heading 2](#heading-2)",
+        "        1.  [Heading 3](#heading-3)",
+        "2.  [Header One](#header-one)",
+        "    1.  [Header Two](#header-two)",
+        "        1.  [Header Three](#header-three)",
+        "3.  [Columns](#columns)",
     ]
     assert "Text block" in lines
     assert "Text *italics* too" in lines
@@ -301,14 +312,18 @@ def test_builtin_plugins(tmpdir):
     https://fresh-pencil-9f3.notion.site/Plugins-Test-96d71e2876eb47b285833582e8cf27eb
     """
     object_id = "96d71e2876eb47b285833582e8cf27eb"
-    document = run_n2y_page(tmpdir, object_id, plugins=[
-        "n2y.plugins.deepheaders",
-        "n2y.plugins.removecallouts",
-        "n2y.plugins.rawcodeblocks",
-        "n2y.plugins.mermaid",
-        "n2y.plugins.footnotes",
-        "n2y.plugins.expandlinktopages",
-    ])
+    document = run_n2y_page(
+        tmpdir,
+        object_id,
+        plugins=[
+            "n2y.plugins.deepheaders",
+            "n2y.plugins.removecallouts",
+            "n2y.plugins.rawcodeblocks",
+            "n2y.plugins.mermaid",
+            "n2y.plugins.footnotes",
+            "n2y.plugins.expandlinktopages",
+        ],
+    )
     lines = document.split("\n")
 
     assert "#### H4" in lines
@@ -381,9 +396,13 @@ def test_jinja_render_plugin(tmpdir):
     the parent page with the database and child page to be rendered.
     """
     object_id = "869e37f1523c468399411a1b23b27634"
-    document = run_n2y_page(tmpdir, object_id, plugins=[
-        "n2y.plugins.jinjarenderpage",
-    ])
+    document = run_n2y_page(
+        tmpdir,
+        object_id,
+        plugins=[
+            "n2y.plugins.jinjarenderpage",
+        ],
+    )
 
     assert "## blue is a color" in document
     assert "## pink is a color" in document
@@ -400,9 +419,13 @@ def test_dbfootnote_plugin(tmpdir):
     https://www.notion.so/Advanced-DB-Footnote-8a1a17c7ef3043f4bd9fb041ef31ba7
     """
     object_id = "8a1a17c7ef3043f4bd9fb041ef31ba7d"
-    document = run_n2y_page(tmpdir, object_id, plugins=[
-        "n2y.plugins.dbfootnotes",
-    ])
+    document = run_n2y_page(
+        tmpdir,
+        object_id,
+        plugins=[
+            "n2y.plugins.dbfootnotes",
+        ],
+    )
 
     assert "some text [^1]." in document
     assert "like so [^2] and" in document
@@ -464,11 +487,14 @@ Yakkity yakkity yakkity yak
         in content
     ):
         number_expected_table_warnings += 1
-    assert """\
+    assert (
+        """\
 | header | row    |
 |--------|--------|
 | Nutter | Butter |
-""" in content
+"""
+        in content
+    )
     if number_expected_table_warnings > 0:
         expected_blurb = (
             f"{number_expected_table_warnings} table(s) will present empty "
