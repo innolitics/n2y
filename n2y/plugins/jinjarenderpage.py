@@ -376,9 +376,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         logger.error(self.error)
 
     def _render_error(self, err, during_render=True):
-        first_pass_output = self.jinja_environment.globals["first_pass_output"]
-        if self.render_count == 1 or during_render and self.render_count == 0 and \
-                not first_pass_output.second_pass_is_requested:
+        if self.render_count == 1 or during_render and self.render_count == 0:
             self._log_jinja_error(err)
 
     def _error_ast(self):
