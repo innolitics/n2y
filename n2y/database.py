@@ -61,7 +61,7 @@ class Database:
     def _tuplize(self, item):
         if callable(getattr(item, "items", None)):
             return tuple((key, self._tuplize(val)) for (key, val) in item.items())
-        elif hasattr(item, "__iter__") and type(item) is not str:
+        elif hasattr(item, "__iter__") and not isinstance(item, str):
             return tuple(self._tuplize(i) for i in item)
         else:
             return (item,)
