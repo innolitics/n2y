@@ -64,7 +64,7 @@ class Database:
         elif hasattr(item, "__iter__") and type(item) is not str:
             return tuple([self._tuplize(i) for i in item])
         else:
-            return {item}
+            return (item,)
 
     def _init_icon(self, icon_notion_data):
         """
