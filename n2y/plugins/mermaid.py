@@ -10,18 +10,14 @@ from n2y.logger import logger
 from n2y.errors import UseNextClass
 from n2y.blocks import FencedCodeBlock
 
-mermaid_config = {
-    "flowchart": {
-        "useMaxWidth": False
-    }
-}
+mermaid_config = {"flowchart": {"useMaxWidth": False}}
 
 puppeteer_config = {
     "headless": True,
     "args": [
         "--no-sandbox",
         "--disable-setuid-sandbox",
-    ]
+    ],
 }
 
 
@@ -46,36 +42,46 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
         # TODO: Clean up by extracting all this temp code out
         temp_fd, temp_filepath = tempfile.mkstemp(suffix=".png")
         os.close(temp_fd)
-        temp_config_mermaid_fd, temp_config_mermaid_filepath = tempfile.mkstemp(suffix=".json")
+        temp_config_mermaid_fd, temp_config_mermaid_filepath = tempfile.mkstemp(
+            suffix=".json"
+        )
         os.write(temp_config_mermaid_fd, json.dumps(mermaid_config).encode("utf-8"))
         os.close(temp_config_mermaid_fd)
-        temp_config_puppeteer_fd, temp_config_puppeteer_filepath = tempfile.mkstemp(suffix=".json")
+        temp_config_puppeteer_fd, temp_config_puppeteer_filepath = tempfile.mkstemp(
+            suffix=".json"
+        )
         os.write(temp_config_puppeteer_fd, json.dumps(puppeteer_config).encode("utf-8"))
         os.close(temp_config_puppeteer_fd)
         try:
             diagram_as_text = self.rich_text.to_plain_text()
             diagram_as_bytes = diagram_as_text.encode()
-            subprocess.run([
-                'mmdc',
-                '--configFile', temp_config_mermaid_filepath,
-                '--puppeteerConfigFile', temp_config_puppeteer_filepath,
-                '-o', temp_filepath,
-            ], capture_output=True, input=diagram_as_bytes, check=True)
-            with open(temp_filepath, 'rb') as temp_file:
+            subprocess.run(
+                [
+                    "mmdc",
+                    "--configFile",
+                    temp_config_mermaid_filepath,
+                    "--puppeteerConfigFile",
+                    temp_config_puppeteer_filepath,
+                    "-o",
+                    temp_filepath,
+                ],
+                capture_output=True,
+                input=diagram_as_bytes,
+                check=True,
+            )
+            with open(temp_filepath, "rb") as temp_file:
                 content = temp_file.read()
                 root = Path(__file__).resolve().parent.parent
-                with open(root/'data'/'mermaid_err.png', 'rb') as err_img:
+                with open(root / "data" / "mermaid_err.png", "rb") as err_img:
                     if content == err_img.read():
-                        raise NotImplementedError(
-                            'Syntax Error In Graph'
-                        )
-                url = self.client.save_file(content, self.page, '.png', self.notion_id)
+                        raise NotImplementedError("Syntax Error In Graph")
+                url = self.client.save_file(content, self.page, ".png", self.notion_id)
                 caption = []
-                fig_flag = ''
+                fig_flag = ""
                 if self.caption:
-                    fig_flag = 'fig:'
+                    fig_flag = "fig:"
                     caption = self.caption.to_pandoc()
-            return Para([Image(('', [], []), caption, (url, fig_flag))])
+            return Para([Image(("", [], []), caption, (url, fig_flag))])
         except subprocess.CalledProcessError as exc:
             # as of now, mmdc does not ever return a non-zero error code, so
             # this won't ever be hit

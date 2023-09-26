@@ -2,10 +2,36 @@ from itertools import groupby
 from urllib.parse import urljoin
 
 from pandoc.types import (
-    Period, Pandoc, Link, HorizontalRule, BlockQuote, Image, Table, TableHead,
-    TableBody, TableFoot, RowHeadColumns, Row, Cell, RowSpan, Str, Para, Plain,
-    Header, CodeBlock, BulletList, OrderedList, Decimal, Space, ColSpan,
-    ColWidthDefault, AlignDefault, Caption, Math, DisplayMath, LineBreak
+    Period,
+    Pandoc,
+    Link,
+    HorizontalRule,
+    BlockQuote,
+    Image,
+    Table,
+    TableHead,
+    TableBody,
+    TableFoot,
+    RowHeadColumns,
+    Row,
+    Cell,
+    RowSpan,
+    Str,
+    Para,
+    Plain,
+    Header,
+    CodeBlock,
+    BulletList,
+    OrderedList,
+    Decimal,
+    Space,
+    ColSpan,
+    ColWidthDefault,
+    AlignDefault,
+    Caption,
+    Math,
+    DisplayMath,
+    LineBreak,
 )
 
 from n2y.logger import logger
@@ -39,14 +65,14 @@ class Block:
         self.client = client
         self.page = page
 
-        self.notion_id = notion_data['id']
-        self.created_time = notion_data['created_time']
-        self.created_by = notion_data['created_by']
-        self.last_edited_time = notion_data['last_edited_time']
-        self.last_edited_by = notion_data['last_edited_by']
-        self.has_children = notion_data['has_children']
-        self.archived = notion_data['archived']
-        self.notion_type = notion_data['type']
+        self.notion_id = notion_data["id"]
+        self.created_time = notion_data["created_time"]
+        self.created_by = notion_data["created_by"]
+        self.last_edited_time = notion_data["last_edited_time"]
+        self.last_edited_by = notion_data["last_edited_by"]
+        self.has_children = notion_data["has_children"]
+        self.archived = notion_data["archived"]
+        self.notion_type = notion_data["type"]
         self.notion_data = notion_data
         if get_children:
             self.get_children()
@@ -89,7 +115,7 @@ class Block:
     @property
     def notion_url(self):
         # the notion URL's don't work if the dashes from the block ID are present
-        fragment = '#' + self.notion_id.replace('-', '')
+        fragment = "#" + self.notion_id.replace("-", "")
         if self.page is None:
             return fragment
         else:
@@ -177,9 +203,9 @@ class BulletedListItemBlock(ListItemBlock):
 class ToDoListItemBlock(BulletedListItemBlock):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.checked = self.notion_type_data['checked']
+        self.checked = self.notion_type_data["checked"]
 
-        box = '☒ ' if self.checked else '☐ '
+        box = "☒ " if self.checked else "☐ "
         self.rich_text.prepend(box)
 
 
@@ -191,8 +217,9 @@ class NumberedListItemBlock(BulletedListItemBlock):
 
 class TableOfContentsBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
-        self.subheaders: list[Header] | None = \
-            notion_data[notion_data["type"]].get('subheaders', None)
+        self.subheaders: list[Header] | None = notion_data[notion_data["type"]].get(
+            "subheaders", None
+        )
         super().__init__(client, notion_data, page, get_children)
 
     def get_children(self):
@@ -208,7 +235,9 @@ class TableOfContentsBlock(Block):
                     subsections[index].append(header)
             for subsection in subsections:
                 notion_data = self.generate_item_block(subsection)
-                children.append(TableOfContentsItemBlock(self.client, notion_data, self.page))
+                children.append(
+                    TableOfContentsItemBlock(self.client, notion_data, self.page)
+                )
             if children:
                 self.has_children = True
             self.children = children
@@ -231,18 +260,16 @@ class TableOfContentsBlock(Block):
         header = section.pop(0)
         header_text = pandoc_write_or_log_errors(
             header[2],
-            format='gfm',
+            format="gfm",
             options=[],
         )[:-1]
-        rich_text = mock_rich_text_array([
-            (header_text, None, f"#{header[1][0]}")
-        ])
+        rich_text = mock_rich_text_array([(header_text, None, f"#{header[1][0]}")])
         type_data = {
-            'header': header,
-            'subheaders': section,
-            'rich_text': rich_text,
+            "header": header,
+            "subheaders": section,
+            "rich_text": rich_text,
         }
-        return mock_block('table_of_contents_item', type_data)
+        return mock_block("table_of_contents_item", type_data)
 
     def render_toc(self, ast_list):
         self.get_subheaders(ast_list)
@@ -251,8 +278,8 @@ class TableOfContentsBlock(Block):
 
 class TableOfContentsItemBlock(NumberedListItemBlock, TableOfContentsBlock):
     def __init__(self, client, notion_data, page, get_children=True):
-        type_data = notion_data[notion_data['type']]
-        self.header = type_data['header']
+        type_data = notion_data[notion_data["type"]]
+        self.header = type_data["header"]
         self.level = self.header[0]
         super().__init__(client, notion_data, page, get_children)
 
@@ -268,13 +295,15 @@ class TableOfContentsItemBlock(NumberedListItemBlock, TableOfContentsBlock):
                 try:
                     subsections[index].append(header)
                 except IndexError:
-                    logger.warning((
-                        f'Skipping out-of-order header "{header[1][0]}" in table of contents for '
-                        f'page named {self.page.title.to_plain_text()} ({self.page.notion_url}). '
-                        f'Please create headers in sequence (i.e. proper document formatting '
-                        f'dictates that an H{self.level} should not be immediately followed by an '
-                        f'H{header[0]}, but an H{self.level + 1}).'
-                    ))
+                    logger.warning(
+                        f'Skipping out-of-order header "{header[1][0]}" in table of'
+                        " contents for page named"
+                        f" {self.page.title.to_plain_text()} ({self.page.notion_url})."
+                        " Please create headers in sequence (i.e. proper document"
+                        f" formatting dictates that an H{self.level} should not be"
+                        f" immediately followed by an H{header[0]}, but an"
+                        f" H{self.level + 1})."
+                    )
         for subsection in subsections:
             notion_data = self.generate_item_block(subsection)
             children.append(TableOfContentsItemBlock(self.client, notion_data, self.page))
@@ -322,50 +351,179 @@ class BookmarkBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.url = self.notion_type_data["url"]
-        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
+        self.caption = client.wrap_notion_rich_text_array(
+            self.notion_type_data["caption"], self
+        )
 
     def to_pandoc(self):
         if self.caption:
             caption_ast = self.caption.to_pandoc()
         else:
             caption_ast = [Str(self.url)]
-        return Para([Link(('', [], []), caption_ast, (self.url, ''))])
+        return Para([Link(("", [], []), caption_ast, (self.url, ""))])
 
 
 class FencedCodeBlock(Block):
     pandoc_highlight_languages = [
-        "abc", "actionscript", "ada", "agda", "apache", "asn1", "asp", "ats", "awk",
-        "bash", "bibtex", "boo", "c", "changelog", "clojure", "cmake", "coffee",
-        "coldfusion", "comments", "commonlisp", "cpp", "cs", "css", "curry", "d",
-        "default", "diff", "djangotemplate", "dockerfile", "dot", "doxygen",
-        "doxygenlua", "dtd", "eiffel", "elixir", "elm", "email", "erlang", "fasm",
-        "fortranfixed", "fortranfree", "fsharp", "gcc", "glsl", "gnuassembler", "go",
-        "graphql", "groovy", "hamlet", "haskell", "haxe", "html", "idris", "ini",
-        "isocpp", "j", "java", "javadoc", "javascript", "javascriptreact", "json",
-        "jsp", "julia", "kotlin", "latex", "lex", "lilypond", "literatecurry",
-        "literatehaskell", "llvm", "lua", "m4", "makefile", "mandoc", "markdown",
-        "mathematica", "matlab", "maxima", "mediawiki", "metafont", "mips", "modelines",
-        "modula2", "modula3", "monobasic", "mustache", "nasm", "nim", "noweb",
-        "objectivec", "objectivecpp", "ocaml", "octave", "opencl", "orgmode", "pascal",
-        "perl", "php", "pike", "postscript", "povray", "powershell", "prolog",
-        "protobuf", "pure", "purebasic", "python", "qml", "r", "raku", "relaxng",
-        "relaxngcompact", "rest", "rhtml", "roff", "ruby", "rust", "sass", "scala",
-        "scheme", "sci", "scss", "sed", "sgml", "sml", "spdxcomments", "sql",
-        "sqlmysql", "sqlpostgresql", "stan", "stata", "swift", "systemverilog", "tcl",
-        "tcsh", "texinfo", "toml", "typescript", "verilog", "vhdl", "xml", "xorg",
-        "xslt", "xul", "yacc", "yaml", "zsh",
+        "abc",
+        "actionscript",
+        "ada",
+        "agda",
+        "apache",
+        "asn1",
+        "asp",
+        "ats",
+        "awk",
+        "bash",
+        "bibtex",
+        "boo",
+        "c",
+        "changelog",
+        "clojure",
+        "cmake",
+        "coffee",
+        "coldfusion",
+        "comments",
+        "commonlisp",
+        "cpp",
+        "cs",
+        "css",
+        "curry",
+        "d",
+        "default",
+        "diff",
+        "djangotemplate",
+        "dockerfile",
+        "dot",
+        "doxygen",
+        "doxygenlua",
+        "dtd",
+        "eiffel",
+        "elixir",
+        "elm",
+        "email",
+        "erlang",
+        "fasm",
+        "fortranfixed",
+        "fortranfree",
+        "fsharp",
+        "gcc",
+        "glsl",
+        "gnuassembler",
+        "go",
+        "graphql",
+        "groovy",
+        "hamlet",
+        "haskell",
+        "haxe",
+        "html",
+        "idris",
+        "ini",
+        "isocpp",
+        "j",
+        "java",
+        "javadoc",
+        "javascript",
+        "javascriptreact",
+        "json",
+        "jsp",
+        "julia",
+        "kotlin",
+        "latex",
+        "lex",
+        "lilypond",
+        "literatecurry",
+        "literatehaskell",
+        "llvm",
+        "lua",
+        "m4",
+        "makefile",
+        "mandoc",
+        "markdown",
+        "mathematica",
+        "matlab",
+        "maxima",
+        "mediawiki",
+        "metafont",
+        "mips",
+        "modelines",
+        "modula2",
+        "modula3",
+        "monobasic",
+        "mustache",
+        "nasm",
+        "nim",
+        "noweb",
+        "objectivec",
+        "objectivecpp",
+        "ocaml",
+        "octave",
+        "opencl",
+        "orgmode",
+        "pascal",
+        "perl",
+        "php",
+        "pike",
+        "postscript",
+        "povray",
+        "powershell",
+        "prolog",
+        "protobuf",
+        "pure",
+        "purebasic",
+        "python",
+        "qml",
+        "r",
+        "raku",
+        "relaxng",
+        "relaxngcompact",
+        "rest",
+        "rhtml",
+        "roff",
+        "ruby",
+        "rust",
+        "sass",
+        "scala",
+        "scheme",
+        "sci",
+        "scss",
+        "sed",
+        "sgml",
+        "sml",
+        "spdxcomments",
+        "sql",
+        "sqlmysql",
+        "sqlpostgresql",
+        "stan",
+        "stata",
+        "swift",
+        "systemverilog",
+        "tcl",
+        "tcsh",
+        "texinfo",
+        "toml",
+        "typescript",
+        "verilog",
+        "vhdl",
+        "xml",
+        "xorg",
+        "xslt",
+        "xul",
+        "yacc",
+        "yaml",
+        "zsh",
     ]
 
     # TODO: finish filling in this mapping from Notion language names to
     # pandoc's supported language names
     notion_to_pandoc_highlight_languages = {
-        'c#': 'cs',
-        'c++': 'cpp',
-        'f#': 'fsharp',
-        'objective-c': 'objectivec',
-        'docker': 'dockerfile',
-        'coffee': 'coffeescript',
-        'shell': 'bash',  # seems better than nothing
+        "c#": "cs",
+        "c++": "cpp",
+        "f#": "fsharp",
+        "objective-c": "objectivec",
+        "docker": "dockerfile",
+        "coffee": "coffeescript",
+        "shell": "bash",  # seems better than nothing
     }
 
     def __init__(self, client, notion_data, page, get_children=True):
@@ -380,7 +538,8 @@ class FencedCodeBlock(Block):
 
     def to_pandoc(self):
         pandoc_language = self.notion_to_pandoc_highlight_languages.get(
-            self.language, self.language,
+            self.language,
+            self.language,
         )
         if pandoc_language not in self.pandoc_highlight_languages:
             if pandoc_language != "plain text":
@@ -389,7 +548,7 @@ class FencedCodeBlock(Block):
             language = []
         else:
             language = [pandoc_language]
-        return CodeBlock(('', language, []), self.rich_text.to_plain_text())
+        return CodeBlock(("", language, []), self.rich_text.to_plain_text())
 
 
 class QuoteBlock(ParagraphBlock):
@@ -411,8 +570,10 @@ class QuoteBlock(ParagraphBlock):
 class FileBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.file = client.wrap_notion_file(notion_data['file'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
+        self.file = client.wrap_notion_file(notion_data["file"])
+        self.caption = client.wrap_notion_rich_text_array(
+            self.notion_type_data["caption"], self
+        )
 
     def to_pandoc(self):
         url = None
@@ -420,7 +581,7 @@ class FileBlock(Block):
             url = self.file.url
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page, self.notion_id)
-        content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
+        content_ast = [Link(("", [], []), [Str(url)], (url, ""))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
             return render_with_caption(content_ast, caption_ast)
@@ -430,8 +591,10 @@ class FileBlock(Block):
 class ImageBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.file = client.wrap_notion_file(notion_data['image'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
+        self.file = client.wrap_notion_file(notion_data["image"])
+        self.caption = client.wrap_notion_rich_text_array(
+            self.notion_type_data["caption"], self
+        )
 
     def to_pandoc(self):
         url = None
@@ -440,19 +603,19 @@ class ImageBlock(Block):
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page, self.notion_id)
         caption = []
-        fig_flag = ''
+        fig_flag = ""
         if self.caption:
-            fig_flag = 'fig:'
+            fig_flag = "fig:"
             caption = self.caption.to_pandoc()
-        return Para([Image(('', [], []), caption, (url, fig_flag))])
+        return Para([Image(("", [], []), caption, (url, fig_flag))])
 
 
 class TableBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.has_column_header = self.notion_type_data['has_column_header']
-        self.has_row_header = self.notion_type_data['has_row_header']
-        self.table_width = self.notion_type_data['table_width']
+        self.has_column_header = self.notion_type_data["has_column_header"]
+        self.has_row_header = self.notion_type_data["has_row_header"]
+        self.table_width = self.notion_type_data["table_width"]
 
     def to_pandoc(self):
         children = self.children_to_pandoc()
@@ -468,17 +631,12 @@ class TableBlock(Block):
         # Notion does not have cell alignment or width options, sticking with defaults.
         colspec = [(AlignDefault(), ColWidthDefault()) for _ in range(self.table_width)]
         table = Table(
-            ('', [], []),
+            ("", [], []),
             Caption(None, []),
             colspec,
-            TableHead(('', [], []), header_rows),
-            [TableBody(
-                ('', [], []),
-                RowHeadColumns(row_header_columns),
-                [],
-                children
-            )],
-            TableFoot(('', [], []), [])
+            TableHead(("", [], []), header_rows),
+            [TableBody(("", [], []), RowHeadColumns(row_header_columns), [], children)],
+            TableFoot(("", [], []), []),
         )
         return table
 
@@ -498,18 +656,14 @@ class RowBlock(Block):
             pandoc = self.filter_linebreaks(pandoc)
             cells.append(
                 Cell(
-                    ('', [], []),
-                    AlignDefault(),
-                    RowSpan(1),
-                    ColSpan(1),
-                    [Plain(pandoc)]
+                    ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(pandoc)]
                 )
             )
-        return Row(('', [], []), cells)
+        return Row(("", [], []), cells)
 
     def filter_linebreaks(self, ast_list):
         for i, ast in enumerate(ast_list):
-            args = ast.__dict__['_args']
+            args = ast.__dict__["_args"]
             if len(args) and isinstance(args[0], list):
                 self.filter_linebreaks(args[0])
             else:
@@ -596,7 +750,9 @@ class TemplateBlock(NoopBlock):
 
 class WarningBlock(NoopBlock):
     def to_pandoc(self):
-        logger.warning('Skipping unsupported "%s" block (%s)', self.notion_type, self.notion_url)
+        logger.warning(
+            'Skipping unsupported "%s" block (%s)', self.notion_type, self.notion_url
+        )
         return None
 
 
@@ -613,10 +769,13 @@ class ContentBlock(Block):
     Generic base class for blocks that contain file-based content that should be
     downloaded and then linked to.
     """
+
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.file = client.wrap_notion_file(self.notion_type_data)
-        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
+        self.caption = client.wrap_notion_rich_text_array(
+            self.notion_type_data["caption"], self
+        )
 
     def to_pandoc(self):
         url = None
@@ -624,7 +783,7 @@ class ContentBlock(Block):
             url = self.file.url
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page, self.notion_id)
-        content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
+        content_ast = [Link(("", [], []), [Str(url)], (url, ""))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
             return render_with_caption(content_ast, caption_ast)
@@ -643,12 +802,14 @@ class VideoBlock(ContentBlock):
 class PdfBlock(Block):
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
-        self.pdf = client.wrap_notion_file(notion_data['pdf'])
-        self.caption = client.wrap_notion_rich_text_array(self.notion_type_data["caption"], self)
+        self.pdf = client.wrap_notion_file(notion_data["pdf"])
+        self.caption = client.wrap_notion_rich_text_array(
+            self.notion_type_data["caption"], self
+        )
 
     def to_pandoc(self):
         url = self.client.download_file(self.pdf.url, self.page, self.notion_id)
-        content_ast = [Link(('', [], []), [Str(url)], (url, ''))]
+        content_ast = [Link(("", [], []), [Str(url)], (url, ""))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
             return render_with_caption(content_ast, caption_ast)
@@ -683,13 +844,17 @@ class SyncedBlock(Block):
             # This last condition is to protect against recursive synced blocks while
             # still allowing synced blocks that are children of other synced blocks
             # (once Notion confirms that this bug has been addressed it can be removed)
-            parent = self.notion_data.get('parent', None)
-            self.is_recursive = parent and self.notion_type_data["synced_from"][
-                "block_id"] == parent[parent['type']]
+            parent = self.notion_data.get("parent", None)
+            self.is_recursive = (
+                parent
+                and self.notion_type_data["synced_from"]["block_id"]
+                == parent[parent["type"]]
+            )
             if not self.is_recursive:
                 return self.client.get_child_blocks(
                     self.notion_type_data["synced_from"]["block_id"],
-                    self.page, True,
+                    self.page,
+                    True,
                 )
         return self.children
 
@@ -698,7 +863,7 @@ class SyncedBlock(Block):
             # logger.warning('Skipping un-shared synced block (%s)', self.notion_url)
             return None
         elif self.is_recursive:
-            logger.warning('Skipping recursive synced block (%s)', self.notion_url)
+            logger.warning("Skipping recursive synced block (%s)", self.notion_url)
             return None
         return self.children_to_pandoc()
 
@@ -732,16 +897,28 @@ class LinkToPageBlock(Block):
 
 
 def render_with_caption(content_ast, caption_ast):
-    header_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(content_ast)]]
-    body_cell_args = [('', [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(caption_ast)]]
-    body_row = Row(('', [], []), [Cell(*body_cell_args)])
+    header_cell_args = [
+        ("", [], []),
+        AlignDefault(),
+        RowSpan(1),
+        ColSpan(1),
+        [Plain(content_ast)],
+    ]
+    body_cell_args = [
+        ("", [], []),
+        AlignDefault(),
+        RowSpan(1),
+        ColSpan(1),
+        [Plain(caption_ast)],
+    ]
+    body_row = Row(("", [], []), [Cell(*body_cell_args)])
     return Table(
-        ('', [], []),
+        ("", [], []),
         Caption(None, []),
         [(AlignDefault(), ColWidthDefault())],
-        TableHead(('', [], []), [Row(('', [], []), [Cell(*header_cell_args)])]),
-        [TableBody(('', [], []), RowHeadColumns(0), [], [body_row])],
-        TableFoot(('', [], []), [])
+        TableHead(("", [], []), [Row(("", [], []), [Cell(*header_cell_args)])]),
+        [TableBody(("", [], []), RowHeadColumns(0), [], [body_row])],
+        TableFoot(("", [], []), []),
     )
 
 

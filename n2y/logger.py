@@ -1,6 +1,6 @@
 import logging
 
-FORMATTER = logging.Formatter('%(asctime)s - %(levelname)s - n2y.%(module)s: %(message)s')
+FORMATTER = logging.Formatter("%(asctime)s - %(levelname)s - n2y.%(module)s: %(message)s")
 HANDLER = logging.StreamHandler()
 HANDLER.setFormatter(FORMATTER)
 logging.basicConfig(level=logging.INFO, handlers=[HANDLER])

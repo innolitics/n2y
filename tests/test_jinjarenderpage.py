@@ -7,45 +7,53 @@ from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
 from n2y.utils import pandoc_ast_to_markdown, pandoc_write_or_log_errors
 from n2y.plugins.jinjarenderpage import (
-    render_from_string, join_to, fuzzy_find_in, list_matches,
-    JinjaFencedCodeBlock, JinjaRenderPage,
+    render_from_string,
+    join_to,
+    fuzzy_find_in,
+    list_matches,
+    JinjaFencedCodeBlock,
+    JinjaRenderPage,
 )
 from n2y.notion_mocks import (
-    mock_database, mock_database_mention, mock_page, mock_rich_text,
-    mock_rich_text_array, mock_block,
+    mock_database,
+    mock_database_mention,
+    mock_page,
+    mock_rich_text,
+    mock_rich_text_array,
+    mock_block,
 )
 
-format_def = '{jinja=gfm}'
-spaced_format_def = '{jinja=gfm} '
+format_def = "{jinja=gfm}"
+spaced_format_def = "{jinja=gfm} "
 
 
 def test_join_to_basic():
-    foreign_keys = ['1', '3']
+    foreign_keys = ["1", "3"]
     table = [
-        {'notion_id': '1', 'data': 'a'},
-        {'notion_id': '2', 'data': 'b'},
+        {"notion_id": "1", "data": "a"},
+        {"notion_id": "2", "data": "b"},
     ]
-    assert join_to(foreign_keys, table) == [{'notion_id': '1', 'data': 'a'}, None]
-    assert join_to(foreign_keys, table, 'data') == [None, None]
+    assert join_to(foreign_keys, table) == [{"notion_id": "1", "data": "a"}, None]
+    assert join_to(foreign_keys, table, "data") == [None, None]
 
 
 def test_fuzzy_find_in():
     dict_list = [
-        {'id': '1', 'data': 'a'},
-        {'id': '2', 'data': 'bc'},
-        {'id': '3', 'data': 'def'},
+        {"id": "1", "data": "a"},
+        {"id": "2", "data": "bc"},
+        {"id": "3", "data": "def"},
     ]
     reversed_dict_list = [
-        {'id': '3', 'data': 'def'},
-        {'id': '2', 'data': 'bc'},
-        {'id': '1', 'data': 'a'}
+        {"id": "3", "data": "def"},
+        {"id": "2", "data": "bc"},
+        {"id": "1", "data": "a"},
     ]
-    catch_all_string = 'a bc def'
-    assert fuzzy_find_in(dict_list, 'a', 'data') == [{'id': '1', 'data': 'a'}]
-    assert fuzzy_find_in(dict_list, catch_all_string, 'data') == reversed_dict_list
-    assert fuzzy_find_in(dict_list, catch_all_string, 'data', False) == reversed_dict_list
-    assert fuzzy_find_in(dict_list, catch_all_string, 'data', False, False) == dict_list
-    assert fuzzy_find_in(dict_list, catch_all_string, 'data', True, False) == dict_list
+    catch_all_string = "a bc def"
+    assert fuzzy_find_in(dict_list, "a", "data") == [{"id": "1", "data": "a"}]
+    assert fuzzy_find_in(dict_list, catch_all_string, "data") == reversed_dict_list
+    assert fuzzy_find_in(dict_list, catch_all_string, "data", False) == reversed_dict_list
+    assert fuzzy_find_in(dict_list, catch_all_string, "data", False, False) == dict_list
+    assert fuzzy_find_in(dict_list, catch_all_string, "data", True, False) == dict_list
 
 
 def test_render_no_filtering():
@@ -65,34 +73,37 @@ def process_jinja_block(client, caption, jinja_code):
     page_notion_data = mock_page()
     page = JinjaRenderPage(client, page_notion_data)
 
-    page_block_notion_data = mock_block('child_page', {'title': "Mock Page"})
+    page_block_notion_data = mock_block("child_page", {"title": "Mock Page"})
     page_block = ChildPageBlock(client, page_block_notion_data, page, False)
 
     page._block = page_block
 
-    code_block_notion_data = mock_block('code', {
-        'language': 'plain text',
-        'caption': caption,
-        'rich_text': mock_rich_text_array(jinja_code)
-    })
+    code_block_notion_data = mock_block(
+        "code",
+        {
+            "language": "plain text",
+            "caption": caption,
+            "rich_text": mock_rich_text_array(jinja_code),
+        },
+    )
     code_block = JinjaFencedCodeBlock(client, code_block_notion_data, page, False)
     page.block.children = [code_block]
     return page
 
 
 def test_jinja_syntax_err():
-    client = Client('')
+    client = Client("")
     caption = mock_rich_text_array(format_def)
     jinja_code = "{% huhwhat 'hotel', 'california' %}"
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
-    assert 'syntax error' in markdown
+    assert "syntax error" in markdown
     assert "Encountered unknown tag 'huhwhat'" in markdown
 
 
 def test_jinja_render_gfm():
-    client = Client('')
+    client = Client("")
     caption = mock_rich_text_array(format_def)
     jinja_code = "{% for v in ['a', 'b'] %}{{v}}{% endfor %}"
     page = process_jinja_block(client, caption, jinja_code)
@@ -102,7 +113,7 @@ def test_jinja_render_gfm():
 
 
 def test_jinja_render_gfm_with_second_pass():
-    client = Client('')
+    client = Client("")
     caption = mock_rich_text_array(format_def)
     jinja_code = "a{% for v in first_pass_output.lines %}{{v}}{% endfor %}"
     page = process_jinja_block(client, caption, jinja_code)
@@ -115,8 +126,8 @@ def test_jinja_render_gfm_with_second_pass():
 
 
 def test_jinja_render_html():
-    client = Client('')
-    caption = mock_rich_text_array('{jinja=html}')
+    client = Client("")
+    caption = mock_rich_text_array("{jinja=html}")
     jinja_code = (
         "<table>"
         "<tr><th>Name</th></tr>"
@@ -126,27 +137,24 @@ def test_jinja_render_html():
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
-    assert markdown == (
-        "  Name\n"
-        "  ------\n"
-        "  a\n"
-        "  b\n"
-    )
+    assert markdown == "  Name\n  ------\n  a\n  b\n"
 
 
 def test_jinja_render_with_database():
-    client = Client('')
-    database_notion_data = mock_database(title='My DB')
-    mention_notion_data = mock_database_mention(database_notion_data['id'])
-    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
+    client = Client("")
+    database_notion_data = mock_database(title="My DB")
+    mention_notion_data = mock_database_mention(database_notion_data["id"])
+    database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
     caption = [
         mock_rich_text(spaced_format_def),
-        mock_rich_text('My DB', mention=mention_notion_data),
+        mock_rich_text("My DB", mention=mention_notion_data),
     ]
     jinja_code = "{% for v in databases['My DB'] %}{{v.title}}{% endfor %}"
 
     with patch.object(Client, "get_notion_database") as mock_get_notion_database:
-        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+        with patch.object(
+            Client, "get_database_notion_pages"
+        ) as mock_get_database_notion_pages:
             mock_get_notion_database.return_value = database_notion_data
             mock_get_database_notion_pages.return_value = database_pages_notion_data
             page = process_jinja_block(client, caption, jinja_code)
@@ -157,18 +165,20 @@ def test_jinja_render_with_database():
 
 
 def test_jinja_render_with_missing_database():
-    client = Client('')
-    database_notion_data = mock_database(title='My DB')
-    mention_notion_data = mock_database_mention(database_notion_data['id'])
-    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
+    client = Client("")
+    database_notion_data = mock_database(title="My DB")
+    mention_notion_data = mock_database_mention(database_notion_data["id"])
+    database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
     caption = [
         mock_rich_text(spaced_format_def),
-        mock_rich_text('My DB', mention=mention_notion_data),
+        mock_rich_text("My DB", mention=mention_notion_data),
     ]
     jinja_code = "{{ databases['MISSING'] }}"
 
     with patch.object(Client, "get_notion_database") as mock_get_notion_database:
-        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+        with patch.object(
+            Client, "get_database_notion_pages"
+        ) as mock_get_database_notion_pages:
             mock_get_notion_database.return_value = database_notion_data
             mock_get_database_notion_pages.return_value = database_pages_notion_data
             page = process_jinja_block(client, caption, jinja_code)
@@ -180,41 +190,50 @@ def test_jinja_render_with_missing_database():
 
 
 def test_jinja_render_with_incorrect_db_property():
-    client = Client('')
-    database_notion_data = mock_database(title='My DB')
-    mention_notion_data = mock_database_mention(database_notion_data['id'])
-    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
+    client = Client("")
+    database_notion_data = mock_database(title="My DB")
+    mention_notion_data = mock_database_mention(database_notion_data["id"])
+    database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
     caption = [
         mock_rich_text(spaced_format_def),
-        mock_rich_text('My DB', mention=mention_notion_data),
+        mock_rich_text("My DB", mention=mention_notion_data),
     ]
     jinja_code = "{{ databases[0][0].Foo }}"
 
     with patch.object(Client, "get_notion_database") as mock_get_notion_database:
-        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+        with patch.object(
+            Client, "get_database_notion_pages"
+        ) as mock_get_database_notion_pages:
             mock_get_notion_database.return_value = database_notion_data
             mock_get_database_notion_pages.return_value = database_pages_notion_data
             page = process_jinja_block(client, caption, jinja_code)
             pandoc_ast = page.to_pandoc()
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
-    assert 'You attempted to access the "Foo" property of a database item on line 1' in markdown
-    assert 'the available properties are "title", "notion_id", and "notion_url".' in markdown
+    assert (
+        'You attempted to access the "Foo" property of a database item on line 1'
+        in markdown
+    )
+    assert (
+        'the available properties are "title", "notion_id", and "notion_url".' in markdown
+    )
 
 
 def test_jinja_render_with_missing_page_property():
-    client = Client('')
-    database_notion_data = mock_database(title='My DB')
-    mention_notion_data = mock_database_mention(database_notion_data['id'])
-    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
+    client = Client("")
+    database_notion_data = mock_database(title="My DB")
+    mention_notion_data = mock_database_mention(database_notion_data["id"])
+    database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
     caption = [
         mock_rich_text(spaced_format_def),
-        mock_rich_text('My DB', mention=mention_notion_data),
+        mock_rich_text("My DB", mention=mention_notion_data),
     ]
     jinja_code = "{{ page['MISSING'] }}"
 
     with patch.object(Client, "get_notion_database") as mock_get_notion_database:
-        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+        with patch.object(
+            Client, "get_database_notion_pages"
+        ) as mock_get_database_notion_pages:
             mock_get_notion_database.return_value = database_notion_data
             mock_get_database_notion_pages.return_value = database_pages_notion_data
             page = process_jinja_block(client, caption, jinja_code)
@@ -226,18 +245,20 @@ def test_jinja_render_with_missing_page_property():
 
 
 def test_jinja_render_with_filter_error():
-    client = Client('')
-    database_notion_data = mock_database(title='My DB')
-    mention_notion_data = mock_database_mention(database_notion_data['id'])
-    database_pages_notion_data = [mock_page(title='a'), mock_page(title='b')]
+    client = Client("")
+    database_notion_data = mock_database(title="My DB")
+    mention_notion_data = mock_database_mention(database_notion_data["id"])
+    database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
     caption = [
         mock_rich_text(spaced_format_def),
-        mock_rich_text('My DB', mention=mention_notion_data),
+        mock_rich_text("My DB", mention=mention_notion_data),
     ]
     jinja_code = "{{ databases[0][0].title|round }}"
 
     with patch.object(Client, "get_notion_database") as mock_get_notion_database:
-        with patch.object(Client, "get_database_notion_pages") as mock_get_database_notion_pages:
+        with patch.object(
+            Client, "get_database_notion_pages"
+        ) as mock_get_database_notion_pages:
             mock_get_notion_database.return_value = database_notion_data
             mock_get_database_notion_pages.return_value = database_pages_notion_data
             page = process_jinja_block(client, caption, jinja_code)
@@ -250,30 +271,30 @@ def test_jinja_render_with_filter_error():
 
 
 def test_jinja_render_plain():
-    client = Client('')
-    caption = mock_rich_text_array('{jinja=plain}')
+    client = Client("")
+    caption = mock_rich_text_array("{jinja=plain}")
     jinja_code = "# <h1> asdf23"
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
-    text = pandoc_write_or_log_errors(pandoc_ast, 'plain', [])
+    text = pandoc_write_or_log_errors(pandoc_ast, "plain", [])
     assert text == "# <h1> asdf23\n"
 
 
 def test_list_matches_special_characters():
-    text = 'somthing (id_num) [category] note* $tag (?!question)'
+    text = "somthing (id_num) [category] note* $tag (?!question)"
     string = (
-        'fdsfds dwefwe 342t45lsfd fdds f34244 dgd somthing '
-        '(id_num) [category] note* $tag (?!question) dsfsa '
-        'sdfasdfsad'
+        "fdsfds dwefwe 342t45lsfd fdds f34244 dgd somthing "
+        "(id_num) [category] note* $tag (?!question) dsfsa "
+        "sdfasdfsad"
     )
     assert len(list_matches(text, string)) == 1
 
 
 def test_list_matches_no_space_fail():
-    text = 'somthing (id_num) [category] note* $tag (?!question)'
+    text = "somthing (id_num) [category] note* $tag (?!question)"
     string = (
-        'fdsfds dwefwe 342t45lsfd fdds f34244 dgd sfdasomthing '
-        '(id_num) [category] note* $tag (?!question) dsfsa '
-        'sdfasdfsad'
+        "fdsfds dwefwe 342t45lsfd fdds f34244 dgd sfdasomthing "
+        "(id_num) [category] note* $tag (?!question) dsfsa "
+        "sdfasdfsad"
     )
     assert len(list_matches(text, string)) == 0

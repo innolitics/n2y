@@ -7,19 +7,22 @@ from pandoc.types import MetaMap, MetaList, MetaBool, MetaString
 
 from n2y.errors import APIResponseError
 from n2y.utils import (
-    fromisoformat, header_id_from_text, id_from_share_link, retry_api_call,
+    fromisoformat,
+    header_id_from_text,
+    id_from_share_link,
+    retry_api_call,
     yaml_to_meta_value,
 )
 
 
 def test_fromisoformat_datetime():
     expected = datetime(2022, 5, 10, 19, 52, tzinfo=timezone.utc)
-    assert fromisoformat('2022-05-10T19:52:00.000Z') == expected
+    assert fromisoformat("2022-05-10T19:52:00.000Z") == expected
 
 
 def test_fromisoformat_date():
     expected = datetime(2022, 5, 11)
-    assert fromisoformat('2022-05-11') == expected
+    assert fromisoformat("2022-05-11") == expected
 
 
 def test_database_id_from_share_link_id():
@@ -49,15 +52,15 @@ def test_database_id_from_share_link_hyphens():
 
 
 def test_page_id_from_share_link():
-    page_id = '42361d2334624e949d9b7e94d30c988b'
-    share_link = f'https://www.notion.so/innolitics/SaMD-DHF-Template-{page_id}'
+    page_id = "42361d2334624e949d9b7e94d30c988b"
+    share_link = f"https://www.notion.so/innolitics/SaMD-DHF-Template-{page_id}"
     assert id_from_share_link(share_link) == page_id
 
 
-class MockResponse():
+class MockResponse:
     def __init__(self, time, code):
-        self.headers = {'retry-after': time}
-        self.text = ''
+        self.headers = {"retry-after": time}
+        self.text = ""
         self.status_code = code
 
 
@@ -65,6 +68,7 @@ def test_retry_api_call_no_error():
     @retry_api_call
     def tester():
         return True
+
     assert tester()
 
 
@@ -80,13 +84,13 @@ def test_retry_api_call_multiple_errors():
         call_count += 1
 
         if call_count == 1:
-            raise APIResponseError(MockResponse(0.05, status_code), '', status_code)
+            raise APIResponseError(MockResponse(0.05, status_code), "", status_code)
         elif call_count == 2:
             assert isclose(0.05, seconds, abs_tol=0.1)
-            raise APIResponseError(MockResponse(0.23, status_code), '', status_code)
+            raise APIResponseError(MockResponse(0.23, status_code), "", status_code)
         elif call_count == 3:
             assert isclose(0.35, seconds, abs_tol=0.1)
-            raise APIResponseError(MockResponse(0.16, status_code), '', status_code)
+            raise APIResponseError(MockResponse(0.16, status_code), "", status_code)
         elif call_count == 4:
             assert isclose(0.51, seconds, abs_tol=0.1)
             return True
@@ -104,7 +108,7 @@ def test_retry_api_call_onc(status_code):
         call_count += 1
 
         if call_count == 1:
-            raise APIResponseError(MockResponse(0.001, status_code), '', status_code)
+            raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
         else:
             return True
 
@@ -117,34 +121,37 @@ def test_retry_api_call_max_errors():
 
     @retry_api_call
     def tester():
-        raise APIResponseError(MockResponse(0.001, status_code), '', status_code)
+        raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
+
     with raises(APIResponseError):
         tester()
 
 
 def test_yaml_to_meta_value_scalar():
-    assert yaml_to_meta_value('test') == MetaString('test')
-    assert yaml_to_meta_value(3) == MetaString('3')
-    assert yaml_to_meta_value(3.45) == MetaString('3.45')
+    assert yaml_to_meta_value("test") == MetaString("test")
+    assert yaml_to_meta_value(3) == MetaString("3")
+    assert yaml_to_meta_value(3.45) == MetaString("3.45")
     assert yaml_to_meta_value(True) == MetaBool(True)
     assert yaml_to_meta_value(False) == MetaBool(False)
-    assert yaml_to_meta_value(None) == MetaString('')
+    assert yaml_to_meta_value(None) == MetaString("")
 
 
 def test_yaml_to_meta_value_map():
-    assert yaml_to_meta_value({'a': '1', 'b': 2}) == MetaMap({
-        'a': MetaString('1'),
-        'b': MetaString('2'),
-    })
+    assert yaml_to_meta_value({"a": "1", "b": 2}) == MetaMap(
+        {
+            "a": MetaString("1"),
+            "b": MetaString("2"),
+        }
+    )
 
 
 def test_yaml_to_meta_value_list():
-    assert yaml_to_meta_value(['a', 1]) == MetaList([MetaString('a'), MetaString('1')])
+    assert yaml_to_meta_value(["a", 1]) == MetaList([MetaString("a"), MetaString("1")])
 
 
 def test_header_id_from_text_basic():
-    assert header_id_from_text("Essays") == 'essays'
-    assert header_id_from_text("Hello Goodbye") == 'hello-goodbye'
+    assert header_id_from_text("Essays") == "essays"
+    assert header_id_from_text("Hello Goodbye") == "hello-goodbye"
 
 
 def test_header_id_from_text():
@@ -152,21 +159,24 @@ def test_header_id_from_text():
     Most of these test cases were taken from the pandoc documentation. See:
     https://pandoc.org/MANUAL.html#extension-auto_identifiers
     """
-    assert header_id_from_text('Heading identifiers in HTML') == 'heading-identifiers-in-html'
-    assert header_id_from_text("Maître d'hôtel") == 'maître-dhôtel'
-    assert header_id_from_text('*Dogs*?--in *my* house?') == 'dogs--in-my-house'
-    assert header_id_from_text('[HTML], [S5], or [RTF]?') == 'html-s5-or-rtf'
-    assert header_id_from_text('3. Applications') == 'applications'
-    assert header_id_from_text('33') == 'section'
+    assert (
+        header_id_from_text("Heading identifiers in HTML")
+        == "heading-identifiers-in-html"
+    )
+    assert header_id_from_text("Maître d'hôtel") == "maître-dhôtel"
+    assert header_id_from_text("*Dogs*?--in *my* house?") == "dogs--in-my-house"
+    assert header_id_from_text("[HTML], [S5], or [RTF]?") == "html-s5-or-rtf"
+    assert header_id_from_text("3. Applications") == "applications"
+    assert header_id_from_text("33") == "section"
 
     # These are additional tests constructed by us.
-    assert header_id_from_text('33 section') == 'section'
-    assert header_id_from_text('') == 'section'
-    assert header_id_from_text('newlines\nare hyphens') == 'newlines-are-hyphens'
+    assert header_id_from_text("33 section") == "section"
+    assert header_id_from_text("") == "section"
+    assert header_id_from_text("newlines\nare hyphens") == "newlines-are-hyphens"
 
 
 def test_header_id_from_text_existing_ids():
-    assert header_id_from_text('a', {'a'}) == 'a-1'
-    assert header_id_from_text('a', {'a', 'a-1'}) == 'a-2'
-    assert header_id_from_text('', {'section', 'section-1'}) == 'section-2'
-    assert header_id_from_text('', {'section', 'a', 'a-1'}) == 'section-1'
+    assert header_id_from_text("a", {"a"}) == "a-1"
+    assert header_id_from_text("a", {"a", "a-1"}) == "a-2"
+    assert header_id_from_text("", {"section", "section-1"}) == "section-2"
+    assert header_id_from_text("", {"section", "a", "a-1"}) == "section-1"

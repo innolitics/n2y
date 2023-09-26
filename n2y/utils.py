@@ -19,13 +19,13 @@ PANDOC_PARSE_ERROR = 64
 def process_notion_date(notion_date):
     if notion_date is None:
         return None
-    elif notion_date.get('end', None):
+    elif notion_date.get("end", None):
         return [
-            notion_date['start'],
-            notion_date['end'],
+            notion_date["start"],
+            notion_date["end"],
         ]
     else:
-        return notion_date['start']
+        return notion_date["start"]
 
 
 def processed_date_to_plain_text(processed_date):
@@ -33,7 +33,7 @@ def processed_date_to_plain_text(processed_date):
     if processed_date is None:
         return ""
     if isinstance(processed_date, list):
-        return f'{processed_date[0]} to {processed_date[1]}'
+        return f"{processed_date[0]} to {processed_date[1]}"
     else:
         return processed_date
 
@@ -45,21 +45,21 @@ def pandoc_ast_to_markdown(pandoc_ast):
         return ""
     elif type(pandoc_ast) is list and all(type(n) in [Str, Space] for n in pandoc_ast):
         # TODO: optimize performance for some other basic cases
-        return ''.join(
-            ' ' if isinstance(n, Space) else n[0]
-            for n in pandoc_ast
-        )
+        return "".join(" " if isinstance(n, Space) else n[0] for n in pandoc_ast)
     else:
         return pandoc_write_or_log_errors(
             pandoc_ast,
-            format='markdown',
+            format="markdown",
             options=[
-                '--wrap', 'none',  # don't hard line-wrap
-                '--columns', '10000',  # The default column width is 72 characters.
+                "--wrap",
+                "none",  # don't hard line-wrap
+                "--columns",
+                "10000",  # The default column width is 72 characters.
                 # When the width is this small, then pandoc may elect to generate HTML
                 # tables in markdown instead of text-based tables; this is problematic
                 # when we then convert the markdown into DOCX files which don't support raw HTML.
-                '--eol', 'lf',  # use linux-style line endings
+                "--eol",
+                "lf",  # use linux-style line endings
             ],
         )
 
@@ -67,7 +67,7 @@ def pandoc_ast_to_markdown(pandoc_ast):
 def pandoc_ast_to_html(pandoc_ast):
     return pandoc_write_or_log_errors(
         pandoc_ast,
-        format='html+smart',
+        format="html+smart",
         options=[],
     )
 
@@ -130,16 +130,22 @@ def yaml_map_to_meta(data):
 
 def pandoc_format_to_file_extension(format):
     # split on '-' or '+' to handle formats like 'markdown+raw_tex'
-    base_type = re.split(r'[-+]', format)[0]
+    base_type = re.split(r"[-+]", format)[0]
     if base_type in [
-        'markdown', 'gfm', 'commonmark', 'commonmark_x', 'markdown_github',
-        'markdown_mmd', 'markdown_phpextra', 'markdown_strict'
+        "markdown",
+        "gfm",
+        "commonmark",
+        "commonmark_x",
+        "markdown_github",
+        "markdown_mmd",
+        "markdown_phpextra",
+        "markdown_strict",
     ]:
-        return 'md'
-    elif base_type in ['html', 'html5', 'html4']:
-        return 'html'
-    elif base_type in ['latex']:
-        return 'tex'
+        return "md"
+    elif base_type in ["html", "html5", "html4"]:
+        return "html"
+    elif base_type in ["latex"]:
+        return "tex"
     else:
         return base_type
 
@@ -151,8 +157,8 @@ def fromisoformat(datestring):
 
     This function removes the need for a third-party library.
     """
-    if datestring.endswith('Z'):
-        return datetime.fromisoformat(datestring[:-1] + '+00:00')
+    if datestring.endswith("Z"):
+        return datetime.fromisoformat(datestring[:-1] + "+00:00")
     else:
         return datetime.fromisoformat(datestring)
 
@@ -166,16 +172,13 @@ def sanitize_filename(filename):
     return s
 
 
-def header_id_from_text(header_text, existing_ids=None):
-    """
-    Given the plain text for a header, produce a header.
-
-    See https://pandoc.org/MANUAL.html#extension-auto_identifiers
-    """
-    have_struck_letter = False
-
+def do_symbol(symbol, have_struck_letter):
     def do_special(potential_special):
-        if potential_special == "_" or potential_special == "-" or potential_special == ".":
+        if (
+            potential_special == "_"
+            or potential_special == "-"
+            or potential_special == "."
+        ):
             return potential_special
         return ""
 
@@ -198,9 +201,21 @@ def header_id_from_text(header_text, existing_ids=None):
             return ""
         return do_decimal(potential_letter)
 
+    return do_letter(symbol), have_struck_letter
+
+
+def header_id_from_text(header_text, existing_ids=None):
+    """
+    Given the plain text for a header, produce a header.
+
+    See https://pandoc.org/MANUAL.html#extension-auto_identifiers
+    """
+    have_struck_letter = False
+
     new_header_text = ""
     for symbol in header_text:
-        new_header_text += do_letter(symbol)
+        symbol, have_struck_letter = do_symbol(symbol, have_struck_letter)
+        new_header_text += symbol
 
     if len(new_header_text) == 0:
         new_header_text = "section"
@@ -244,22 +259,25 @@ def stringify_list(array, wrap_in_quotes=False):
         array = [f'"{item}"' for item in array]
     length = len(array)
     if length == 0:
-        return ''
+        return ""
     elif length == 1:
         return array[0]
     elif length == 2:
-        return f'{array[0]} and {array[1]}'
+        return f"{array[0]} and {array[1]}"
     else:
-        return ', '.join(array[:-1]) + ", and " + array[-1]
+        return ", ".join(array[:-1]) + ", and " + array[-1]
 
 
 def available_from_list(collection, singular, plural):
     if len(collection) == 0:
-        return f'there are no available {plural}'
+        return f"there are no available {plural}"
     elif len(collection) == 1:
         return f'the only available {singular} is "{collection[0]}"'
     else:
-        return f'the available {plural} are {stringify_list(collection, wrap_in_quotes=True)}'
+        return (
+            f"the available {plural} are"
+            f" {stringify_list(collection, wrap_in_quotes=True)}"
+        )
 
 
 def load_yaml(data):
@@ -283,22 +301,27 @@ def retry_api_call(api_call):
                 raise err
             elif retry_count < max_api_retries:
                 retry_count += 1
-                if 'retry-after' in err.headers:
-                    retry_after = float(err.headers['retry-after'])
+                if "retry-after" in err.headers:
+                    retry_after = float(err.headers["retry-after"])
                     logger.info(
-                        'This API call has been rate limited and '
-                        'will be retried in %f seconds. Attempt %d of %d.',
-                        retry_after, retry_count, max_api_retries,
+                        "This API call has been rate limited and "
+                        "will be retried in %f seconds. Attempt %d of %d.",
+                        retry_after,
+                        retry_count,
+                        max_api_retries,
                     )
                 else:
                     retry_after = 2
                     logger.info(
-                        'This API call failed and '
-                        'will be retried in %f seconds. Attempt %d of %d.',
-                        retry_after, retry_count, max_api_retries,
+                        "This API call failed and "
+                        "will be retried in %f seconds. Attempt %d of %d.",
+                        retry_after,
+                        retry_count,
+                        max_api_retries,
                     )
                 sleep(retry_after)
                 return wrapper(*args, retry_count=retry_count, **kwargs)
             else:
                 raise err
+
     return wrapper

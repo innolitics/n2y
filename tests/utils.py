@@ -12,11 +12,11 @@ except ImportError:
 # the auth_token in the codebase. The login for this throw-away account is in
 # the Innolitics' 1password "Everyone" vault. If new test pages are added, this
 # will need to be used to create them.
-NOTION_ACCESS_TOKEN = 'secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r'
+NOTION_ACCESS_TOKEN = "secret_lylx4iL5awveY3re6opuvSQqM6sMRu572TowhfzPy5r"
 # see https://pandoc.org/MANUAL.html#exit-codes
 PANDOC_PARSE_ERROR = 64
 
-yaml_frontmatter_regexp = re.compile(r'^---$(.*)^---$', re.MULTILINE | re.DOTALL)
+yaml_frontmatter_regexp = re.compile(r"^---$(.*)^---$", re.MULTILINE | re.DOTALL)
 
 block_colors = {
     "default",
@@ -51,4 +51,4 @@ def parse_yaml_front_matter(content):
 
 
 def newline_lf(input):
-    return input.replace('\r\n', '\n')
+    return input.replace("\r\n", "\n")

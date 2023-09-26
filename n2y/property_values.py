@@ -8,8 +8,9 @@ class PropertyValue:
     def __init__(self, client, notion_data, page):
         self.client = client
         self.notion_property_id = notion_data.get(
-            'id', None)  # will be none for rollup array values
-        self.notion_type = notion_data['type']
+            "id", None
+        )  # will be none for rollup array values
+        self.notion_type = notion_data["type"]
         self.page = page
 
     def to_value(self, pandoc_format=None):
@@ -21,7 +22,7 @@ class TitlePropertyValue(PropertyValue):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data, page)
-        self.rich_text = client.wrap_notion_rich_text_array(notion_data['title'])
+        self.rich_text = client.wrap_notion_rich_text_array(notion_data["title"])
 
     def to_value(self, _=None):
         # Notion allows styling of the title, however, in their UI they display
@@ -37,9 +38,9 @@ class TextPropertyValue(PropertyValue):
         # TODO: handle the case when there are more than 25 rich text items in the property
         # See https://developers.notion.com/reference/retrieve-a-page-property
         super().__init__(client, notion_data, page)
-        self.rich_text = client.wrap_notion_rich_text_array(notion_data['rich_text'])
+        self.rich_text = client.wrap_notion_rich_text_array(notion_data["rich_text"])
 
-    def to_value(self, pandoc_format='gfm'):
+    def to_value(self, pandoc_format="gfm"):
         if pandoc_format is None:
             return self.rich_text.to_plain_text()
         else:
@@ -49,7 +50,7 @@ class TextPropertyValue(PropertyValue):
 class NumberPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.number = notion_data['number']
+        self.number = notion_data["number"]
 
     def to_value(self, _=None):
         return self.number
@@ -58,11 +59,11 @@ class NumberPropertyValue(PropertyValue):
 class SelectPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        notion_select = notion_data['select']
+        notion_select = notion_data["select"]
         if notion_select is not None:
-            self.notion_option_id = notion_select['id']
-            self.name = notion_select['name']
-            self.color = notion_select['color']
+            self.notion_option_id = notion_select["id"]
+            self.name = notion_select["name"]
+            self.color = notion_select["color"]
         else:
             self.notion_option_id = None
             self.name = None
@@ -77,7 +78,9 @@ class SelectPropertyValue(PropertyValue):
 class MultiSelectPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.options = [MultiSelectOption(self.client, no) for no in notion_data['multi_select']]
+        self.options = [
+            MultiSelectOption(self.client, no) for no in notion_data["multi_select"]
+        ]
 
     def to_value(self, _=None):
         # Note: the Notion UI shouldn't allow you to have two options with the
@@ -88,16 +91,16 @@ class MultiSelectPropertyValue(PropertyValue):
 class MultiSelectOption:
     def __init__(self, client, notion_option):
         self.client = client
-        self.notion_id = notion_option['id']
-        self.name = notion_option['name']
-        self.color = notion_option['color']
+        self.notion_id = notion_option["id"]
+        self.name = notion_option["name"]
+        self.color = notion_option["color"]
 
 
 class DatePropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         # TODO: handle timezones
         super().__init__(client, notion_data, page)
-        self.value = process_notion_date(notion_data['date'])
+        self.value = process_notion_date(notion_data["date"])
 
     def to_value(self, _=None):
         return self.value
@@ -109,7 +112,7 @@ class DatePropertyValue(PropertyValue):
 class PeoplePropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.people = [client.wrap_notion_user(nu) for nu in notion_data['people']]
+        self.people = [client.wrap_notion_user(nu) for nu in notion_data["people"]]
 
     def to_value(self, _=None):
         return [u.to_value() for u in self.people]
@@ -118,7 +121,7 @@ class PeoplePropertyValue(PropertyValue):
 class FilesPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.files = [client.wrap_notion_file(nf) for nf in notion_data['files']]
+        self.files = [client.wrap_notion_file(nf) for nf in notion_data["files"]]
 
     def to_value(self, _):
         return [f.to_value() for f in self.files]
@@ -127,7 +130,7 @@ class FilesPropertyValue(PropertyValue):
 class CheckboxPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.checkbox = notion_data['checkbox']
+        self.checkbox = notion_data["checkbox"]
 
     def to_value(self, _):
         return self.checkbox
@@ -136,7 +139,7 @@ class CheckboxPropertyValue(PropertyValue):
 class UrlPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.url = notion_data['url']
+        self.url = notion_data["url"]
 
     def to_value(self, _=None):
         return self.url
@@ -145,7 +148,7 @@ class UrlPropertyValue(PropertyValue):
 class EmailPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.email = notion_data['email']
+        self.email = notion_data["email"]
 
     def to_value(self, _=None):
         return self.email
@@ -154,7 +157,7 @@ class EmailPropertyValue(PropertyValue):
 class PhoneNumberPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.phone_number = notion_data['phone_number']
+        self.phone_number = notion_data["phone_number"]
 
     def to_value(self, _=None):
         return self.phone_number
@@ -182,8 +185,8 @@ class RelationPropertyValue(PropertyValue):
         else:
             url = f"{client.base_url}pages/{page.notion_id}/properties/{self.notion_property_id}"
             self.ids = [
-                r["relation"]["id"] for r in
-                client._paginated_request(client._get_url, url, {})
+                r["relation"]["id"]
+                for r in client._paginated_request(client._get_url, url, {})
             ]
 
     def to_value(self, _=None):
@@ -199,22 +202,22 @@ class RollupPropertyValue(PropertyValue):
         self.rollup_type = notion_rollup["type"]
         self.function = notion_rollup["function"]
         if self.rollup_type == "date":
-            self.value = process_notion_date(notion_rollup['date'])
+            self.value = process_notion_date(notion_rollup["date"])
         elif self.rollup_type == "string":
-            self.value = notion_rollup['string']
+            self.value = notion_rollup["string"]
         elif self.rollup_type == "number":
-            self.value = notion_rollup['number']
+            self.value = notion_rollup["number"]
         elif self.rollup_type == "array":
             self.value = [
                 self.client.wrap_notion_property_value(pv, page)
-                for pv in notion_rollup['array']
+                for pv in notion_rollup["array"]
             ]
         else:
             logger.warning("Unhandled rollup type %s", notion_rollup["type"])
             self.value = notion_rollup[notion_rollup["type"]]
         # TODO: handle arrays of dates
 
-    def to_value(self, pandoc_format='gfm'):
+    def to_value(self, pandoc_format="gfm"):
         if self.rollup_type == "date":
             return self.value
         elif self.rollup_type == "string":
@@ -230,7 +233,7 @@ class RollupPropertyValue(PropertyValue):
 class CreatedTimePropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.created_time = fromisoformat(notion_data['created_time'])
+        self.created_time = fromisoformat(notion_data["created_time"])
 
     def to_value(self, _=None):
         return datetime.isoformat(self.created_time)
@@ -239,7 +242,7 @@ class CreatedTimePropertyValue(PropertyValue):
 class CreatedByPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.created_by = client.wrap_notion_user(notion_data['created_by'])
+        self.created_by = client.wrap_notion_user(notion_data["created_by"])
 
     def to_value(self, _=None):
         return self.created_by.to_value()
@@ -248,7 +251,7 @@ class CreatedByPropertyValue(PropertyValue):
 class LastEditedTimePropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
+        self.last_edited_time = fromisoformat(notion_data["last_edited_time"])
 
     def to_value(self, _=None):
         return datetime.isoformat(self.last_edited_time)
@@ -257,30 +260,30 @@ class LastEditedTimePropertyValue(PropertyValue):
 class LastEditedBy(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
-        self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
+        self.last_edited_by = client.wrap_notion_user(notion_data["last_edited_by"])
 
     def to_value(self, _=None):
         return self.last_edited_by.to_value()
 
 
 DEFAULT_PROPERTY_VALUES = {
-    'title': TitlePropertyValue,
-    'rich_text': TextPropertyValue,
-    'number': NumberPropertyValue,
-    'select': SelectPropertyValue,
-    'multi_select': MultiSelectPropertyValue,
-    'date': DatePropertyValue,
-    'people': PeoplePropertyValue,
-    'files': FilesPropertyValue,
-    'checkbox': CheckboxPropertyValue,
-    'url': UrlPropertyValue,
-    'email': EmailPropertyValue,
-    'phone_number': PhoneNumberPropertyValue,
-    'formula': FormulaPropertyValue,
-    'relation': RelationPropertyValue,
-    'rollup': RollupPropertyValue,
-    'created_time': CreatedTimePropertyValue,
-    'created_by': CreatedByPropertyValue,
-    'last_edited_time': LastEditedTimePropertyValue,
-    'last_edited_by': LastEditedBy,
+    "title": TitlePropertyValue,
+    "rich_text": TextPropertyValue,
+    "number": NumberPropertyValue,
+    "select": SelectPropertyValue,
+    "multi_select": MultiSelectPropertyValue,
+    "date": DatePropertyValue,
+    "people": PeoplePropertyValue,
+    "files": FilesPropertyValue,
+    "checkbox": CheckboxPropertyValue,
+    "url": UrlPropertyValue,
+    "email": EmailPropertyValue,
+    "phone_number": PhoneNumberPropertyValue,
+    "formula": FormulaPropertyValue,
+    "relation": RelationPropertyValue,
+    "rollup": RollupPropertyValue,
+    "created_time": CreatedTimePropertyValue,
+    "created_by": CreatedByPropertyValue,
+    "last_edited_time": LastEditedTimePropertyValue,
+    "last_edited_by": LastEditedBy,
 }

@@ -9,6 +9,7 @@ class PandocASTParseError(N2YError):
     """
     Raised if there was an error parsing the AST we provided to Pandoc.
     """
+
     pass
 
 
@@ -16,6 +17,7 @@ class PluginError(N2YError):
     """
     Raised due to various errors loading a plugin.
     """
+
     pass
 
 
@@ -23,6 +25,7 @@ class UseNextClass(N2YError):
     """
     Used by plugin classes to indicate that the next class should be used instead of them.
     """
+
     pass
 
 
@@ -49,9 +52,7 @@ class HTTPResponseError(N2YError):
 
     def __init__(self, response, message=None) -> None:
         if message is None:
-            message = (
-                f"Request to Notion API failed with status: {response.status_code}"
-            )
+            message = f"Request to Notion API failed with status: {response.status_code}"
         super().__init__(message)
         self.status = response.status_code
         self.headers = response.headers
@@ -131,7 +132,7 @@ def is_api_error_code(code: str) -> bool:
 
 
 # Some of this code was taken from https://github.com/ramnes/notion-sdk-py
-'''
+"""
 The MIT License (MIT)
 
 Copyright (c) 2021 Guillaume Gelin
@@ -152,4 +153,4 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-'''
+"""

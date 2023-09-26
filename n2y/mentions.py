@@ -18,9 +18,7 @@ class UserMention(Mention):
         self.user = client.wrap_notion_user(notion_data["user"])
 
     def to_pandoc(self):
-        return RichText.plain_text_to_pandoc(
-            self.user.name
-        )if self.user.name else []
+        return RichText.plain_text_to_pandoc(self.user.name) if self.user.name else []
 
 
 class PageMention(Mention):

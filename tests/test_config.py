@@ -2,8 +2,12 @@ import copy
 import yaml
 
 from n2y.config import (
-    valid_notion_id, merge_config, load_config, _valid_notion_filter,
-    _validate_config_item, EXPORT_DEFAULTS
+    valid_notion_id,
+    merge_config,
+    load_config,
+    _valid_notion_filter,
+    _validate_config_item,
+    EXPORT_DEFAULTS,
 )
 from n2y.notion_mocks import mock_id
 
@@ -20,22 +24,26 @@ def test_load_config_basic(tmp_path):
     config_path = tmp_path / "config.yaml"
     export_id = mock_id()
     with open(config_path, "w") as f:
-        f.write(yaml.dump({
-            "media_root": "media",
-            "media_url": "https://example.com/media",
-            "export_defaults": {
-                "id_property": "id",
-                "url_property": "url",
-            },
-            "exports": [
+        f.write(
+            yaml.dump(
                 {
-                    "id": export_id,
-                    "node_type": "page",
-                    "output": "output.md",
-                    "pandoc_format": "gfm",
+                    "media_root": "media",
+                    "media_url": "https://example.com/media",
+                    "export_defaults": {
+                        "id_property": "id",
+                        "url_property": "url",
+                    },
+                    "exports": [
+                        {
+                            "id": export_id,
+                            "node_type": "page",
+                            "output": "output.md",
+                            "pandoc_format": "gfm",
+                        }
+                    ],
                 }
-            ]
-        }))
+            )
+        )
     config = load_config(config_path)
     assert config is not None, "The config is invalid"
     merged_export = config["exports"][0]
@@ -79,26 +87,32 @@ def test_valid_id_valid():
 
 
 def test_valid_id_invalid():
-    assert not valid_notion_id(mock_id() + 'a')
+    assert not valid_notion_id(mock_id() + "a")
 
 
 def test_valid_id_invalid_due_to_special():
-    bad_id = 'https://' + mock_id()[8:]
+    bad_id = "https://" + mock_id()[8:]
     assert not valid_notion_id(bad_id)
 
 
 def test_valid_notion_filter_simple():
-    assert _valid_notion_filter({
-        "property": "title",
-        "direction": "ascending",
-    })
+    assert _valid_notion_filter(
+        {
+            "property": "title",
+            "direction": "ascending",
+        }
+    )
 
 
 def test_valid_notion_filter_complex():
-    assert _valid_notion_filter([{
-        "property": "title",
-        "direction": "ascending",
-    }])
+    assert _valid_notion_filter(
+        [
+            {
+                "property": "title",
+                "direction": "ascending",
+            }
+        ]
+    )
 
 
 def test_valid_config_item_missing_id():

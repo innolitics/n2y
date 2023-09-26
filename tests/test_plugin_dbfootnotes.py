@@ -15,9 +15,7 @@ from n2y.page import Page
 from n2y.plugins.dbfootnotes import PageMentionFootnote
 
 
-def mock_page_mention_with_footnote(
-    mentioned_page_parent, connect_parent_correctly=True
-):
+def mock_page_mention_with_footnote(mentioned_page_parent, connect_parent_correctly=True):
     client = Client("", plugins=["n2y.plugins.dbfootnotes"])
     # The original page, with the footnote ref.
     original_page = mock_page()

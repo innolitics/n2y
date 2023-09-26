@@ -20,8 +20,13 @@ from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
 from n2y.errors import (
-    HTTPResponseError, APIResponseError, ObjectNotFound, PluginError,
-    UseNextClass, is_api_error_code, APIErrorCode
+    HTTPResponseError,
+    APIResponseError,
+    ObjectNotFound,
+    PluginError,
+    UseNextClass,
+    is_api_error_code,
+    APIErrorCode,
 )
 
 
@@ -60,8 +65,8 @@ class Client:
     def __init__(
         self,
         access_token,
-        media_root='.',
-        media_url='',
+        media_root=".",
+        media_url="",
         plugins=None,
         export_defaults=None,
     ):
@@ -107,7 +112,9 @@ class Client:
         for notion_object, object_types in notion_classes.items():
             if notion_object in self.notion_classes:
                 default_object_types = DEFAULT_NOTION_CLASSES[notion_object]
-                self._override_notion_classes(notion_object, object_types, default_object_types)
+                self._override_notion_classes(
+                    notion_object, object_types, default_object_types
+                )
             else:
                 raise PluginError(f'Invalid notion object "{notion_object}"')
 
@@ -121,7 +128,9 @@ class Client:
                     default_object_types, notion_object, object_type, plugin_class
                 )
         elif notion_object_has_types and not isinstance(object_types, dict):
-            raise PluginError(f'Expecting dict for "{notion_object}", found "{type(object_types)}"')
+            raise PluginError(
+                f'Expecting dict for "{notion_object}", found "{type(object_types)}"'
+            )
         else:
             plugin_class = object_types
             base_class = default_object_types
@@ -156,7 +165,9 @@ class Client:
         try:
             return self.notion_classes[notion_object][object_type]
         except KeyError:
-            raise NotImplementedError(f'Unknown "{notion_object}" class of type "{object_type}"')
+            raise NotImplementedError(
+                f'Unknown "{notion_object}" class of type "{object_type}"'
+            )
 
     def instantiate_class(self, notion_object, object_type, *args, **kwargs):
         class_list = self.get_class_list(notion_object, object_type)
@@ -194,10 +205,9 @@ class Client:
             return self.pages_cache[notion_data["id"]]
         else:
             page = self.instantiate_class("page", None, self, notion_data)
-            not page_in_cache or logger.warning((
-                "page in cache overwritten at "
-                f"key \"{notion_data['id']}\""
-            ))
+            not page_in_cache or logger.warning(
+                f"page in cache overwritten at key \"{notion_data['id']}\""
+            )
             self.pages_cache[page.notion_id] = page
             return page
 
@@ -206,8 +216,12 @@ class Client:
 
     def wrap_notion_block(self, notion_data, page, get_children):
         return self.instantiate_class(
-            "blocks", notion_data["type"],
-            self, notion_data, page, get_children,
+            "blocks",
+            notion_data["type"],
+            self,
+            notion_data,
+            page,
+            get_children,
         )
 
     def wrap_notion_user(self, notion_data):
@@ -231,20 +245,22 @@ class Client:
         # here we pass in the plain_text to avoid the need to query the page
         # just to get its title
         return self.instantiate_class(
-            "mentions", notion_data["type"],
-            self, notion_data, plain_text, block,
-        )
-
-    def wrap_notion_property(self, notion_data):
-        return self.instantiate_class("properties", notion_data["type"], self, notion_data)
-
-    def wrap_notion_property_value(self, notion_data, page):
-        return self.instantiate_class(
-            "property_values",
+            "mentions",
             notion_data["type"],
             self,
             notion_data,
-            page
+            plain_text,
+            block,
+        )
+
+    def wrap_notion_property(self, notion_data):
+        return self.instantiate_class(
+            "properties", notion_data["type"], self, notion_data
+        )
+
+    def wrap_notion_property_value(self, notion_data, page):
+        return self.instantiate_class(
+            "property_values", notion_data["type"], self, notion_data, page
         )
 
     def get_page_or_database(self, object_id):
@@ -324,7 +340,9 @@ class Client:
 
     def get_child_blocks(self, block_id, page, get_children):
         child_notion_blocks = self.get_child_notion_blocks(block_id)
-        return [self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks]
+        return [
+            self.wrap_notion_block(b, page, get_children) for b in child_notion_blocks
+        ]
 
     def get_child_notion_blocks(self, block_id):
         url = f"{self.base_url}blocks/{block_id}/children"
@@ -347,7 +365,7 @@ class Client:
         return self._get_url(url)
 
     def create_notion_page(self, page_data):
-        creation_url = f'{self.base_url}pages'
+        creation_url = f"{self.base_url}pages"
         return self._post_url(creation_url, page_data)
 
     @retry_api_call
@@ -358,7 +376,7 @@ class Client:
             url,
             params=params,
             stream=stream,
-            headers=self.headers if not stream else None
+            headers=self.headers if not stream else None,
         )
         return self._parse_response(response, stream)
 
@@ -372,8 +390,7 @@ class Client:
     @retry_api_call
     def _delete_url(self, url):
         response = requests.delete(
-            url,
-            headers={k: v for k, v in self.headers.items() if k != 'Content-Type'}
+            url, headers={k: v for k, v in self.headers.items() if k != "Content-Type"}
         )
         return self._parse_response(response)
 
@@ -408,9 +425,7 @@ class Client:
             if code == APIErrorCode.ObjectNotFound:
                 raise ObjectNotFound(response, body["message"])
             elif code and is_api_error_code(code):
-                raise APIResponseError(
-                    response, body["message"], code
-                )
+                raise APIResponseError(response, body["message"], code)
             raise HTTPResponseError(error.response)
         return response.json() if not stream else response.content
 
@@ -432,75 +447,70 @@ class Client:
         relative_filepath = f"{page_title}-{block_id_chars[:11]}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
-        with open(full_filepath, 'wb') as temp_file:
+        with open(full_filepath, "wb") as temp_file:
             temp_file.write(content)
         return urljoin(self.media_url, relative_filepath)
 
     def copy_notion_database_children(self, children, destination):
-        '''
+        """
         copy the notion children (`children`) of one notion database to another (`destination`)
-        '''
+        """
         bad_keys = [
-            'id',
-            'url',
-            'parent',
-            'created_by',
-            'created_time',
-            'last_edited_by',
-            'last_edited_time',
+            "id",
+            "url",
+            "parent",
+            "created_by",
+            "created_time",
+            "last_edited_by",
+            "last_edited_time",
         ]
         db_children = [
-            {
-                key: value
-                for (key, value) in child.items()
-                if key not in bad_keys
-            } for child in children
+            {key: value for (key, value) in child.items() if key not in bad_keys}
+            for child in children
         ]
         for page in db_children:
-            page['parent'] = {
-                'type': 'database_id',
-                'database_id': destination['id']
-            }
-            for key in page['properties'].keys():
-                page['properties'][key] = self._edit_notion_child_property(
-                    page['properties'][key]
+            page["parent"] = {"type": "database_id", "database_id": destination["id"]}
+            for key in page["properties"].keys():
+                page["properties"][key] = self._edit_notion_child_property(
+                    page["properties"][key]
                 )
             self.create_notion_page(page)
 
     def _edit_notion_child_property(self, prop):
-        del prop['id']
-        prop_type = prop['type']
-        del prop['type']
+        del prop["id"]
+        prop_type = prop["type"]
+        del prop["type"]
         prop_type_info = prop[prop_type]
         if isinstance(prop_type_info, dict):
-            if 'id' in prop_type_info:
-                del prop_type_info['id']
-        elif isinstance(prop_type_info, list) and prop_type != 'relation':
+            if "id" in prop_type_info:
+                del prop_type_info["id"]
+        elif isinstance(prop_type_info, list) and prop_type != "relation":
             for item in prop_type_info:
-                if 'id' in item:
-                    del item['id']
+                if "id" in item:
+                    del item["id"]
         return prop
 
     def _notion_block_type_is(self, block, type):
-        return 'type' in block and block['type'] == type
+        return "type" in block and block["type"] == type
 
     def _notion_block_object_is(self, block, object):
-        return 'object' in block and block['object'] == object
+        return "object" in block and block["object"] == object
 
     def append_child_notion_blocks(self, block_id, children):
-        '''
+        """
         Appends each datapoint of a list of notion_data as children to the block specified by id.
         Please note that not all block types are allowed to have children, so this method only works
         for those that are.
-        '''
+        """
         previous_i = 0
         children_appended = []
         parent = self.get_page_or_database(block_id) or self.get_block(block_id, None)
         parent_type = parent.notion_data["object"]
 
         for i, child in enumerate(children):
-            if self._notion_block_object_is(child, 'database') \
-                    or self._notion_block_type_is(child, 'child_database'):
+            if self._notion_block_object_is(
+                child, "database"
+            ) or self._notion_block_type_is(child, "child_database"):
                 if previous_i != i:
                     children_appended = self._append_blocks(
                         block_id, children, children_appended, previous_i, i
@@ -510,13 +520,16 @@ class Client:
                 )
                 children_appended.append(child_database)
                 previous_i = i + 1
-            elif self._notion_block_object_is(child, 'page') \
-                    or self._notion_block_type_is(child, 'child_page'):
+            elif self._notion_block_object_is(
+                child, "page"
+            ) or self._notion_block_type_is(child, "child_page"):
                 if previous_i != i:
                     children_appended = self._append_blocks(
                         block_id, children, children_appended, previous_i, i
                     )
-                child_page = self._copy_notion_database_child_page(parent, parent_type, child)
+                child_page = self._copy_notion_database_child_page(
+                    parent, parent_type, child
+                )
                 children_appended.append(child_page)
                 previous_i = i + 1
             elif i == len(children) - 1:
@@ -525,7 +538,9 @@ class Client:
                 )
         return children_appended
 
-    def _append_blocks(self, block_id, full_child_data_list, appension_history_list, i1=0, i2=0):
+    def _append_blocks(
+        self, block_id, full_child_data_list, appension_history_list, i1=0, i2=0
+    ):
         max_new_blocks = 100
         if i1 < i2:
             child_data_list = full_child_data_list[i1:i2]
@@ -537,64 +552,53 @@ class Client:
                 else:
                     portion = child_data_list[i:]
                 appension_return = self._patch_url(
-                    f"{self.base_url}blocks/{block_id}/children",
-                    {"children": portion}
+                    f"{self.base_url}blocks/{block_id}/children", {"children": portion}
                 )
-                appension_history_list.extend(appension_return['results'])
+                appension_history_list.extend(appension_return["results"])
         return appension_history_list
 
     def _copy_notion_database_child_page(self, parent, parent_type, child_notion_data):
-        bad_keys = [
-            'last_edited_by',
-            'created_time',
-            'last_edited_time',
-            'created_by'
-        ]
-        if parent_type == 'block':
-            logger.warning((
-                'Skipping page with block type parent as '
-                'appension is currently unsupported by Notion API'
-            ))
+        bad_keys = ["last_edited_by", "created_time", "last_edited_time", "created_by"]
+        if parent_type == "block":
+            logger.warning(
+                "Skipping page with block type parent as "
+                "appension is currently unsupported by Notion API"
+            )
             child_page = {}
         else:
-            page = self.get_page(child_notion_data['id'])
+            page = self.get_page(child_notion_data["id"])
             child_page_data = {
                 key: value
-                for (key, value) in
-                page.notion_data.items()
+                for (key, value) in page.notion_data.items()
                 if key not in bad_keys
             }
-            child_page_data['parent'] = {
-                'type': f'{parent_type}_id',
-                f'{parent_type}_id': parent.notion_id
+            child_page_data["parent"] = {
+                "type": f"{parent_type}_id",
+                f"{parent_type}_id": parent.notion_id,
             }
             child_page = self.create_notion_page(child_page_data)
         return child_page
 
-    def _copy_notion_database_child_database(self, parent, parent_type, child_notion_data):
-        bad_keys = [
-            'last_edited_by',
-            'created_time',
-            'last_edited_time',
-            'created_by'
-        ]
-        if parent_type == 'block':
-            logger.warning((
-                'Skipping database with block type parent as '
-                'appension is currently unsupported by Notion API'
-            ))
+    def _copy_notion_database_child_database(
+        self, parent, parent_type, child_notion_data
+    ):
+        bad_keys = ["last_edited_by", "created_time", "last_edited_time", "created_by"]
+        if parent_type == "block":
+            logger.warning(
+                "Skipping database with block type parent as "
+                "appension is currently unsupported by Notion API"
+            )
             child_database = {}
         else:
-            database = self.get_database(child_notion_data['id'])
+            database = self.get_database(child_notion_data["id"])
             child_database_data = {
                 key: value
-                for (key, value) in
-                database.notion_data.items()
+                for (key, value) in database.notion_data.items()
                 if key not in bad_keys
             }
-            child_database_data['parent'] = {
-                'type': f'{parent_type}_id',
-                f'{parent_type}_id': parent.notion_id
+            child_database_data["parent"] = {
+                "type": f"{parent_type}_id",
+                f"{parent_type}_id": parent.notion_id,
             }
             child_database = self.create_notion_database(child_database_data)
             if database.children:
@@ -613,16 +617,16 @@ class Client:
         return self._post_url(f"{self.base_url}comments", data)
 
     def create_notion_database(self, notion_data):
-        return self._post_url(f'{self.base_url}databases', notion_data)
+        return self._post_url(f"{self.base_url}databases", notion_data)
 
     def delete_notion_block(self, notion_block):
         return self._delete_url(f"{self.base_url}blocks/{notion_block['id']}")
 
     def page_class_is_in_use(self, page):
-        '''
+        """
         Checks if the given page has been instantiated
         with the currently favored page class in use.
-        '''
-        if page is None or self.notion_classes['page'][-1] == type(page):
+        """
+        if page is None or self.notion_classes["page"][-1] == type(page):
             return True
         return False

@@ -57,50 +57,76 @@ example_img = "https://example.com/image.png"
 toc_headers = [
     Header(
         1,
-        ('foo-items-header', [], []),
-        [Str('Foo'), Space(), Str('Items'), Space(), Str('Header')]
+        ("foo-items-header", [], []),
+        [Str("Foo"), Space(), Str("Items"), Space(), Str("Header")],
     ),
-    Header(
-        2,
-        ('foo-bar', [], []),
-        [Str('Foo:'), Space(), Str('Bar')]
-    ),
-    Header(
-        2,
-        ('foo-ski', [], []),
-        [Str('Foo:'), Space(), Str('Ski')]
-    ),
+    Header(2, ("foo-bar", [], []), [Str("Foo:"), Space(), Str("Bar")]),
+    Header(2, ("foo-ski", [], []), [Str("Foo:"), Space(), Str("Ski")]),
     Header(
         3,
-        ('first-foo-ski', [], []),
-        [Str('First'), Space(), Str('Foo'), Space(), Str('Ski')]
+        ("first-foo-ski", [], []),
+        [Str("First"), Space(), Str("Foo"), Space(), Str("Ski")],
     ),
 ]
 toc_item_ast = [
-    Plain([Link(
-        ('', [], []),
-        [Str('Foo'), Space(), Str('Items'), Space(), Str('Header')],
-        ('#foo-items-header', '')
-    )]),
+    Plain(
+        [
+            Link(
+                ("", [], []),
+                [Str("Foo"), Space(), Str("Items"), Space(), Str("Header")],
+                ("#foo-items-header", ""),
+            )
+        ]
+    ),
     OrderedList(
         (1, Decimal(), Period()),
         [
-            [Plain([Link(('', [], []), [Str('Foo:'), Space(), Str('Bar')], ('#foo-bar', ''))])],
             [
-                Plain([Link(('', [], []), [Str('Foo:'), Space(), Str('Ski')], ('#foo-ski', ''))]),
+                Plain(
+                    [
+                        Link(
+                            ("", [], []),
+                            [Str("Foo:"), Space(), Str("Bar")],
+                            ("#foo-bar", ""),
+                        )
+                    ]
+                )
+            ],
+            [
+                Plain(
+                    [
+                        Link(
+                            ("", [], []),
+                            [Str("Foo:"), Space(), Str("Ski")],
+                            ("#foo-ski", ""),
+                        )
+                    ]
+                ),
                 OrderedList(
                     (1, Decimal(), Period()),
-                    [[
-                        Plain([
-                            Link(
-                                ('', [], []),
-                                [Str('First'), Space(), Str('Foo'), Space(), Str('Ski')],
-                                ('#first-foo-ski', '')
+                    [
+                        [
+                            Plain(
+                                [
+                                    Link(
+                                        ("", [], []),
+                                        [
+                                            Str("First"),
+                                            Space(),
+                                            Str("Foo"),
+                                            Space(),
+                                            Str("Ski"),
+                                        ],
+                                        ("#first-foo-ski", ""),
+                                    )
+                                ]
                             )
-                        ])
-                    ]])]
-        ]
-    )
+                        ]
+                    ],
+                ),
+            ],
+        ],
+    ),
 ]
 
 
@@ -167,11 +193,11 @@ def test_paragraph_with_child_paragraph():
 
 
 def test_heading_1():
-    notion_block = mock_block(
-        "heading_1", {"rich_text": [mock_rich_text("Heading One")]}
-    )
+    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One")]})
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Header(1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")])
+    assert pandoc_ast == Header(
+        1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")]
+    )
     assert markdown == "# Heading One\n"
 
 
@@ -180,16 +206,18 @@ def test_heading_1_bolding_stripped():
         "heading_1", {"rich_text": [mock_rich_text("Heading One", ["bold"])]}
     )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Header(1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")])
+    assert pandoc_ast == Header(
+        1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")]
+    )
     assert markdown == "# Heading One\n"
 
 
 def test_heading_2():
-    notion_block = mock_block(
-        "heading_2", {"rich_text": [mock_rich_text("Heading Two")]}
-    )
+    notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == Header(2, ("heading-two", [], []), [Str("Heading"), Space(), Str("Two")])
+    assert pandoc_ast == Header(
+        2, ("heading-two", [], []), [Str("Heading"), Space(), Str("Two")]
+    )
     assert markdown == "## Heading Two\n"
 
 
@@ -294,7 +322,7 @@ def test_divider():
     notion_block = mock_block("divider", {"divider": []})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == HorizontalRule()
-    assert re.match('-+', markdown)
+    assert re.match("-+", markdown)
 
 
 def test_block_quote():
@@ -530,11 +558,12 @@ def test_table_block():
         ],
         TableFoot(("", [], []), []),
     )
-    assert markdown == (
-        '  header1   header2\n'
-        '  --------- ---------\n'
-        '  one       two\n'
-        '  three     four\n'
+    assert (
+        markdown
+        == "  header1   header2\n"
+        "  --------- ---------\n"
+        "  one       two\n"
+        "  three     four\n"
     )
 
 
@@ -572,9 +601,7 @@ def test_todo_in_paragraph():
         has_children=True,
     )
     children = [
-        mock_block(
-            "to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}
-        ),
+        mock_block("to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}),
         mock_block(
             "to_do", {"rich_text": [mock_rich_text("Task Two")], "checked": False}
         ),
@@ -615,15 +642,17 @@ def test_synced_block_shared():
     )
     reference_synced_block = mock_block(
         "synced_block",
-        {"synced_from": {'type': 'block_id', 'block_id': 'some-block-id'}},
+        {"synced_from": {"type": "block_id", "block_id": "some-block-id"}},
         has_children=True,
     )
     children = [mock_paragraph_block([("synced", [])])]
     original_pandoc_ast, original_markdown = process_parent_block(
-        original_synced_block, children,
+        original_synced_block,
+        children,
     )
     reference_pandoc_ast, reference_markdown = process_parent_block(
-        reference_synced_block, children,
+        reference_synced_block,
+        children,
     )
     assert original_pandoc_ast == reference_pandoc_ast == [Para([Str("synced")])]
     assert original_markdown == reference_markdown == "synced\n"
@@ -632,11 +661,12 @@ def test_synced_block_shared():
 def test_synced_block_unshared():
     unshared_reference_synced_block = mock_block(
         "synced_block",
-        {"synced_from": {'type': 'block_id', 'block_id': 'some-block-id'}},
+        {"synced_from": {"type": "block_id", "block_id": "some-block-id"}},
         has_children=False,
     )
     unshared_reference_pandoc_ast, unshared_reference_markdown = process_parent_block(
-        unshared_reference_synced_block, None,
+        unshared_reference_synced_block,
+        None,
     )
     assert unshared_reference_pandoc_ast is None
     assert unshared_reference_markdown == ""
@@ -644,7 +674,8 @@ def test_synced_block_unshared():
 
 def test_link_to_page_page():
     mock_link_to_page_block = mock_block(
-        "link_to_page", {"type": "page_id", "page_id": mock_id()},
+        "link_to_page",
+        {"type": "page_id", "page_id": mock_id()},
     )
     page = mock_page("Linked Page")
     with mock.patch("n2y.notion.Client._get_url", return_value=page):
@@ -662,41 +693,44 @@ def test_column_block():
         mock_get_child_notion_blocks.return_value = children
         n2y_block = generate_block(column_block)
     pandoc_ast = n2y_block.to_pandoc()
-    assert pandoc_ast == [Para([Str('child')])]
+    assert pandoc_ast == [Para([Str("child")])]
 
 
 @mock.patch("n2y.notion.Client.get_child_notion_blocks")
 def test_column_list_block(mock_get_child_notion_blocks):
     column_list_block = mock_block("column_list", {}, True)
     column1, column2 = mock_block("column", {}, True), mock_block("column", {}, True)
-    para1, para2 = mock_paragraph_block([["child1"]]), mock_paragraph_block(
-        [["child2"]]
-    )
+    para1, para2 = mock_paragraph_block([["child1"]]), mock_paragraph_block([["child2"]])
     # Return [column1, column2] for the column list get_child_notion_blocks call
     # and [para1] and [para2] for the get_child_notion_blocks calls of the
     # respective column blocks
     mock_get_child_notion_blocks.side_effect = [[column1, column2], [para1], [para2]]
     pandoc_ast, markdown = process_block(column_list_block)
-    assert pandoc_ast == [Para([Str('child1')]), Para([Str('child2')])]
-    assert markdown == 'child1\n\nchild2\n'
+    assert pandoc_ast == [Para([Str("child1")]), Para([Str("child2")])]
+    assert markdown == "child1\n\nchild2\n"
 
 
 def test_toc_item_block():
     contents = {
-        'header': toc_headers[0],
-        'subheaders': toc_headers[1:],
-        'rich_text': mock_rich_text_array([('Foo Items Header', None, '#foo-items-header')])
+        "header": toc_headers[0],
+        "subheaders": toc_headers[1:],
+        "rich_text": mock_rich_text_array(
+            [("Foo Items Header", None, "#foo-items-header")]
+        ),
     }
     toc_item_block = mock_block("table_of_contents_item", contents)
     pandoc_ast, markdown = process_block(toc_item_block)
     assert pandoc_ast == toc_item_ast
-    assert markdown == '''\
+    assert (
+        markdown
+        == """\
 [Foo Items Header](#foo-items-header)
 
 1.  [Foo: Bar](#foo-bar)
 2.  [Foo: Ski](#foo-ski)
     1.  [First Foo Ski](#first-foo-ski)
-'''
+"""
+    )
 
 
 def test_toc_block():
@@ -707,12 +741,11 @@ def test_toc_block():
     pandoc_ast = toc.to_pandoc()
     markdown = pandoc_ast_to_markdown(pandoc_ast)
     assert pandoc_ast == [
-        OrderedList(
-            (1, Decimal(), Period()),
-            [toc_item_ast, toc_item_ast]
-        )
+        OrderedList((1, Decimal(), Period()), [toc_item_ast, toc_item_ast])
     ]
-    assert markdown == '''\
+    assert (
+        markdown
+        == """\
 1.  [Foo Items Header](#foo-items-header)
     1.  [Foo: Bar](#foo-bar)
     2.  [Foo: Ski](#foo-ski)
@@ -721,4 +754,5 @@ def test_toc_block():
     1.  [Foo: Bar](#foo-bar)
     2.  [Foo: Ski](#foo-ski)
         1.  [First Foo Ski](#first-foo-ski)
-'''
+"""
+    )

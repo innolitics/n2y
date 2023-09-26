@@ -8,6 +8,7 @@ class RemoveCalloutBlock(NoopBlock):
     Useful, e.g., if you want callout blocks to contain help text that shouldn't
     be included in generated documents.
     """
+
     ...
 
 

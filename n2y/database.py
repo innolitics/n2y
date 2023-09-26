@@ -8,22 +8,24 @@ class Database:
         self.client = client
 
         self.notion_data = notion_data
-        self.notion_id = notion_data['id']
-        self.created_time = fromisoformat(notion_data['created_time'])
-        self.created_by = client.wrap_notion_user(notion_data['created_by'])
-        self.last_edited_time = fromisoformat(notion_data['last_edited_time'])
-        self.last_edited_by = client.wrap_notion_user(notion_data['last_edited_by'])
-        self.title = client.wrap_notion_rich_text_array(notion_data['title'])
-        self.icon = self._init_icon(notion_data['icon'])
-        self.cover = notion_data['cover'] and client.wrap_notion_file(notion_data['cover'])
-        self.archived = notion_data['archived']
+        self.notion_id = notion_data["id"]
+        self.created_time = fromisoformat(notion_data["created_time"])
+        self.created_by = client.wrap_notion_user(notion_data["created_by"])
+        self.last_edited_time = fromisoformat(notion_data["last_edited_time"])
+        self.last_edited_by = client.wrap_notion_user(notion_data["last_edited_by"])
+        self.title = client.wrap_notion_rich_text_array(notion_data["title"])
+        self.icon = self._init_icon(notion_data["icon"])
+        self.cover = notion_data["cover"] and client.wrap_notion_file(
+            notion_data["cover"]
+        )
+        self.archived = notion_data["archived"]
         self.schema = {
             k: client.wrap_notion_property(p)
-            for k, p in notion_data['properties'].items()
+            for k, p in notion_data["properties"].items()
         }
-        self.notion_parent = notion_data['parent']
-        self.notion_url = notion_data['url']
-        self.archived = notion_data['archived']
+        self.notion_parent = notion_data["parent"]
+        self.notion_url = notion_data["url"]
+        self.archived = notion_data["archived"]
 
         self._children = None
         self._filtered_children = {}
@@ -45,8 +47,9 @@ class Database:
             if tupled_filter not in self._filtered_children:
                 self._filtered_children[tupled_filter] = {}
             if tupled_sort not in self._filtered_children[tupled_filter]:
-                self._filtered_children[tupled_filter][tupled_sort] = \
-                    self.client.get_database_pages(self.notion_id, filter, sort)
+                self._filtered_children[tupled_filter][
+                    tupled_sort
+                ] = self.client.get_database_pages(self.notion_id, filter, sort)
             children = self._filtered_children[tupled_filter][tupled_sort]
         else:
             children = self.children
@@ -57,11 +60,11 @@ class Database:
 
     def _tuplize(self, item):
         if callable(getattr(item, "items", None)):
-            return tuple([(key, self._tuplize(val)) for (key, val) in item.items()])
-        elif hasattr(item, '__iter__') and type(item) is not str:
-            return tuple([self._tuplize(i) for i in item])
+            return tuple((key, self._tuplize(val)) for (key, val) in item.items())
+        elif hasattr(item, "__iter__") and not isinstance(item, str):
+            return tuple(self._tuplize(i) for i in item)
         else:
-            return (item)
+            return (item,)
 
     def _init_icon(self, icon_notion_data):
         """

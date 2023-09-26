@@ -13,14 +13,14 @@ from n2y.plugins.rawcodeblocks import RawFencedCodeBlock
 
 
 def test_load_plugin_invalid_notion_object():
-    client = Client('')
+    client = Client("")
     with pytest.raises(PluginError) as err:
         client.load_plugin({"puppy": str})
     assert "puppy" in str(err)
 
 
 def test_load_plugin_invalid_object_type():
-    client = Client('')
+    client = Client("")
     with pytest.raises(PluginError) as err:
         client.load_plugin({"blocks": {"puppy": str}})
     assert "block" in str(err)
@@ -28,16 +28,17 @@ def test_load_plugin_invalid_object_type():
 
 
 def test_load_plugin_valid_page():
-    client = Client('')
+    client = Client("")
 
     class MyPage(Page):
         pass
+
     client.load_plugin({"page": MyPage})
     assert client.get_class_list("page") == [Page, MyPage]
 
 
 def test_get_class_fallthrough():
-    client = Client('')
+    client = Client("")
 
     class SometimesParagraph(ParagraphBlock):
         def __init__(self, client, notion_data, page=None, get_children=False):
@@ -46,51 +47,67 @@ def test_get_class_fallthrough():
                 raise UseNextClass()
 
     client.load_plugin({"blocks": {"paragraph": SometimesParagraph}})
-    sometimes = client.wrap_notion_block(mock_paragraph_block([("sometimes", {})]), None, False)
-    othertimes = client.wrap_notion_block(mock_paragraph_block([("othertimes", {})]), None, False)
+    sometimes = client.wrap_notion_block(
+        mock_paragraph_block([("sometimes", {})]), None, False
+    )
+    othertimes = client.wrap_notion_block(
+        mock_paragraph_block([("othertimes", {})]), None, False
+    )
     assert type(sometimes) is SometimesParagraph
     assert type(othertimes) is ParagraphBlock
 
 
 def test_load_plugin_invalid_page_class():
-    client = Client('')
+    client = Client("")
 
     class MyPage:
         pass
+
     with pytest.raises(PluginError) as err:
         client.load_plugin({"page": MyPage})
     assert "MyPage" in str(err)
 
 
 def test_load_plugin_valid_block():
-    client = Client('')
+    client = Client("")
 
     class MyParagraphBlock(ParagraphBlock):
         pass
+
     client.load_plugin({"blocks": {"paragraph": MyParagraphBlock}})
-    assert client.get_class_list("blocks", "paragraph") == [ParagraphBlock, MyParagraphBlock]
+    assert client.get_class_list("blocks", "paragraph") == [
+        ParagraphBlock,
+        MyParagraphBlock,
+    ]
 
 
 def test_load_plugin_invalid_block_mapping():
-    client = Client('')
+    client = Client("")
     with pytest.raises(PluginError) as err:
         client.load_plugin({"blocks": str})
     assert "block" in str(err)
 
 
 def test_load_plugin_invalid_block_class():
-    client = Client('')
+    client = Client("")
 
     class MyParagraphBlock:
         pass
+
     with pytest.raises(PluginError) as err:
         client.load_plugin({"blocks": {"paragraph": MyParagraphBlock}})
     assert "MyParagraphBlock" in str(err)
 
 
 def test_load_plugins_overrides_old_plugins():
-    client = Client('')
+    client = Client("")
     client.load_plugins(["n2y.plugins.mermaid"])
-    assert client.get_class_list("blocks", "code") == [FencedCodeBlock, MermaidFencedCodeBlock]
+    assert client.get_class_list("blocks", "code") == [
+        FencedCodeBlock,
+        MermaidFencedCodeBlock,
+    ]
     client.load_plugins(["n2y.plugins.rawcodeblocks"])
-    assert client.get_class_list("blocks", "code") == [FencedCodeBlock, RawFencedCodeBlock]
+    assert client.get_class_list("blocks", "code") == [
+        FencedCodeBlock,
+        RawFencedCodeBlock,
+    ]

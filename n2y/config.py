@@ -25,12 +25,15 @@ EXPORT_DEFAULTS = {
     "notion_sorts": [],
     "pandoc_format": "markdown",
     "pandoc_options": [
-        '--wrap', 'none',  # don't hard line-wrap
-        '--columns', '10000',  # The default column width is 72 characters.
+        "--wrap",
+        "none",  # don't hard line-wrap
+        "--columns",
+        "10000",  # The default column width is 72 characters.
         # When the width is this small, then pandoc may elect to generate HTML
         # tables in markdown instead of text-based tables; this is problematic
         # when we then convert the markdown into DOCX files which don't support raw HTML.
-        '--eol', 'lf',  # use linux-style line endings
+        "--eol",
+        "lf",  # use linux-style line endings
     ],
     "plugins": [],
     "property_map": {},
@@ -120,7 +123,9 @@ def _validate_config_item(config_item):
         logger.error("Export config item missing the 'node_type' key")
         return False
     if config_item["node_type"] not in ["page", "database_as_yaml", "database_as_files"]:
-        logger.error("Invalid node_type in export config item: %s", config_item["node_type"])
+        logger.error(
+            "Invalid node_type in export config item: %s", config_item["node_type"]
+        )
         return False
     if "filename_template" in config_item:
         if not _valid_filename_template(config_item["filename_template"]):

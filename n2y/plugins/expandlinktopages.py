@@ -21,8 +21,9 @@ class ExpandingLinkToPageBlock(LinkToPageBlock):
         else:
             # TODO: Might be expanded to handle links to databases as well.
             logger.warning(
-                'Links to databases (to:%s from:%s) not supported at this time.',
-                self.linked_node_id, self.page.notion_id
+                "Links to databases (to:%s from:%s) not supported at this time.",
+                self.linked_node_id,
+                self.page.notion_id,
             )
             return None
 
