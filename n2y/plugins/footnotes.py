@@ -90,7 +90,9 @@ class TextRichTextWithFootnoteRef(TextRichText):
         pandoc_ast.append(Str(suffix))
 
     def _is_footnote(self):
-        return any(self._footnote_from_token(t) is not None for t in super().to_pandoc())
+        return any(
+            self._footnote_from_token(t) is not None for t in super().to_pandoc()
+        )
 
     def _footnote_from_token(self, token):
         if not isinstance(token, Str):

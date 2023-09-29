@@ -81,7 +81,9 @@ class Block:
 
     def get_children(self):
         if self.has_children:
-            self.children = self.client.get_child_blocks(self.notion_id, self.page, True)
+            self.children = self.client.get_child_blocks(
+                self.notion_id, self.page, True
+            )
         else:
             self.children = []
 
@@ -316,7 +318,9 @@ class TableOfContentsItemBlock(NumberedListItemBlock, TableOfContentsBlock):
                     )
         for subsection in subsections:
             notion_data = self.generate_item_block(subsection)
-            children.append(TableOfContentsItemBlock(self.client, notion_data, self.page))
+            children.append(
+                TableOfContentsItemBlock(self.client, notion_data, self.page)
+            )
         if children:
             self.has_children = True
         self.children = children
@@ -666,7 +670,11 @@ class RowBlock(Block):
             pandoc = self.filter_linebreaks(pandoc)
             cells.append(
                 Cell(
-                    ("", [], []), AlignDefault(), RowSpan(1), ColSpan(1), [Plain(pandoc)]
+                    ("", [], []),
+                    AlignDefault(),
+                    RowSpan(1),
+                    ColSpan(1),
+                    [Plain(pandoc)],
                 )
             )
         return Row(("", [], []), cells)

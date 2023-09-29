@@ -83,7 +83,11 @@ def merge_config(config_items, builtin_defaults, defaults):
         master_defaults_copy = copy.deepcopy(builtin_defaults)
         defaults_copy = copy.deepcopy(defaults)
         config_item_copy = copy.deepcopy(config_item)
-        merged_config_item = {**master_defaults_copy, **defaults_copy, **config_item_copy}
+        merged_config_item = {
+            **master_defaults_copy,
+            **defaults_copy,
+            **config_item_copy,
+        }
         merged_config_items.append(merged_config_item)
     return merged_config_items
 
@@ -122,7 +126,11 @@ def _validate_config_item(config_item):
     if "node_type" not in config_item:
         logger.error("Export config item missing the 'node_type' key")
         return False
-    if config_item["node_type"] not in ["page", "database_as_yaml", "database_as_files"]:
+    if config_item["node_type"] not in [
+        "page",
+        "database_as_yaml",
+        "database_as_files",
+    ]:
         logger.error(
             "Invalid node_type in export config item: %s", config_item["node_type"]
         )

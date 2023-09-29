@@ -133,7 +133,9 @@ def mock_property_value(property_value_type, content):
 
 
 def mock_rich_text_property_value(text_blocks_descriptors):
-    return mock_property_value("rich_text", mock_rich_text_array(text_blocks_descriptors))
+    return mock_property_value(
+        "rich_text", mock_rich_text_array(text_blocks_descriptors)
+    )
 
 
 def mock_formula_property_value(formula_type, content):

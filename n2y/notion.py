@@ -92,7 +92,9 @@ class Client:
         notion_classes = {}
         for notion_object, object_types in DEFAULT_NOTION_CLASSES.items():
             if type(object_types) is dict:
-                notion_classes[notion_object] = {k: [v] for k, v in object_types.items()}
+                notion_classes[notion_object] = {
+                    k: [v] for k, v in object_types.items()
+                }
             else:
                 notion_classes[notion_object] = [object_types]
         return notion_classes
@@ -118,7 +120,9 @@ class Client:
             else:
                 raise PluginError(f'Invalid notion object "{notion_object}"')
 
-    def _override_notion_classes(self, notion_object, object_types, default_object_types):
+    def _override_notion_classes(
+        self, notion_object, object_types, default_object_types
+    ):
         # E.g., there are many types of notion blocks but only one type of notion page.
         notion_object_has_types = isinstance(default_object_types, dict)
 

@@ -124,7 +124,9 @@ def test_bold_space():
 
 
 def test_italic_spaces():
-    notion_data = mock_rich_text_array([("An", []), (" italic ", ["italic"]), (word, [])])
+    notion_data = mock_rich_text_array(
+        [("An", []), (" italic ", ["italic"]), (word, [])]
+    )
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [Str("An"), Space(), Emph([Str("italic")]), Space(), Str(word)]
     assert markdown == "An *italic* word.\n"
@@ -188,8 +190,7 @@ def test_blended_annotated_spaces():
         Str("?"),
     ]
     assert (
-        markdown
-        == "**this** ***is*** *a*\n~~test~~[**` did`*"
+        markdown == "**this** ***is*** *a*\n~~test~~[**` did`*"
         "*]{.underline}[` i pass`]{.underline}?\n"
     )
 
@@ -236,8 +237,7 @@ def test_equation_inline():
         Str("indeed"),
     ]
     assert (
-        markdown
-        == "The Schrödinger Equation\n(${\\displaystyle "
+        markdown == "The Schrödinger Equation\n(${\\displaystyle "
         "i\\hbar {\\frac {d}{dt}}\\vert \\Psi (t)\\"
         "rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}$)\nis"
         " a very useful one indeed\n"
