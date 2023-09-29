@@ -40,6 +40,7 @@ from pandoc.types import (
 )
 
 from n2y.notion import Client
+from n2y.page import Page
 from n2y.utils import pandoc_ast_to_markdown
 from n2y.notion_mocks import (
     mock_rich_text_array,
@@ -64,6 +65,28 @@ toc_headers = [
     Header(2, ("foo-ski", [], []), [Str("Foo:"), Space(), Str("Ski")]),
     Header(
         3,
+        ("first-foo-ski", [], []),
+        [Str("First"), Space(), Str("Foo"), Space(), Str("Ski")],
+    ),
+]
+toc_headers_starting_h2 = [
+    Header(
+        2,
+        ("foo-header-h2", [], []),
+        [Str("Foo"), Space(), Str("Header"), Space(), Str("H2")],
+    ),
+    Header(
+        3,
+        ("foo-bar-h3", [], []),
+        [Str("Foo:"), Space(), Str("Bar"), Space(), Str("H3")],
+    ),
+    Header(
+        3,
+        ("foo-ski-h3", [], []),
+        [Str("Foo:"), Space(), Str("Ski"), Space(), Str("H3")],
+    ),
+    Header(
+        4,
         ("first-foo-ski", [], []),
         [Str("First"), Space(), Str("Foo"), Space(), Str("Ski")],
     ),
@@ -193,7 +216,9 @@ def test_paragraph_with_child_paragraph():
 
 
 def test_heading_1():
-    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One")]})
+    notion_block = mock_block(
+        "heading_1", {"rich_text": [mock_rich_text("Heading One")]}
+    )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(
         1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")]
@@ -213,7 +238,9 @@ def test_heading_1_bolding_stripped():
 
 
 def test_heading_2():
-    notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
+    notion_block = mock_block(
+        "heading_2", {"rich_text": [mock_rich_text("Heading Two")]}
+    )
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(
         2, ("heading-two", [], []), [Str("Heading"), Space(), Str("Two")]
@@ -387,7 +414,13 @@ def test_image_internal_with_caption(mock_download):
     mock_download.return_value = "image.png"
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Para(
-        [Image(("", [], []), [Str("test"), Space(), Str("image")], ("image.png", "fig:"))]
+        [
+            Image(
+                ("", [], []),
+                [Str("test"), Space(), Str("image")],
+                ("image.png", "fig:"),
+            )
+        ]
     )
     assert markdown == "![test image](image.png)\n"
 
@@ -559,8 +592,7 @@ def test_table_block():
         TableFoot(("", [], []), []),
     )
     assert (
-        markdown
-        == "  header1   header2\n"
+        markdown == "  header1   header2\n"
         "  --------- ---------\n"
         "  one       two\n"
         "  three     four\n"
@@ -601,7 +633,9 @@ def test_todo_in_paragraph():
         has_children=True,
     )
     children = [
-        mock_block("to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}),
+        mock_block(
+            "to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}
+        ),
         mock_block(
             "to_do", {"rich_text": [mock_rich_text("Task Two")], "checked": False}
         ),
@@ -700,7 +734,9 @@ def test_column_block():
 def test_column_list_block(mock_get_child_notion_blocks):
     column_list_block = mock_block("column_list", {}, True)
     column1, column2 = mock_block("column", {}, True), mock_block("column", {}, True)
-    para1, para2 = mock_paragraph_block([["child1"]]), mock_paragraph_block([["child2"]])
+    para1, para2 = mock_paragraph_block([["child1"]]), mock_paragraph_block(
+        [["child2"]]
+    )
     # Return [column1, column2] for the column list get_child_notion_blocks call
     # and [para1] and [para2] for the get_child_notion_blocks calls of the
     # respective column blocks
@@ -754,5 +790,50 @@ def test_toc_block():
     1.  [Foo: Bar](#foo-bar)
     2.  [Foo: Ski](#foo-ski)
         1.  [First Foo Ski](#first-foo-ski)
+"""
+    )
+
+
+def test_toc_block_starting_h2():
+    toc_block = mock_block("table_of_contents", {})
+    client = Client("")
+    toc = client.wrap_notion_block(toc_block, None, True)
+    toc.render_toc([*toc_headers_starting_h2, *toc_headers_starting_h2])
+    pandoc_ast = toc.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert (
+        markdown
+        == """\
+1.  [Foo Header H2](#foo-header-h2)
+    1.  [Foo: Bar H3](#foo-bar-h3)
+    2.  [Foo: Ski H3](#foo-ski-h3)
+        1.  [First Foo Ski](#first-foo-ski)
+2.  [Foo Header H2](#foo-header-h2)
+    1.  [Foo: Bar H3](#foo-bar-h3)
+    2.  [Foo: Ski H3](#foo-ski-h3)
+        1.  [First Foo Ski](#first-foo-ski)
+"""
+    )
+
+
+def test_toc_block_h1_after_h2_base():
+    toc_block = mock_block("table_of_contents", {})
+    client = Client("")
+    page_data = mock_page("Mock Page")
+    page = Page(client, page_data)
+    toc = client.wrap_notion_block(toc_block, page, True)
+    toc.render_toc([*toc_headers_starting_h2, *toc_headers])
+    pandoc_ast = toc.to_pandoc()
+    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    assert (
+        markdown
+        == """\
+1.  [Foo Header H2](#foo-header-h2)
+    1.  [Foo: Bar H3](#foo-bar-h3)
+    2.  [Foo: Ski H3](#foo-ski-h3)
+        1.  [First Foo Ski](#first-foo-ski)
+2.  [Foo: Bar](#foo-bar)
+3.  [Foo: Ski](#foo-ski)
+    1.  [First Foo Ski](#first-foo-ski)
 """
     )

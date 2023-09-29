@@ -16,7 +16,9 @@ def test_append_and_delete_blocks():
         has_children=True,
     )
     del notion_block["url"]
-    creation_response = client.append_child_notion_blocks(page.notion_id, [notion_block])
+    creation_response = client.append_child_notion_blocks(
+        page.notion_id, [notion_block]
+    )
     new_block = creation_response[0]
     assert creation_response
     deletion_response = client.delete_notion_block(new_block)

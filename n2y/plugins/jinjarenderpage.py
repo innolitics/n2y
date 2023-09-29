@@ -63,7 +63,9 @@ def join_to(foreign_keys, table, primary_key="notion_id"):
 def list_matches(string, text):
     return list(
         re.finditer(
-            "(?<![a-zA-Z])" + re.escape(_canonicalize(string)) + "(?:s|es)?(?![a-zA-Z])",
+            "(?<![a-zA-Z])"
+            + re.escape(_canonicalize(string))
+            + "(?:s|es)?(?![a-zA-Z])",
             _canonicalize(text),
             re.IGNORECASE,
         )
@@ -267,7 +269,9 @@ class JinjaRenderPage(Page):
         first_pass_output = self.jinja_environment.globals["first_pass_output"]
         if first_pass_output.second_pass_is_requested:
             first_pass_output_text = pandoc_ast_to_markdown(ast)
-            first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
+            first_pass_output.set_lines(
+                first_pass_output_text.splitlines(keepends=True)
+            )
             ast = super().to_pandoc(ignore_toc=True)
             jinja2.clear_caches()
         return ast if ignore_toc else self.generate_toc(ast)
@@ -449,7 +453,11 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
     def to_pandoc(self):
         if self.databases is None:
             self._get_yaml_from_mentions()
-        if self.render_count < 1 or self.render_count < 2 and self.uses_first_pass_output:
+        if (
+            self.render_count < 1
+            or self.render_count < 2
+            and self.uses_first_pass_output
+        ):
             self._render_text()
         if self.error:
             children_ast = self._error_ast()

@@ -51,7 +51,9 @@ def test_fuzzy_find_in():
     catch_all_string = "a bc def"
     assert fuzzy_find_in(dict_list, "a", "data") == [{"id": "1", "data": "a"}]
     assert fuzzy_find_in(dict_list, catch_all_string, "data") == reversed_dict_list
-    assert fuzzy_find_in(dict_list, catch_all_string, "data", False) == reversed_dict_list
+    assert (
+        fuzzy_find_in(dict_list, catch_all_string, "data", False) == reversed_dict_list
+    )
     assert fuzzy_find_in(dict_list, catch_all_string, "data", False, False) == dict_list
     assert fuzzy_find_in(dict_list, catch_all_string, "data", True, False) == dict_list
 
@@ -215,7 +217,8 @@ def test_jinja_render_with_incorrect_db_property():
         in markdown
     )
     assert (
-        'the available properties are "title", "notion_id", and "notion_url".' in markdown
+        'the available properties are "title", "notion_id", and "notion_url".'
+        in markdown
     )
 
 
@@ -265,7 +268,9 @@ def test_jinja_render_with_filter_error():
             pandoc_ast = page.to_pandoc()
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
-    assert 'Recieved the message "type str doesn\'t define __round__ method"' in markdown
+    assert (
+        'Recieved the message "type str doesn\'t define __round__ method"' in markdown
+    )
     assert 'The Jinja filter "round" raised this error' in markdown
     assert 'argument(s): {\n\t"args": (\'a\',),\n\t"kwargs": {}\n}' in markdown
 

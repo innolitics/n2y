@@ -26,7 +26,9 @@ def mock_header_ast(level, suffix, notion_block):
 
 
 def test_heading_1():
-    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One")]})
+    notion_block = mock_block(
+        "heading_1", {"rich_text": [mock_rich_text("Heading One")]}
+    )
     pandoc_ast, markdown = process_block(notion_block, linked_headers)
     assert pandoc_ast == mock_header_ast(1, "One", notion_block)
     assert markdown == f'# [Heading One]({notion_block["url"]})\n'
@@ -42,7 +44,9 @@ def test_heading_1_bolding_stripped():
 
 
 def test_heading_2():
-    notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
+    notion_block = mock_block(
+        "heading_2", {"rich_text": [mock_rich_text("Heading Two")]}
+    )
     pandoc_ast, markdown = process_block(notion_block, linked_headers)
     assert pandoc_ast == mock_header_ast(2, "Two", notion_block)
     assert markdown == f'## [Heading Two]({notion_block["url"]})\n'
