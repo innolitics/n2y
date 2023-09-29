@@ -226,13 +226,23 @@ class TableOfContentsBlock(Block):
         if self.subheaders is not None:
             children: list[TableOfContentsItemBlock] = []
             subsections: list[list[Header]] = []
+            # Sometimes, the first header is not an H1, so we need to find the first
+            base: int = self.subheaders[0][0]
             index: int = -1
             for header in self.subheaders:
-                if header[0] == 1:
+                if header[0] == base:
                     index += 1
                     subsections.append([header])
-                if header[0] > 1:
+                if header[0] > base:
                     subsections[index].append(header)
+                if header[0] < base:
+                    logger.warning(
+                        f'Skipping out-of-order header "{header[1][0]}" in table of'
+                        " contents for page named"
+                        f" {self.page.title.to_plain_text()} ({self.page.notion_url})."
+                        " The base header is an H{base} so all following headers"
+                        " should be H{base} or greater."
+                    )
             for subsection in subsections:
                 notion_data = self.generate_item_block(subsection)
                 children.append(
