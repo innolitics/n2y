@@ -81,8 +81,15 @@ class Database:
     def parent(self):
         if self.notion_parent["type"] == "workspace":
             return None
-        else:
-            return self.client.get_page(self.notion_parent["page_id"])
+
+        if "page_id" not in self.notion_parent:
+            logger.warning(
+                f"Parent of database {self.title.to_plain_text()} (id: {self.notion_id})"
+                f" has no page_id: {self.notion_parent.items()}"
+            )
+            return None
+
+        return self.client.get_page(self.notion_parent["page_id"])
 
     def to_pandoc(self):
         return self.block.to_pandoc()
