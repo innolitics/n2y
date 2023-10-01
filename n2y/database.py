@@ -79,10 +79,22 @@ class Database:
 
     @property
     def parent(self):
-        if self.notion_parent["type"] == "workspace":
+        """
+        The parent of a database can be a page, another database, a block, or
+        it can be at the top level of workspace.
+        """
+        type = self.notion_parent["type"]
+        if type == "workspace":
             return None
-        else:
+
+        if type == "page_id":
             return self.client.get_page(self.notion_parent["page_id"])
+
+        if type == "database_id":
+            return self.client.get_database(self.notion_parent["database_id"])
+
+        if type == "block_id":
+            return self.client.get_block(self.notion_parent["block_id"], page=None)
 
     def to_pandoc(self):
         return self.block.to_pandoc()
