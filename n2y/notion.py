@@ -199,13 +199,14 @@ class Client:
         state that has been added to it.
         """
         page_in_cache = notion_data["id"] in self.pages_cache
-        if page_in_cache and self.page_class_is_in_use(
+        if page_in_cache and self.class_is_in_use(
             # Need to check that the page in the client cache was instantiated using
             # the currently favored page class. Otherwise, plugins set for one export
             # will be used in another or a plugin will be set but not used.
             # As we currently use the `jinjarenderpage` plugin for all pages,
             # this check is most likely uneccessary at this point.
-            self.pages_cache[notion_data["id"]]
+            self.pages_cache[notion_data["id"]],
+            "page",
         ):
             return self.pages_cache[notion_data["id"]]
         else:
@@ -234,7 +235,9 @@ class Client:
         Retrieve the user if its not in the cache.
         """
         user_id = notion_data["id"]
-        if user_id in self.users_cache:
+        if user_id in self.users_cache and self.class_is_in_use(
+            self.users_cache[user_id], "user"
+        ):
             user = self.users_cache[user_id]
         else:
             try:
@@ -303,7 +306,9 @@ class Client:
         Retrieve the database (but not it's pages) if its not in the cache. Even
         if it is in the cache.
         """
-        if database_id in self.databases_cache:
+        if database_id in self.databases_cache and self.class_is_in_use(
+            self.databases_cache[database_id], "database"
+        ):
             database = self.databases_cache[database_id]
         else:
             try:
@@ -336,7 +341,7 @@ class Client:
         """
         if page_id in self.pages_cache:
             page = self.pages_cache[page_id]
-            if not self.page_class_is_in_use(page):
+            if not self.class_is_in_use(page, "page"):
                 page = self.instantiate_class("page", None, self, page.notion_data)
         else:
             try:
@@ -646,11 +651,11 @@ class Client:
     def delete_notion_block(self, notion_block):
         return self._delete_url(f"{self.base_url}blocks/{notion_block['id']}")
 
-    def page_class_is_in_use(self, page):
+    def class_is_in_use(self, class_object, cls):
         """
-        Checks if the given page has been instantiated
-        with the currently favored page class in use.
+        Checks if the given class object has been instantiated
+        with the currently favored class type for that class.
         """
-        if page is None or self.notion_classes["page"][-1] == type(page):
+        if class_object is None or type(class_object) is self.notion_classes[cls][-1]:
             return True
         return False
