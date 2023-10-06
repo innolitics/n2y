@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from n2y.blocks import ParagraphBlock
@@ -10,15 +12,19 @@ from n2y.notion_mocks import (
     mock_page,
     mock_page_mention,
     mock_paragraph_block,
+    mock_user,
 )
 from n2y.page import Page
 from n2y.plugins.dbfootnotes import PageMentionFootnote
+from n2y.user import User
 
 
+@patch("n2y.notion.Client.wrap_notion_user")
 def mock_page_mention_with_footnote(
-    mentioned_page_parent, connect_parent_correctly=True
+    mentioned_page_parent, wrap_notion_user, connect_parent_correctly=True
 ):
     client = Client("", plugins=["n2y.plugins.dbfootnotes"])
+    wrap_notion_user.return_value = User(client, mock_user())
     # The original page, with the footnote ref.
     original_page = mock_page()
     # A paragraph in the original page where the mention occurs.
@@ -88,7 +94,7 @@ def test_check_that_mention_parent_is_a_database():
 
 def test_check_that_mention_parent_is_inline_db_of_original_page():
     from_page_mention_with_inline_db = mock_page_mention_with_footnote(
-        mentioned_page_parent=mock_database("Footnotes"),
+        mock_database("Footnotes"),
         connect_parent_correctly=True,
     )
 
@@ -96,7 +102,7 @@ def test_check_that_mention_parent_is_inline_db_of_original_page():
 
     with pytest.raises(PluginError):
         mock_page_mention_with_footnote(
-            mentioned_page_parent=mock_database("Footnotes"),
+            mock_database("Footnotes"),
             connect_parent_correctly=False,
         )._is_footnote()
 

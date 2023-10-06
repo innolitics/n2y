@@ -1,21 +1,29 @@
-import pytest
-from n2y import notion
+from unittest.mock import patch
 
+import pytest
+
+from n2y import notion
 from n2y.notion_mocks import (
     mock_formula_property_value,
     mock_person_user,
+    mock_property_value,
     mock_relation_value,
     mock_rich_text,
-    mock_property_value,
     mock_rich_text_array,
     mock_rollup_property_value,
     mock_select_option,
     mock_user,
 )
+from n2y.user import User
 
 
-def process_property_value(notion_data):
+@patch("n2y.notion.Client.wrap_notion_user")
+def process_property_value(notion_data, wrap_notion_user):
     client = notion.Client("")
+    if notion_data.get("people", None):
+        wrap_notion_user.return_value = User(client, notion_data["people"][0])
+    else:
+        wrap_notion_user.return_value = User(client, mock_user())
     property_value = client.wrap_notion_property_value(notion_data, None)
     return property_value.to_value("gfm")
 

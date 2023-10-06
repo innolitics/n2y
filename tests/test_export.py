@@ -1,17 +1,22 @@
+from unittest.mock import patch
+
 import pytest
 
-from n2y.export import _page_properties, _page_filename
-from n2y.notion_mocks import mock_page, mock_rich_text_property_value
 from n2y import notion
+from n2y.export import _page_filename, _page_properties
+from n2y.notion_mocks import mock_page, mock_rich_text_property_value, mock_user
+from n2y.user import User
 
 pdf = "T.pdf"
 
 
 @pytest.fixture
-def page():
+@patch("n2y.notion.Client.wrap_notion_user")
+def page(wrap_notion_user):
     property_value = mock_rich_text_property_value("P")
     notion_page = mock_page(title="T", extra_properties={"property": property_value})
     client = notion.Client("")
+    wrap_notion_user.return_value = User(client, mock_user())
     return client._wrap_notion_page(notion_page)
 
 
