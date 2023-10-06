@@ -1,34 +1,34 @@
-import json
-import requests
 import importlib.util
-from os import path, makedirs
+import json
+from os import makedirs, path
 from urllib.parse import urljoin, urlparse
 
-from n2y.user import User
-from n2y.file import File
-from n2y.page import Page
-from n2y.emoji import Emoji
-from n2y.logger import logger
-from n2y.comment import Comment
-from n2y.database import Database
+import requests
+
 from n2y.blocks import DEFAULT_BLOCKS
-from n2y.mentions import DEFAULT_MENTIONS
+from n2y.comment import Comment
 from n2y.config import merge_default_config
-from n2y.properties import DEFAULT_PROPERTIES
-from n2y.notion_mocks import mock_rich_text_array
-from n2y.property_values import DEFAULT_PROPERTY_VALUES
-from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
-from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
+from n2y.database import Database
+from n2y.emoji import Emoji
 from n2y.errors import (
-    HTTPResponseError,
+    APIErrorCode,
     APIResponseError,
+    HTTPResponseError,
     ObjectNotFound,
     PluginError,
     UseNextClass,
     is_api_error_code,
-    APIErrorCode,
 )
-
+from n2y.file import File
+from n2y.logger import logger
+from n2y.mentions import DEFAULT_MENTIONS
+from n2y.notion_mocks import mock_rich_text_array
+from n2y.page import Page
+from n2y.properties import DEFAULT_PROPERTIES
+from n2y.property_values import DEFAULT_PROPERTY_VALUES
+from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
+from n2y.user import User
+from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
 
 # TODO: Rename this file `client.py`
 
@@ -84,6 +84,7 @@ class Client:
 
         self.databases_cache = {}
         self.pages_cache = {}
+        self.users_cache = {}
 
         self.load_plugins(plugins)
         self.plugin_data = {}
@@ -92,9 +93,7 @@ class Client:
         notion_classes = {}
         for notion_object, object_types in DEFAULT_NOTION_CLASSES.items():
             if type(object_types) is dict:
-                notion_classes[notion_object] = {
-                    k: [v] for k, v in object_types.items()
-                }
+                notion_classes[notion_object] = {k: [v] for k, v in object_types.items()}
             else:
                 notion_classes[notion_object] = [object_types]
         return notion_classes
@@ -120,9 +119,7 @@ class Client:
             else:
                 raise PluginError(f'Invalid notion object "{notion_object}"')
 
-    def _override_notion_classes(
-        self, notion_object, object_types, default_object_types
-    ):
+    def _override_notion_classes(self, notion_object, object_types, default_object_types):
         # E.g., there are many types of notion blocks but only one type of notion page.
         notion_object_has_types = isinstance(default_object_types, dict)
 
@@ -142,8 +139,10 @@ class Client:
                 self.notion_classes[notion_object].append(plugin_class)
             else:
                 raise PluginError(
-                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
-                    f'override the base class "{base_class.__name__}"',
+                    (
+                        f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                        f'override the base class "{base_class.__name__}"'
+                    ),
                 )
 
     def _organize_notion_classes(
@@ -157,8 +156,10 @@ class Client:
                 self.notion_classes[notion_object][object_type].append(plugin_class)
             else:
                 raise PluginError(
-                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
-                    f'override the base class "{base_class.__name__}"',
+                    (
+                        f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                        f'override the base class "{base_class.__name__}"'
+                    ),
                 )
         else:
             raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
@@ -229,7 +230,23 @@ class Client:
         )
 
     def wrap_notion_user(self, notion_data):
-        return self.instantiate_class("user", None, self, notion_data)
+        """
+        Retrieve the user if its not in the cache.
+        """
+        user_id = notion_data["id"]
+        if user_id in self.users_cache:
+            user = self.users_cache[user_id]
+        else:
+            try:
+                if [key for key in notion_data] == ["object", "id"] and notion_data[
+                    "object"
+                ] == "user":
+                    notion_data = self.get_notion_user(user_id)
+                user = self.instantiate_class("user", None, self, notion_data)
+            except ObjectNotFound:
+                user = None
+            self.users_cache[user_id] = user
+        return user
 
     def wrap_notion_file(self, notion_data):
         return self.instantiate_class("file", None, self, notion_data)
@@ -333,6 +350,9 @@ class Client:
 
     def get_notion_page(self, page_id):
         return self._get_url(f"{self.base_url}pages/{page_id}")
+
+    def get_notion_user(self, user_id):
+        return self._get_url(f"{self.base_url}users/{user_id}")
 
     def get_block(self, block_id, page, get_children=True):
         notion_block = self.get_notion_block(block_id)
