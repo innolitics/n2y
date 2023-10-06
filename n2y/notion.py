@@ -241,9 +241,7 @@ class Client:
             user = self.users_cache[user_id]
         else:
             try:
-                if [key for key in notion_data] == ["object", "id"] and notion_data[
-                    "object"
-                ] == "user":
+                if [key for key in notion_data] == ["object", "id"]:
                     notion_data = self.get_notion_user(user_id)
                 user = self.instantiate_class("user", None, self, notion_data)
             except ObjectNotFound:
