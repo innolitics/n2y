@@ -5,7 +5,7 @@ class User:
         self.notion_type = notion_data.get("type", None)
         self.name = notion_data.get("name", None)
         self.avatar_url = notion_data.get("avatar_url", None)
-        if "person" in notion_data and "email" in notion_data["person"]:
+        if self.notion_type == "person" and "email" in notion_data["person"]:
             self.email = notion_data["person"]["email"]
         else:
             self.email = None

@@ -1,27 +1,30 @@
-from unittest.mock import patch, PropertyMock
+from unittest.mock import PropertyMock, patch
+
 from jinja2 import TemplateSyntaxError
 from pytest import raises
 
-from n2y.page import Page
-from n2y.notion import Client
 from n2y.blocks import ChildPageBlock
-from n2y.utils import pandoc_ast_to_markdown, pandoc_write_or_log_errors
-from n2y.plugins.jinjarenderpage import (
-    render_from_string,
-    join_to,
-    fuzzy_find_in,
-    list_matches,
-    JinjaFencedCodeBlock,
-    JinjaRenderPage,
-)
+from n2y.notion import Client
 from n2y.notion_mocks import (
+    mock_block,
     mock_database,
     mock_database_mention,
     mock_page,
     mock_rich_text,
     mock_rich_text_array,
-    mock_block,
+    mock_user,
 )
+from n2y.page import Page
+from n2y.plugins.jinjarenderpage import (
+    JinjaFencedCodeBlock,
+    JinjaRenderPage,
+    fuzzy_find_in,
+    join_to,
+    list_matches,
+    render_from_string,
+)
+from n2y.user import User
+from n2y.utils import pandoc_ast_to_markdown, pandoc_write_or_log_errors
 
 format_def = "{jinja=gfm}"
 spaced_format_def = "{jinja=gfm} "
@@ -51,9 +54,7 @@ def test_fuzzy_find_in():
     catch_all_string = "a bc def"
     assert fuzzy_find_in(dict_list, "a", "data") == [{"id": "1", "data": "a"}]
     assert fuzzy_find_in(dict_list, catch_all_string, "data") == reversed_dict_list
-    assert (
-        fuzzy_find_in(dict_list, catch_all_string, "data", False) == reversed_dict_list
-    )
+    assert fuzzy_find_in(dict_list, catch_all_string, "data", False) == reversed_dict_list
     assert fuzzy_find_in(dict_list, catch_all_string, "data", False, False) == dict_list
     assert fuzzy_find_in(dict_list, catch_all_string, "data", True, False) == dict_list
 
@@ -71,7 +72,9 @@ def test_undefined():
         render_from_string(input_string)
 
 
-def process_jinja_block(client, caption, jinja_code):
+@patch("n2y.notion.Client.wrap_notion_user")
+def process_jinja_block(client, caption, jinja_code, wrap_notion_user):
+    wrap_notion_user.return_value = User(client, mock_user())
     page_notion_data = mock_page()
     page = JinjaRenderPage(client, page_notion_data)
 
@@ -142,8 +145,10 @@ def test_jinja_render_html():
     assert markdown == "  Name\n  ------\n  a\n  b\n"
 
 
-def test_jinja_render_with_database():
+@patch("n2y.notion.Client.wrap_notion_user")
+def test_jinja_render_with_database(wrap_notion_user):
     client = Client("")
+    wrap_notion_user.return_value = User(client, mock_user())
     database_notion_data = mock_database(title="My DB")
     mention_notion_data = mock_database_mention(database_notion_data["id"])
     database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
@@ -166,8 +171,10 @@ def test_jinja_render_with_database():
     assert markdown == "ab\n"
 
 
-def test_jinja_render_with_missing_database():
+@patch("n2y.notion.Client.wrap_notion_user")
+def test_jinja_render_with_missing_database(wrap_notion_user):
     client = Client("")
+    wrap_notion_user.return_value = User(client, mock_user())
     database_notion_data = mock_database(title="My DB")
     mention_notion_data = mock_database_mention(database_notion_data["id"])
     database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
@@ -191,8 +198,10 @@ def test_jinja_render_with_missing_database():
     assert 'the only available database is "My DB".' in markdown
 
 
-def test_jinja_render_with_incorrect_db_property():
+@patch("n2y.notion.Client.wrap_notion_user")
+def test_jinja_render_with_incorrect_db_property(wrap_notion_user):
     client = Client("")
+    wrap_notion_user.return_value = User(client, mock_user())
     database_notion_data = mock_database(title="My DB")
     mention_notion_data = mock_database_mention(database_notion_data["id"])
     database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
@@ -217,13 +226,14 @@ def test_jinja_render_with_incorrect_db_property():
         in markdown
     )
     assert (
-        'the available properties are "title", "notion_id", and "notion_url".'
-        in markdown
+        'the available properties are "title", "notion_id", and "notion_url".' in markdown
     )
 
 
-def test_jinja_render_with_missing_page_property():
+@patch("n2y.notion.Client.wrap_notion_user")
+def test_jinja_render_with_missing_page_property(wrap_notion_user):
     client = Client("")
+    wrap_notion_user.return_value = User(client, mock_user())
     database_notion_data = mock_database(title="My DB")
     mention_notion_data = mock_database_mention(database_notion_data["id"])
     database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
@@ -247,8 +257,10 @@ def test_jinja_render_with_missing_page_property():
     assert 'the only available property is "title".' in markdown
 
 
-def test_jinja_render_with_filter_error():
+@patch("n2y.notion.Client.wrap_notion_user")
+def test_jinja_render_with_filter_error(wrap_notion_user):
     client = Client("")
+    wrap_notion_user.return_value = User(client, mock_user())
     database_notion_data = mock_database(title="My DB")
     mention_notion_data = mock_database_mention(database_notion_data["id"])
     database_pages_notion_data = [mock_page(title="a"), mock_page(title="b")]
@@ -268,9 +280,7 @@ def test_jinja_render_with_filter_error():
             pandoc_ast = page.to_pandoc()
 
     markdown = pandoc_ast_to_markdown(pandoc_ast)
-    assert (
-        'Recieved the message "type str doesn\'t define __round__ method"' in markdown
-    )
+    assert 'Recieved the message "type str doesn\'t define __round__ method"' in markdown
     assert 'The Jinja filter "round" raised this error' in markdown
     assert 'argument(s): {\n\t"args": (\'a\',),\n\t"kwargs": {}\n}' in markdown
 

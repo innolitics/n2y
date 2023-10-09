@@ -7,51 +7,53 @@ from unittest import mock
 
 import pytest
 from pandoc.types import (
-    Str,
-    Para,
-    Plain,
-    Space,
-    Header,
-    CodeBlock,
-    BulletList,
-    OrderedList,
-    Decimal,
-    Period,
-    Meta,
-    Pandoc,
-    Link,
-    HorizontalRule,
+    AlignDefault,
     BlockQuote,
-    Image,
-    Table,
-    TableHead,
-    TableBody,
-    TableFoot,
-    RowHeadColumns,
-    Row,
+    BulletList,
+    Caption,
     Cell,
-    RowSpan,
+    CodeBlock,
     ColSpan,
     ColWidthDefault,
-    AlignDefault,
-    Caption,
-    Math,
+    Decimal,
     DisplayMath,
+    Header,
+    HorizontalRule,
+    Image,
+    Link,
+    Math,
+    Meta,
+    OrderedList,
+    Pandoc,
+    Para,
+    Period,
+    Plain,
+    Row,
+    RowHeadColumns,
+    RowSpan,
+    Space,
+    Str,
+    Table,
+    TableBody,
+    TableFoot,
+    TableHead,
 )
 
 from n2y.notion import Client
-from n2y.page import Page
-from n2y.utils import pandoc_ast_to_markdown
 from n2y.notion_mocks import (
-    mock_rich_text_array,
-    mock_paragraph_block,
-    mock_page_mention,
-    mock_rich_text,
     mock_block,
-    mock_page,
     mock_file,
     mock_id,
+    mock_page,
+    mock_page_mention,
+    mock_paragraph_block,
+    mock_rich_text,
+    mock_rich_text_array,
+    mock_user,
 )
+from n2y.page import Page
+from n2y.user import User
+from n2y.utils import pandoc_ast_to_markdown
 
 innolitics_website = "https://innolitics.com"
 example_img = "https://example.com/image.png"
@@ -216,9 +218,7 @@ def test_paragraph_with_child_paragraph():
 
 
 def test_heading_1():
-    notion_block = mock_block(
-        "heading_1", {"rich_text": [mock_rich_text("Heading One")]}
-    )
+    notion_block = mock_block("heading_1", {"rich_text": [mock_rich_text("Heading One")]})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(
         1, ("heading-one", [], []), [Str("Heading"), Space(), Str("One")]
@@ -238,9 +238,7 @@ def test_heading_1_bolding_stripped():
 
 
 def test_heading_2():
-    notion_block = mock_block(
-        "heading_2", {"rich_text": [mock_rich_text("Heading Two")]}
-    )
+    notion_block = mock_block("heading_2", {"rich_text": [mock_rich_text("Heading Two")]})
     pandoc_ast, markdown = process_block(notion_block)
     assert pandoc_ast == Header(
         2, ("heading-two", [], []), [Str("Heading"), Space(), Str("Two")]
@@ -592,7 +590,8 @@ def test_table_block():
         TableFoot(("", [], []), []),
     )
     assert (
-        markdown == "  header1   header2\n"
+        markdown
+        == "  header1   header2\n"
         "  --------- ---------\n"
         "  one       two\n"
         "  three     four\n"
@@ -633,9 +632,7 @@ def test_todo_in_paragraph():
         has_children=True,
     )
     children = [
-        mock_block(
-            "to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}
-        ),
+        mock_block("to_do", {"rich_text": [mock_rich_text("Task One")], "checked": True}),
         mock_block(
             "to_do", {"rich_text": [mock_rich_text("Task Two")], "checked": False}
         ),
@@ -734,9 +731,7 @@ def test_column_block():
 def test_column_list_block(mock_get_child_notion_blocks):
     column_list_block = mock_block("column_list", {}, True)
     column1, column2 = mock_block("column", {}, True), mock_block("column", {}, True)
-    para1, para2 = mock_paragraph_block([["child1"]]), mock_paragraph_block(
-        [["child2"]]
-    )
+    para1, para2 = mock_paragraph_block([["child1"]]), mock_paragraph_block([["child2"]])
     # Return [column1, column2] for the column list get_child_notion_blocks call
     # and [para1] and [para2] for the get_child_notion_blocks calls of the
     # respective column blocks
@@ -816,9 +811,11 @@ def test_toc_block_starting_h2():
     )
 
 
-def test_toc_block_h1_after_h2_base():
+@mock.patch("n2y.notion.Client.wrap_notion_user")
+def test_toc_block_h1_after_h2_base(wrap_notion_user):
     toc_block = mock_block("table_of_contents", {})
     client = Client("")
+    wrap_notion_user.return_value = User(client, mock_user())
     page_data = mock_page("Mock Page")
     page = Page(client, page_data)
     toc = client.wrap_notion_block(toc_block, page, True)
