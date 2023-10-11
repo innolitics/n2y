@@ -240,12 +240,12 @@ class Client:
         ):
             user = self.users_cache[user_id]
         else:
-            try:
-                if [key for key in notion_data] == ["object", "id"]:
+            if [key for key in notion_data] == ["object", "id"]:
+                try:
                     notion_data = self.get_notion_user(user_id)
-                user = self.instantiate_class("user", None, self, notion_data)
-            except ObjectNotFound:
-                user = None
+                except ObjectNotFound:
+                    pass
+            user = self.instantiate_class("user", None, self, notion_data)
             self.users_cache[user_id] = user
         return user
 
@@ -585,7 +585,13 @@ class Client:
         return appension_history_list
 
     def _copy_notion_database_child_page(self, parent, parent_type, child_notion_data):
-        bad_keys = ["last_edited_by", "created_time", "last_edited_time", "created_by"]
+        bad_keys = [
+            "last_edited_by",
+            "created_time",
+            "last_edited_time",
+            "created_by",
+            "request_id",
+        ]
         if parent_type == "block":
             logger.warning(
                 "Skipping page with block type parent as "
@@ -609,7 +615,13 @@ class Client:
     def _copy_notion_database_child_database(
         self, parent, parent_type, child_notion_data
     ):
-        bad_keys = ["last_edited_by", "created_time", "last_edited_time", "created_by"]
+        bad_keys = [
+            "last_edited_by",
+            "created_time",
+            "last_edited_time",
+            "created_by",
+            "request_id",
+        ]
         if parent_type == "block":
             logger.warning(
                 "Skipping database with block type parent as "
