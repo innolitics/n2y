@@ -1,42 +1,43 @@
 from itertools import groupby
+from re import match
 from urllib.parse import urljoin
 
 from pandoc.types import (
-    Period,
-    Pandoc,
-    Link,
-    HorizontalRule,
+    AlignDefault,
     BlockQuote,
-    Image,
-    Table,
-    TableHead,
-    TableBody,
-    TableFoot,
-    RowHeadColumns,
-    Row,
-    Cell,
-    RowSpan,
-    Str,
-    Para,
-    Plain,
-    Header,
-    CodeBlock,
     BulletList,
-    OrderedList,
-    Decimal,
-    Space,
+    Caption,
+    Cell,
+    CodeBlock,
     ColSpan,
     ColWidthDefault,
-    AlignDefault,
-    Caption,
-    Math,
+    Decimal,
     DisplayMath,
+    Header,
+    HorizontalRule,
+    Image,
     LineBreak,
+    Link,
+    Math,
+    OrderedList,
+    Pandoc,
+    Para,
+    Period,
+    Plain,
+    Row,
+    RowHeadColumns,
+    RowSpan,
+    Space,
+    Str,
+    Table,
+    TableBody,
+    TableFoot,
+    TableHead,
 )
 
 from n2y.logger import logger
 from n2y.notion_mocks import mock_block, mock_rich_text_array
-from n2y.utils import yaml_map_to_meta, header_id_from_text, pandoc_write_or_log_errors
+from n2y.utils import header_id_from_text, pandoc_write_or_log_errors, yaml_map_to_meta
 
 
 class Block:
@@ -81,9 +82,7 @@ class Block:
 
     def get_children(self):
         if self.has_children:
-            self.children = self.client.get_child_blocks(
-                self.notion_id, self.page, True
-            )
+            self.children = self.client.get_child_blocks(self.notion_id, self.page, True)
         else:
             self.children = []
 
@@ -318,9 +317,7 @@ class TableOfContentsItemBlock(NumberedListItemBlock, TableOfContentsBlock):
                     )
         for subsection in subsections:
             notion_data = self.generate_item_block(subsection)
-            children.append(
-                TableOfContentsItemBlock(self.client, notion_data, self.page)
-            )
+            children.append(TableOfContentsItemBlock(self.client, notion_data, self.page))
         if children:
             self.has_children = True
         self.children = children
@@ -588,6 +585,15 @@ class FileBlock(Block):
         self.caption = client.wrap_notion_rich_text_array(
             self.notion_type_data["caption"], self
         )
+        potential_name = match(
+            (
+                r".+(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)+"
+                r"(?P<name>.+)\?.+"
+            ),
+            self.file.url,
+        )
+        name = potential_name.groups("name") if potential_name else None
+        self.name = name[0] if name else None
 
     def to_pandoc(self):
         url = None
@@ -595,7 +601,7 @@ class FileBlock(Block):
             url = self.file.url
         elif self.file.type == "file":
             url = self.client.download_file(self.file.url, self.page, self.notion_id)
-        content_ast = [Link(("", [], []), [Str(url)], (url, ""))]
+        content_ast = [Link(("", [], []), [Str(self.name or url)], (url, ""))]
         if self.caption:
             caption_ast = self.caption.to_pandoc()
             return render_with_caption(content_ast, caption_ast)
