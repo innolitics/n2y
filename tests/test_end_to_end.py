@@ -10,9 +10,9 @@ try:
 except ImportError:
     from yaml import Loader
 
-from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 from n2y.main import main
 from n2y.notion import Client
+from tests.utils import NOTION_ACCESS_TOKEN, parse_yaml_front_matter
 
 
 def run_n2y(temp_dir, config):
@@ -262,6 +262,9 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "Simple Test Page" in lines  # from the LinkToPageBlock
     assert "Mention: Simple Test Database" in lines
     assert "Simple Test Database" in lines  # from the LinkToPageBlock
+
+    # from the FileBlock
+    assert any("[small_file.txt](media/All_Blocks_Test_Page-" in l for l in lines)
 
     # a bookmark with a caption and without
     assert "<https://innolitics.com>" in lines
