@@ -38,6 +38,8 @@ def test_page_properties_url(page):
 def test_page_properties_mapping(page):
     properties = _page_properties(page, property_map={"property": "p"})
     assert properties == {"title": "T", "p": "P\n"}
+    properties = _page_properties(page, property_map={"property": None})
+    assert properties == {"title": "T"}
 
 
 def test_page_filename_no_template(page):

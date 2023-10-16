@@ -4,8 +4,8 @@ This module contains all the code responsible for exporting `page.Page` and
 """
 import os
 
-from pandoc.types import Table
 import yaml
+from pandoc.types import Table
 
 from n2y.logger import logger
 from n2y.utils import (
@@ -44,7 +44,9 @@ def _page_properties(
         properties[url_property] = page.notion_url
     for original, new in property_map.items():
         if original in properties:
-            properties[new] = properties.pop(original)
+            value = properties.pop(original)
+            if new:
+                properties[new] = value
         else:
             msg = "Property %s not found in page %s; skipping remapping from %s to %s"
             logger.warning(msg, original, page.notion_url, original, new)
@@ -121,8 +123,10 @@ def database_to_yaml(
 ):
     if content_property in database.schema:
         logger.warning(
-            'The content property "%s" is shadowing an existing '
-            "property with the same name",
+            (
+                'The content property "%s" is shadowing an existing '
+                "property with the same name"
+            ),
             content_property,
         )
     results = []
