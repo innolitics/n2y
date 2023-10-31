@@ -673,7 +673,6 @@ class RowBlock(Block):
         cells = []
         for cell in self.cells:
             pandoc = cell.to_pandoc()
-            pandoc = self.filter_linebreaks(pandoc)
             cells.append(
                 Cell(
                     ("", [], []),
@@ -684,22 +683,6 @@ class RowBlock(Block):
                 )
             )
         return Row(("", [], []), cells)
-
-    def filter_linebreaks(self, ast_list):
-        for i, ast in enumerate(ast_list):
-            # A BulletList contains an array of AST arrays, so it wouldn't have a __dict__ attribute
-            if isinstance(ast, list):
-                self.filter_linebreaks(ast)
-                continue
-
-            args = ast.__dict__["_args"]
-            if len(args) and isinstance(args[0], list):
-                self.filter_linebreaks(args[0])
-                continue
-
-            if isinstance(ast, LineBreak):
-                ast_list[i] = Space()
-        return ast_list
 
 
 class ColumnListBlock(Block):
