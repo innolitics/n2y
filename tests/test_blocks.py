@@ -20,6 +20,7 @@ from pandoc.types import (
     Header,
     HorizontalRule,
     Image,
+    LineBreak,
     Link,
     Math,
     Meta,
@@ -505,7 +506,7 @@ def test_table_block():
             "table_row",
             {
                 "cells": [
-                    [mock_rich_text("three")],
+                    [mock_rich_text("three\n3.5")],
                     [mock_rich_text("four")],
                 ]
             },
@@ -573,7 +574,7 @@ def test_table_block():
                                 AlignDefault(),
                                 RowSpan(1),
                                 ColSpan(1),
-                                [Plain([Str("three")])],
+                                [Plain([Str("three"), LineBreak(), Str("3.5")])],
                             ),
                             Cell(
                                 ("", [], []),
@@ -591,10 +592,13 @@ def test_table_block():
     )
     assert (
         markdown
-        == "  header1   header2\n"
+        == "  -------------------\n"
+        "  header1   header2\n"
         "  --------- ---------\n"
         "  one       two\n"
-        "  three     four\n"
+        "\n  three\\    four\n"
+        "  3.5       \n  "
+        "-------------------\n"
     )
 
 
