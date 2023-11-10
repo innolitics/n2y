@@ -1,6 +1,7 @@
 class User:
     def __init__(self, client, notion_data):
         self.client = client
+        self.notion_data = notion_data
         self.notion_id = notion_data["id"]
         self.notion_type = notion_data.get("type", None)
         self.name = notion_data.get("name", None)
