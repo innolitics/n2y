@@ -1,5 +1,5 @@
-from datetime import datetime
 import uuid
+from datetime import datetime, timezone
 
 from n2y.utils import strip_hyphens
 
@@ -91,7 +91,7 @@ def mock_database_mention(id=None):
 
 def mock_block(block_type, content, has_children=False, **kwargs):
     created_by = mock_user()
-    created_time = datetime.now().isoformat()
+    created_time = datetime.now(tz=timezone.utc).isoformat()
     notion_id = mock_id()
     return {
         "id": notion_id,
@@ -133,9 +133,7 @@ def mock_property_value(property_value_type, content):
 
 
 def mock_rich_text_property_value(text_blocks_descriptors):
-    return mock_property_value(
-        "rich_text", mock_rich_text_array(text_blocks_descriptors)
-    )
+    return mock_property_value("rich_text", mock_rich_text_array(text_blocks_descriptors))
 
 
 def mock_formula_property_value(formula_type, content):
@@ -176,7 +174,7 @@ def mock_page(title="Mock Page", extra_properties=None):
     if extra_properties is None:
         extra_properties = {}
     user = mock_user()
-    created_time = datetime.now().isoformat()
+    created_time = datetime.now(tz=timezone.utc).isoformat()
     notion_id = mock_id()
     hyphenated_title = title.replace(" ", "-")
     return {
@@ -206,7 +204,7 @@ def mock_database(title="Mock Database", extra_properties=None):
     if extra_properties is None:
         extra_properties = {}
     hyphenated_title = title.replace(" ", "-")
-    created_time = datetime.now().isoformat()
+    created_time = datetime.now(tz=timezone.utc).isoformat()
     notion_id = mock_id()
     user = mock_user()
     return {
@@ -233,4 +231,18 @@ def mock_database(title="Mock Database", extra_properties=None):
         },
         "parent": {"type": "page_id", "page_id": mock_id()},
         "url": f"https://www.notion.so/{hyphenated_title}-{notion_id}",
+    }
+
+
+def mock_comment(text_blocks_descriptors: list[list[str | list[str]]], **kwargs) -> dict:
+    date = datetime.now(tz=timezone.utc).isoformat()
+    return {
+        "id": mock_id(),
+        "parent": mock_id(),
+        "discussion_id": mock_id(),
+        "created_time": date,
+        "last_edited_time": date,
+        "created_by": mock_user(),
+        "rich_text": mock_rich_text_array(text_blocks_descriptors),
+        **kwargs,
     }
