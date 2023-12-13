@@ -24,6 +24,32 @@ class NumberProperty(Property):
         self.format = notion_data["number"]["format"]
 
 
+class StatusProperty(Property):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        notion_groups = notion_data["status"]["groups"]
+        notion_options = notion_data["status"]["options"]
+        self.groups = [StatusGroup(self.client, ng) for ng in notion_groups]
+        self.options = [StatusOption(self.client, no) for no in notion_options]
+
+
+class StatusOption:
+    def __init__(self, client, notion_option):
+        self.client = client
+        self.notion_id = notion_option["id"]
+        self.name = notion_option["name"]
+        self.color = notion_option["color"]
+
+
+class StatusGroup:
+    def __init__(self, client, notion_group):
+        self.client = client
+        self.name = notion_group["name"]
+        self.color = notion_group["color"]
+        self.notion_id = notion_group["id"]
+        self.option_ids = notion_group["option_ids"]
+
+
 class SelectProperty(Property):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
@@ -135,6 +161,7 @@ DEFAULT_PROPERTIES = {
     "title": TitleProperty,
     "rich_text": TextProperty,
     "number": NumberProperty,
+    "status": StatusProperty,
     "select": SelectProperty,
     "multi_select": MultiSelectProperty,
     "date": DateProperty,

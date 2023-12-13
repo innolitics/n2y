@@ -56,6 +56,11 @@ def test_number_non_empty():
     assert process_property_value(notion_data) == 3
 
 
+def test_status():
+    notion_data = mock_property_value("status", "red")
+    assert process_property_value(notion_data) == "red"
+
+
 def test_select_empty():
     notion_data = mock_property_value("select", None)
     assert process_property_value(notion_data) is None

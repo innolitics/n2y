@@ -1,37 +1,34 @@
-from n2y.logger import logger
-from n2y.utils import fromisoformat
-from n2y.property_values import TitlePropertyValue
 from n2y.blocks import ChildDatabaseBlock, ChildPageBlock, TableOfContentsBlock
+from n2y.logger import logger
+from n2y.property_values import TitlePropertyValue
+from n2y.utils import fromisoformat
 
 
 class Page:
     def __init__(self, client, notion_data):
         logger.debug("Instantiating page")
-        self.client = client
-
-        self.notion_data = notion_data
-        self.notion_id = notion_data["id"]
-        self.created_time = fromisoformat(notion_data["created_time"])
-        self.created_by = client.wrap_notion_user(notion_data["created_by"])
-        self.last_edited_time = fromisoformat(notion_data["last_edited_time"])
-        self.last_edited_by = client.wrap_notion_user(notion_data["last_edited_by"])
+        self.notion_parent = notion_data["parent"]
         self.archived = notion_data["archived"]
+        self.notion_url = notion_data["url"]
+        self.notion_id = notion_data["id"]
+        self.notion_data = notion_data
+        self.plugin_data = {}
+        self._children = None
+        self.client = client
+        self._block = None
+
+        self.created_time = fromisoformat(notion_data["created_time"])
+        self.last_edited_time = fromisoformat(notion_data["last_edited_time"])
+        self.created_by = client.wrap_notion_user(notion_data["created_by"])
+        self.last_edited_by = client.wrap_notion_user(notion_data["last_edited_by"])
         self.icon = self._init_icon(notion_data["icon"])
         self.cover = notion_data["cover"] and client.wrap_notion_file(
             notion_data["cover"]
         )
-        self.archived = notion_data["archived"]
         self.properties = {
             k: client.wrap_notion_property_value(npv, self)
             for k, npv in notion_data["properties"].items()
         }
-        self.notion_parent = notion_data["parent"]
-        self.notion_url = notion_data["url"]
-
-        self._block = None
-        self._children = None
-
-        self.plugin_data = {}
 
     def _init_icon(self, icon_notion_data):
         """
