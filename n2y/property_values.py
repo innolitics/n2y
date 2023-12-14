@@ -56,6 +56,17 @@ class NumberPropertyValue(PropertyValue):
         return self.number
 
 
+class StatusPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
+        self.status = notion_data["status"]
+
+    def to_value(self, _=None):
+        # Note: the Notion UI shouldn't allow you to have two statuses with the
+        # same name nor should it allow no status at all
+        return self.status
+
+
 class SelectPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
@@ -270,6 +281,7 @@ DEFAULT_PROPERTY_VALUES = {
     "title": TitlePropertyValue,
     "rich_text": TextPropertyValue,
     "number": NumberPropertyValue,
+    "status": StatusPropertyValue,
     "select": SelectPropertyValue,
     "multi_select": MultiSelectPropertyValue,
     "date": DatePropertyValue,

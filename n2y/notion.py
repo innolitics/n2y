@@ -139,10 +139,8 @@ class Client:
                 self.notion_classes[notion_object].append(plugin_class)
             else:
                 raise PluginError(
-                    (
-                        f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
-                        f'override the base class "{base_class.__name__}"'
-                    ),
+                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                    f'override the base class "{base_class.__name__}"',
                 )
 
     def _organize_notion_classes(
@@ -156,10 +154,8 @@ class Client:
                 self.notion_classes[notion_object][object_type].append(plugin_class)
             else:
                 raise PluginError(
-                    (
-                        f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
-                        f'override the base class "{base_class.__name__}"'
-                    ),
+                    f'Cannot use "{plugin_class.__name__}", as it doesn\'t '
+                    f'override the base class "{base_class.__name__}"',
                 )
         else:
             raise PluginError(f'Invalid type "{object_type}" for "{notion_object}"')
