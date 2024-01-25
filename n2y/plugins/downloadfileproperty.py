@@ -2,7 +2,6 @@ import hashlib
 from os import makedirs, path
 from urllib.parse import urlparse
 
-import urllib3
 
 from n2y.property_values import FilesPropertyValue
 from n2y.utils import slugify
