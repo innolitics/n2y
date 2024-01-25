@@ -1,13 +1,13 @@
 import functools
-import re
-import yaml
 import numbers
-from time import sleep
+import re
 from datetime import datetime
+from time import sleep
 
 import pandoc
+import yaml
+from pandoc.types import Meta, MetaBool, MetaList, MetaMap, MetaString, Space, Str
 from plumbum import ProcessExecutionError
-from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
 
 from n2y.errors import HTTPResponseError, PandocASTParseError
 from n2y.logger import logger
@@ -169,6 +169,15 @@ def sanitize_filename(filename):
     s = re.sub(r"(?u)[^-\w.]", "", s)
     if s in {".", ".."}:
         raise ValueError("Could not derive file name from '%s'" % filename)
+    return s
+
+
+def slugify(string):
+    """Turn a string into a slug."""
+    s = str(string).strip().replace(" ", "-")
+    s = re.sub(r"(?u)[^-\w.]", "", s)
+    if s in {".", ".."}:
+        raise ValueError("Could not derive a slug from '%s'" % string)
     return s
 
 

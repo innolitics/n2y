@@ -28,7 +28,7 @@ from n2y.properties import DEFAULT_PROPERTIES
 from n2y.property_values import DEFAULT_PROPERTY_VALUES
 from n2y.rich_text import DEFAULT_RICH_TEXTS, RichTextArray
 from n2y.user import User
-from n2y.utils import retry_api_call, sanitize_filename, strip_hyphens
+from n2y.utils import retry_api_call, slugify, strip_hyphens
 
 # TODO: Rename this file `client.py`
 
@@ -466,7 +466,7 @@ class Client:
 
     def save_file(self, content, page, extension, block_id):
         block_id_chars = strip_hyphens(block_id)
-        page_title = sanitize_filename(page.title.to_plain_text())
+        page_title = slugify(page.title.to_plain_text())
         relative_filepath = f"{page_title}-{block_id_chars[:11]}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
