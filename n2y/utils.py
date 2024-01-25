@@ -1,13 +1,14 @@
 import functools
-import re
-import yaml
 import numbers
-from time import sleep
+import re
+import unicodedata
 from datetime import datetime
+from time import sleep
 
 import pandoc
+import yaml
+from pandoc.types import Meta, MetaBool, MetaList, MetaMap, MetaString, Space, Str
 from plumbum import ProcessExecutionError
-from pandoc.types import Str, Space, MetaString, MetaBool, MetaList, MetaMap, Meta
 
 from n2y.errors import HTTPResponseError, PandocASTParseError
 from n2y.logger import logger
@@ -170,6 +171,19 @@ def sanitize_filename(filename):
     if s in {".", ".."}:
         raise ValueError("Could not derive file name from '%s'" % filename)
     return s
+
+
+def slugify(value, allow_unicode=False):
+    """Taken from Django."""
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize("NFKC", value)
+    else:
+        value = (
+            unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+        )
+    value = re.sub(r"[^\w\s-]", "", value.lower())
+    return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
 def do_symbol(symbol, have_struck_letter):
