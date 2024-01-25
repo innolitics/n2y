@@ -1,6 +1,7 @@
 import functools
 import numbers
 import re
+import unicodedata
 from datetime import datetime
 from time import sleep
 
@@ -172,13 +173,17 @@ def sanitize_filename(filename):
     return s
 
 
-def slugify(string):
-    """Turn a string into a slug."""
-    s = str(string).strip().replace(" ", "-")
-    s = re.sub(r"(?u)[^-\w.]", "", s)
-    if s in {".", ".."}:
-        raise ValueError("Could not derive a slug from '%s'" % string)
-    return s
+def slugify(value, allow_unicode=False):
+    """Taken from Django."""
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize("NFKC", value)
+    else:
+        value = (
+            unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+        )
+    value = re.sub(r"[^\w\s-]", "", value.lower())
+    return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
 def do_symbol(symbol, have_struck_letter):
