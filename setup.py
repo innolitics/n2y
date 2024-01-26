@@ -2,8 +2,9 @@
 A setuptools based setup module.
 """
 
-from setuptools import setup, find_packages
 from os import path
+
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -11,7 +12,7 @@ description = "Notion to YAML"
 
 setup(
     name="n2y",
-    version="0.8.1",
+    version="0.8.2",
     description=description,
     long_description=description,
     long_description_content_type="text/x-rst",

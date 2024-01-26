@@ -390,6 +390,23 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.8.2
+
+- stop filtering linebreaks from table cells
+- cache user data in notion client
+- generalize `Client().page_class_is_in_use` to `Client().class_is_in_use`
+- get rid of `Client().get_notion_user` in favor of `Client().wrap_notion_user`
+- add `request_id` to the list of keys that are not to be copied in
+`Client()._copy_notion_database_child_page`
+- add `request_id` to the list of keys that are not to be copied in
+`Client()._copy_notion_database_child_database`
+- make datetimes in mock data utc timezone aware to better mirror the API behavior
+- add `mock_comment` to `notion_mocks.py`
+- add `downloadfileproperty.py` to plugins which downloads the files in each file property value to
+local files
+- add support for status properties and property values
+- add django's slugify to `utils.py`
+
 ### v0.8.1
 
 - Add basic support for undocumented "audio" block type
