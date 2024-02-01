@@ -12,7 +12,7 @@ description = "Notion to YAML"
 
 setup(
     name="n2y",
-    version="0.8.2",
+    version="0.9.0",
     description=description,
     long_description=description,
     long_description_content_type="text/x-rst",
