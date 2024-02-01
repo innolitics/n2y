@@ -117,5 +117,8 @@ class Page:
         ast = self.block.to_pandoc()
         return ast if ignore_toc else self.generate_toc(ast)
 
-    def properties_to_values(self, pandoc_format=None):
-        return {k: v.to_value(pandoc_format) for k, v in self.properties.items()}
+    def properties_to_values(self, pandoc_format=None, pandoc_options=None):
+        return {
+            k: v.to_value(pandoc_format, pandoc_options)
+            for k, v in self.properties.items()
+        }

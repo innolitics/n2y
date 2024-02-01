@@ -18,6 +18,7 @@ from n2y.utils import (
 def _page_properties(
     page,
     pandoc_format=None,
+    pandoc_options=None,
     id_property=None,
     url_property=None,
     property_map=None,
@@ -26,7 +27,7 @@ def _page_properties(
         pandoc_format = "markdown"
     if property_map is None:
         property_map = {}
-    properties = page.properties_to_values(pandoc_format)
+    properties = page.properties_to_values(pandoc_format, pandoc_options)
     if id_property in properties:
         logger.warning(
             'The id property "%s" is shadowing an existing property with the same name',
@@ -77,6 +78,7 @@ def export_page(
         page_properties = _page_properties(
             page,
             pandoc_format,
+            pandoc_options,
             id_property,
             url_property,
             property_map,
@@ -123,16 +125,14 @@ def database_to_yaml(
 ):
     if content_property in database.schema:
         logger.warning(
-            (
-                'The content property "%s" is shadowing an existing '
-                "property with the same name"
-            ),
+            'The content property "%s" is shadowing an existing '
+            "property with the same name",
             content_property,
         )
     results = []
     for page in database.children_filtered(notion_filter, notion_sorts):
         result = _page_properties(
-            page, pandoc_format, id_property, url_property, property_map
+            page, pandoc_format, pandoc_options, id_property, url_property, property_map
         )
         if content_property:
             pandoc_ast = page.to_pandoc()

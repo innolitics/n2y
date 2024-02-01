@@ -2,13 +2,12 @@ import hashlib
 from os import makedirs, path
 from urllib.parse import urlparse
 
-
 from n2y.property_values import FilesPropertyValue
 from n2y.utils import slugify
 
 
 class DownloadFilePropertyValue(FilesPropertyValue):
-    def to_value(self, _):
+    def to_value(self, _, __):
         url_list = []
         for file in self.files:
             file_content = self.client._get_url(file.url, stream=True)

@@ -1,25 +1,25 @@
 from pandoc.types import (
-    Str,
-    Space,
-    Strong,
-    Emph,
-    Strikeout,
     Code,
+    Emph,
+    InlineMath,
     Link,
     Math,
-    InlineMath,
+    Space,
+    Str,
+    Strikeout,
+    Strong,
     Underline,
 )
 
-from n2y.notion import Client
-from n2y.rich_text import RichTextArray, MentionRichText
 from n2y.mentions import PageMention
+from n2y.notion import Client
 from n2y.notion_mocks import (
-    mock_rich_text_array,
     mock_annotations,
-    mock_rich_text,
     mock_id,
+    mock_rich_text,
+    mock_rich_text_array,
 )
+from n2y.rich_text import MentionRichText, RichTextArray
 
 word = "word."
 spaced_word = " word."
@@ -30,7 +30,7 @@ def process_rich_text_array(notion_data):
     client = Client("")
     rich_text_array = client.wrap_notion_rich_text_array(notion_data)
     pandoc_ast = rich_text_array.to_pandoc()
-    markdown = rich_text_array.to_value("markdown")
+    markdown = rich_text_array.to_value("markdown", [])
     plain_text = rich_text_array.to_plain_text()
     return pandoc_ast, markdown, plain_text
 
@@ -124,9 +124,7 @@ def test_bold_space():
 
 
 def test_italic_spaces():
-    notion_data = mock_rich_text_array(
-        [("An", []), (" italic ", ["italic"]), (word, [])]
-    )
+    notion_data = mock_rich_text_array([("An", []), (" italic ", ["italic"]), (word, [])])
     pandoc_ast, markdown, plain_text = process_rich_text_array(notion_data)
     assert pandoc_ast == [Str("An"), Space(), Emph([Str("italic")]), Space(), Str(word)]
     assert markdown == "An *italic* word.\n"
@@ -190,7 +188,8 @@ def test_blended_annotated_spaces():
         Str("?"),
     ]
     assert (
-        markdown == "**this** ***is*** *a*\n~~test~~[**` did`*"
+        markdown
+        == "**this** ***is*** *a*\n~~test~~[**` did`*"
         "*]{.underline}[` i pass`]{.underline}?\n"
     )
 
@@ -237,7 +236,8 @@ def test_equation_inline():
         Str("indeed"),
     ]
     assert (
-        markdown == "The Schrödinger Equation\n(${\\displaystyle "
+        markdown
+        == "The Schrödinger Equation\n(${\\displaystyle "
         "i\\hbar {\\frac {d}{dt}}\\vert \\Psi (t)\\"
         "rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}$)\nis"
         " a very useful one indeed\n"

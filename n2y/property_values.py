@@ -13,7 +13,7 @@ class PropertyValue:
         self.notion_type = notion_data["type"]
         self.page = page
 
-    def to_value(self, pandoc_format=None):
+    def to_value(self, pandoc_format=None, pandoc_options=None):
         raise NotImplementedError()
 
 
@@ -24,7 +24,7 @@ class TitlePropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.rich_text = client.wrap_notion_rich_text_array(notion_data["title"])
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         # Notion allows styling of the title, however, in their UI they display
         # the title property without any styling. Thus, if you copy/paste styled
         # text into a title this styling can be hidden and can re-appear after
@@ -40,11 +40,11 @@ class TextPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.rich_text = client.wrap_notion_rich_text_array(notion_data["rich_text"])
 
-    def to_value(self, pandoc_format="gfm"):
+    def to_value(self, pandoc_format="gfm", pandoc_options=None):
         if pandoc_format is None:
             return self.rich_text.to_plain_text()
         else:
-            return self.rich_text.to_value(pandoc_format)
+            return self.rich_text.to_value(pandoc_format, pandoc_options)
 
 
 class NumberPropertyValue(PropertyValue):
@@ -52,7 +52,7 @@ class NumberPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.number = notion_data["number"]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.number
 
 
@@ -61,7 +61,7 @@ class StatusPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.status = notion_data["status"]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         # Note: the Notion UI shouldn't allow you to have two statuses with the
         # same name nor should it allow no status at all
         return self.status
@@ -80,7 +80,7 @@ class SelectPropertyValue(PropertyValue):
             self.name = None
             self.color = None
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         # Note: the Notion UI shouldn't allow you to have two options with the
         # same name
         return self.name
@@ -93,7 +93,7 @@ class MultiSelectPropertyValue(PropertyValue):
             MultiSelectOption(self.client, no) for no in notion_data["multi_select"]
         ]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         # Note: the Notion UI shouldn't allow you to have two options with the
         # same name
         return [o.name for o in self.options]
@@ -113,7 +113,7 @@ class DatePropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.value = process_notion_date(notion_data["date"])
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.value
 
     def to_plain_text(self):
@@ -125,7 +125,7 @@ class PeoplePropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.people = [client.wrap_notion_user(nu) for nu in notion_data["people"]]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return [u.to_value() for u in self.people]
 
 
@@ -134,7 +134,7 @@ class FilesPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.files = [client.wrap_notion_file(nf) for nf in notion_data["files"]]
 
-    def to_value(self, _):
+    def to_value(self, _, __):
         return [f.to_value() for f in self.files]
 
 
@@ -143,7 +143,7 @@ class CheckboxPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.checkbox = notion_data["checkbox"]
 
-    def to_value(self, _):
+    def to_value(self, _, __):
         return self.checkbox
 
 
@@ -152,7 +152,7 @@ class UrlPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.url = notion_data["url"]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.url
 
 
@@ -161,7 +161,7 @@ class EmailPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.email = notion_data["email"]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.email
 
 
@@ -170,7 +170,7 @@ class PhoneNumberPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.phone_number = notion_data["phone_number"]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.phone_number
 
 
@@ -184,7 +184,7 @@ class FormulaPropertyValue(PropertyValue):
         else:
             self.value = notion_formula[notion_formula["type"]]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.value
 
 
@@ -200,7 +200,7 @@ class RelationPropertyValue(PropertyValue):
                 for r in client._paginated_request(client._get_url, url, {})
             ]
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.ids
 
 
@@ -228,7 +228,7 @@ class RollupPropertyValue(PropertyValue):
             self.value = notion_rollup[notion_rollup["type"]]
         # TODO: handle arrays of dates
 
-    def to_value(self, pandoc_format="gfm"):
+    def to_value(self, pandoc_format="gfm", pandoc_options=None):
         if self.rollup_type == "date":
             return self.value
         elif self.rollup_type == "string":
@@ -236,7 +236,7 @@ class RollupPropertyValue(PropertyValue):
         elif self.rollup_type == "number":
             return self.value
         elif self.rollup_type == "array":
-            return [pv.to_value(pandoc_format) for pv in self.value]
+            return [pv.to_value(pandoc_format, pandoc_options) for pv in self.value]
         else:
             return self.value
 
@@ -246,7 +246,7 @@ class CreatedTimePropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.created_time = fromisoformat(notion_data["created_time"])
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return datetime.isoformat(self.created_time)
 
 
@@ -255,7 +255,7 @@ class CreatedByPropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.created_by = client.wrap_notion_user(notion_data["created_by"])
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.created_by.to_value()
 
 
@@ -264,7 +264,7 @@ class LastEditedTimePropertyValue(PropertyValue):
         super().__init__(client, notion_data, page)
         self.last_edited_time = fromisoformat(notion_data["last_edited_time"])
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return datetime.isoformat(self.last_edited_time)
 
 
@@ -273,7 +273,7 @@ class LastEditedBy(PropertyValue):
         super().__init__(client, notion_data, page)
         self.last_edited_by = client.wrap_notion_user(notion_data["last_edited_by"])
 
-    def to_value(self, _=None):
+    def to_value(self, _=None, __=None):
         return self.last_edited_by.to_value()
 
 
