@@ -2,17 +2,17 @@ import re
 from collections import deque
 
 from pandoc.types import (
-    Str,
-    Space,
-    LineBreak,
-    Strong,
-    Emph,
-    Strikeout,
     Code,
-    Link,
-    Underline,
-    Math,
+    Emph,
     InlineMath,
+    LineBreak,
+    Link,
+    Math,
+    Space,
+    Str,
+    Strikeout,
+    Strong,
+    Underline,
 )
 
 from n2y.logger import logger
@@ -49,11 +49,11 @@ class RichText:
     def to_pandoc(self):
         raise NotImplementedError()
 
-    def to_value(self, pandoc_format):
+    def to_value(self, pandoc_format, pandoc_options):
         return pandoc_write_or_log_errors(
             self.to_pandoc(),
             format=pandoc_format,
-            options=[],
+            options=pandoc_options,
         )
 
     @classmethod
@@ -211,11 +211,12 @@ class RichTextArray:
     def to_pandoc(self):
         return sum([item.to_pandoc() for item in self.items], [])
 
-    def to_value(self, pandoc_format):
+    def to_value(self, pandoc_format, pandoc_options):
+        print(self.client.export_defaults)
         return pandoc_write_or_log_errors(
             self.to_pandoc(),
             format=pandoc_format,
-            options=[],
+            options=pandoc_options,
         )
 
     def to_plain_text(self):

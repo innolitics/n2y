@@ -25,7 +25,7 @@ def process_property_value(notion_data, wrap_notion_user):
     else:
         wrap_notion_user.return_value = User(client, mock_user())
     property_value = client.wrap_notion_property_value(notion_data, None)
-    return property_value.to_value("gfm")
+    return property_value.to_value("gfm", [])
 
 
 def test_title():
