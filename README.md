@@ -390,6 +390,9 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.9.1
+- Delete print statement in `rich_text.py`
+
 ### v0.9.0
 - pass the `pandoc_options` setting to wherever `pandoc.write` is called for consistency. Also,
   this should reasonably be the expected behavior.
