@@ -212,7 +212,6 @@ class RichTextArray:
         return sum([item.to_pandoc() for item in self.items], [])
 
     def to_value(self, pandoc_format, pandoc_options):
-        print(self.client.export_defaults)
         return pandoc_write_or_log_errors(
             self.to_pandoc(),
             format=pandoc_format,
