@@ -181,10 +181,10 @@ class JinjaCacheObject(dict):
         self.block.exc_info = JinjaExceptionInfo(self, *args, kwargs)
 
 
-class JinjaDatabaseItem(JinjaCacheObject): ...
+class JinjaDatabaseItem(JinjaCacheObject): ...  # noqa: E701
 
 
-class PageProperties(JinjaCacheObject): ...
+class PageProperties(JinjaCacheObject): ...  # noqa: E701
 
 
 class JinjaDatabaseCache(JinjaCacheObject):

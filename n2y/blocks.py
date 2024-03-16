@@ -33,7 +33,6 @@ from pandoc.types import (
     TableHead,
 )
 
-from n2y.logger import logger as log
 from n2y.notion_mocks import mock_block, mock_rich_text_array
 from n2y.utils import header_id_from_text, pandoc_write_or_log_errors, yaml_map_to_meta
 
