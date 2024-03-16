@@ -1,14 +1,16 @@
 import copy
+
 import yaml
 
 from n2y.config import (
-    valid_notion_id,
-    merge_config,
-    load_config,
+    EXPORT_DEFAULTS,
     _valid_notion_filter,
     _validate_config_item,
-    EXPORT_DEFAULTS,
+    load_config,
+    merge_config,
+    valid_notion_id,
 )
+from n2y.logger import logger
 from n2y.notion_mocks import mock_id
 
 
@@ -44,7 +46,7 @@ def test_load_config_basic(tmp_path):
                 }
             )
         )
-    config = load_config(config_path)
+    config = load_config(config_path, logger)
     assert config is not None, "The config is invalid"
     merged_export = config["exports"][0]
     assert merged_export["id"] == export_id
@@ -100,7 +102,8 @@ def test_valid_notion_filter_simple():
         {
             "property": "title",
             "direction": "ascending",
-        }
+        },
+        logger,
     )
 
 
@@ -111,34 +114,35 @@ def test_valid_notion_filter_complex():
                 "property": "title",
                 "direction": "ascending",
             }
-        ]
+        ],
+        logger,
     )
 
 
 def test_valid_config_item_missing_id():
     config_item = mock_config_item("page")
     del config_item["id"]
-    assert not _validate_config_item(config_item)
+    assert not _validate_config_item(config_item, logger)
 
 
 def test_valid_config_item_missing_node_type():
     config_item = mock_config_item("page")
     del config_item["node_type"]
-    assert not _validate_config_item(config_item)
+    assert not _validate_config_item(config_item, logger)
 
 
 def test_valid_config_item_invalid_node_type():
     config_item = mock_config_item("page")
     config_item["node_type"] = "invalid"
-    assert not _validate_config_item(config_item)
+    assert not _validate_config_item(config_item, logger)
 
 
 def test_valid_config_item_missing_filename_template():
     config_item = mock_config_item("database_as_files")
-    assert not _validate_config_item(config_item)
+    assert not _validate_config_item(config_item, logger)
 
 
 def test_valid_config_item_malformed_filename_template():
     config_item = mock_config_item("database_as_files")
     config_item["filename_template"] = "{"
-    assert not _validate_config_item(config_item)
+    assert not _validate_config_item(config_item, logger)

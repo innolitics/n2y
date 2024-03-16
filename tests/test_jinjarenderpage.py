@@ -102,7 +102,7 @@ def test_jinja_syntax_err():
     jinja_code = "{% huhwhat 'hotel', 'california' %}"
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert "syntax error" in markdown
     assert "Encountered unknown tag 'huhwhat'" in markdown
 
@@ -113,7 +113,7 @@ def test_jinja_render_gfm():
     jinja_code = "{% for v in ['a', 'b'] %}{{v}}{% endfor %}"
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert markdown == "ab\n"
 
 
@@ -126,7 +126,7 @@ def test_jinja_render_gfm_with_second_pass():
     with patch.object(Page, "block", new_callable=PropertyMock) as mock_block:
         mock_block.return_value = page_block
         pandoc_ast = page.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert markdown == "aa\n"
 
 
@@ -141,7 +141,7 @@ def test_jinja_render_html():
     )
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert markdown == "  Name\n  ------\n  a\n  b\n"
 
 
@@ -167,7 +167,7 @@ def test_jinja_render_with_database(wrap_notion_user):
             page = process_jinja_block(client, caption, jinja_code)
             pandoc_ast = page.to_pandoc()
 
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert markdown == "ab\n"
 
 
@@ -193,7 +193,7 @@ def test_jinja_render_with_missing_database(wrap_notion_user):
             page = process_jinja_block(client, caption, jinja_code)
             pandoc_ast = page.to_pandoc()
 
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert 'You attempted to access the "MISSING" database' in markdown
     assert 'the only available database is "My DB".' in markdown
 
@@ -220,7 +220,7 @@ def test_jinja_render_with_incorrect_db_property(wrap_notion_user):
             page = process_jinja_block(client, caption, jinja_code)
             pandoc_ast = page.to_pandoc()
 
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert (
         'You attempted to access the "Foo" property of a database item on line 1'
         in markdown
@@ -252,7 +252,7 @@ def test_jinja_render_with_missing_page_property(wrap_notion_user):
             page = process_jinja_block(client, caption, jinja_code)
             pandoc_ast = page.to_pandoc()
 
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert 'You attempted to access the "MISSING" property' in markdown
     assert 'the only available property is "title".' in markdown
 
@@ -279,7 +279,7 @@ def test_jinja_render_with_filter_error(wrap_notion_user):
             page = process_jinja_block(client, caption, jinja_code)
             pandoc_ast = page.to_pandoc()
 
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert 'Recieved the message "type str doesn\'t define __round__ method"' in markdown
     assert 'The Jinja filter "round" raised this error' in markdown
     assert 'argument(s): {\n\t"args": (\'a\',),\n\t"kwargs": {}\n}' in markdown
@@ -291,7 +291,7 @@ def test_jinja_render_plain():
     jinja_code = "# <h1> asdf23"
     page = process_jinja_block(client, caption, jinja_code)
     pandoc_ast = page.to_pandoc()
-    text = pandoc_write_or_log_errors(pandoc_ast, "plain", [])
+    text = pandoc_write_or_log_errors(pandoc_ast, "plain", [], client.logger)
     assert text == "# <h1> asdf23\n"
 
 
