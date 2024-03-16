@@ -1,12 +1,11 @@
 from n2y.blocks import ChildDatabaseBlock, ChildPageBlock, TableOfContentsBlock
-from n2y.logger import logger
 from n2y.property_values import TitlePropertyValue
 from n2y.utils import fromisoformat
 
 
 class Page:
     def __init__(self, client, notion_data):
-        logger.debug("Instantiating page")
+        client.logger.debug("Instantiating page")
         self.notion_parent = notion_data["parent"]
         self.archived = notion_data["archived"]
         self.notion_url = notion_data["url"]

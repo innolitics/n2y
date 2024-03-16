@@ -1,14 +1,9 @@
-import logging
 import copy
 import string
 
 import yaml
 
 from n2y.utils import strip_hyphens
-
-
-logger = logging.getLogger(__name__)
-
 
 DEFAULTS = {
     "media_root": "media",
@@ -41,8 +36,8 @@ EXPORT_DEFAULTS = {
 }
 
 
-def load_config(path):
-    config = _load_config_from_yaml(path)
+def load_config(path, logger):
+    config = _load_config_from_yaml(path, logger)
     if config is None:
         return None
 
@@ -57,7 +52,7 @@ def load_config(path):
     return config
 
 
-def _load_config_from_yaml(path):
+def _load_config_from_yaml(path, logger):
     try:
         with open(path, "r") as config_file:
             config = yaml.safe_load(config_file)
@@ -67,7 +62,7 @@ def _load_config_from_yaml(path):
     except FileNotFoundError:
         logger.error("The config file '%s' does not exist", path)
         return None
-    if not validate_config(config):
+    if not validate_config(config, logger):
         logger.error("Invalid config file: %s", path)
         return None
     return config
@@ -98,7 +93,7 @@ def merge_default_config(defaults):
     return {**master_defaults_copy, **defaults_copy}
 
 
-def validate_config(config):
+def validate_config(config, logger):
     if "exports" not in config:
         logger.error("Config missing the 'exports' key")
         return False
@@ -106,7 +101,7 @@ def validate_config(config):
         logger.error("Config 'exports' key must be a non-empty list")
         return False
     for export in config["exports"]:
-        if not _validate_config_item(export):
+        if not _validate_config_item(export, logger):
             return False
     # TODO: validate the export defaults key
     return True
@@ -117,7 +112,7 @@ def valid_notion_id(notion_id):
     return len(canonical_id) == 32 and canonical_id.isalnum()
 
 
-def _validate_config_item(config_item):
+def _validate_config_item(config_item, logger):
     if "id" not in config_item:
         logger.error("Export config item missing the 'id' key")
         return False
@@ -136,23 +131,23 @@ def _validate_config_item(config_item):
         )
         return False
     if "filename_template" in config_item:
-        if not _valid_filename_template(config_item["filename_template"]):
+        if not _valid_filename_template(config_item["filename_template"], logger):
             return False
     if "output" not in config_item:
         logger.error("Export config item missing the 'output' key")
         return False
     if "notion_filter" in config_item:
-        if not _valid_notion_filter(config_item["notion_filter"]):
+        if not _valid_notion_filter(config_item["notion_filter"], logger):
             return False
     if "notion_sorts" in config_item:
-        if not _valid_notion_sort(config_item["notion_sorts"]):
+        if not _valid_notion_sort(config_item["notion_sorts"], logger):
             return False
     # TODO: validate pandoc_format using the `--list-output-types` and `--list-extensions`
     # TODO: property map
     return True
 
 
-def _valid_filename_template(filename_template):
+def _valid_filename_template(filename_template, logger):
     if not isinstance(filename_template, str):
         logger.error("filename_template must be a string")
         return False
@@ -172,7 +167,7 @@ def _valid_filename_template(filename_template):
     return True
 
 
-def _valid_notion_filter(notion_filter):
+def _valid_notion_filter(notion_filter, logger):
     if not (isinstance(notion_filter, list) or isinstance(notion_filter, dict)):
         logger.error("notion_filter must be a list or dict")
         return False
@@ -180,7 +175,7 @@ def _valid_notion_filter(notion_filter):
     return True
 
 
-def _valid_notion_sort(notion_sorts):
+def _valid_notion_sort(notion_sorts, logger):
     if not (isinstance(notion_sorts, list) or isinstance(notion_sorts, dict)):
         logger.error("notion_sorts must be a list or dict")
         return False

@@ -25,6 +25,7 @@ Another context variable that is provided is the database variable, which is
 used to access Notion databases. Any database that is @-mentioned in the caption
 of the codeblock may be accessed via the database name.
 """
+
 import functools
 import re
 import traceback
@@ -36,7 +37,6 @@ from pandoc.types import Code, Meta, MetaString, Pandoc, Para, Plain, Str
 from n2y.blocks import FencedCodeBlock, HeadingBlock
 from n2y.errors import UseNextClass
 from n2y.export import database_to_yaml
-from n2y.logger import logger
 from n2y.mentions import DatabaseMention
 from n2y.page import Page
 from n2y.rich_text import MentionRichText
@@ -63,9 +63,7 @@ def join_to(foreign_keys, table, primary_key="notion_id"):
 def list_matches(string, text):
     return list(
         re.finditer(
-            "(?<![a-zA-Z])"
-            + re.escape(_canonicalize(string))
-            + "(?:s|es)?(?![a-zA-Z])",
+            "(?<![a-zA-Z])" + re.escape(_canonicalize(string)) + "(?:s|es)?(?![a-zA-Z])",
             _canonicalize(text),
             re.IGNORECASE,
         )
@@ -114,11 +112,11 @@ def fuzzy_find_in(term_list, text, key="Name", by_length=True, reverse=True):
 
 
 def _canonicalize(markdown):
-    markdown = markdown.replace("\u201D", '"').replace("\u201C", '"')
+    markdown = markdown.replace("\u201d", '"').replace("\u201c", '"')
     markdown = markdown.replace("\u2019", "'").replace("\u2018", "'")
     markdown = markdown.replace("\u2013", "--").replace("\u2014", "---")
     markdown = markdown.replace("\u2026", "...")
-    markdown = markdown.replace("\u00A0", " ")
+    markdown = markdown.replace("\u00a0", " ")
     return markdown
 
 
@@ -150,13 +148,13 @@ def render_from_string(source, context=None, environment=None):
 
 class JinjaExceptionInfo:
     err: Exception
-    object: object
+    obj: object
     method: str
     args: list
     kwargs: dict | None
 
     def __init__(self, object, err, method, args, kwargs):
-        self.object = object
+        self.obj = object
         self.method = method
         self.kwargs = kwargs
         self.args = args
@@ -183,12 +181,10 @@ class JinjaCacheObject(dict):
         self.block.exc_info = JinjaExceptionInfo(self, *args, kwargs)
 
 
-class JinjaDatabaseItem(JinjaCacheObject):
-    ...
+class JinjaDatabaseItem(JinjaCacheObject): ...
 
 
-class PageProperties(JinjaCacheObject):
-    ...
+class PageProperties(JinjaCacheObject): ...
 
 
 class JinjaDatabaseCache(JinjaCacheObject):
@@ -201,7 +197,7 @@ class JinjaDatabaseCache(JinjaCacheObject):
         except Exception as err:
             self.cache_exception_info(err, "__getitem__", [__key])
             raise
-        logger.error(
+        self.block.client.logger.error(
             "Jinja template database must be selected using a string or an integer"
         )
         err = KeyError(__key)
@@ -268,10 +264,8 @@ class JinjaRenderPage(Page):
         ast = super().to_pandoc(ignore_toc=True)
         first_pass_output = self.jinja_environment.globals["first_pass_output"]
         if first_pass_output.second_pass_is_requested:
-            first_pass_output_text = pandoc_ast_to_markdown(ast)
-            first_pass_output.set_lines(
-                first_pass_output_text.splitlines(keepends=True)
-            )
+            first_pass_output_text = pandoc_ast_to_markdown(ast, self.client.logger)
+            first_pass_output.set_lines(first_pass_output_text.splitlines(keepends=True))
             ast = super().to_pandoc(ignore_toc=True)
             jinja2.clear_caches()
         return ast if ignore_toc else self.generate_toc(ast)
@@ -325,7 +319,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                     f'Duplicate database name "{database_name}"'
                     f" when rendering [{self.notion_url}]"
                 )
-                logger.error(msg)
+                self.client.logger.error(msg)
                 raise ValueError(msg)
             self.databases[database_name] = database_to_yaml(
                 database=database,
@@ -341,9 +335,9 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
 
         if self.exc_info is not None:
             if type(self.exc_info.err) is KeyError:
-                if type(self.exc_info.object) is JinjaDatabaseCache:
+                if type(self.exc_info.obj) is JinjaDatabaseCache:
                     available_props: str = available_from_list(
-                        list(self.exc_info.object), "database", "databases"
+                        list(self.exc_info.obj), "database", "databases"
                     )
                     return (
                         f' You attempted to access the "{self.exc_info.args[0]}" database'
@@ -353,28 +347,28 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                         " permission to read the database via the NOTION_ACCESS_TOKEN."
                         f" {block_ref}"
                     )
-                elif type(self.exc_info.object) is JinjaDatabaseItem:
+                elif type(self.exc_info.obj) is JinjaDatabaseItem:
                     available_props: str = available_from_list(
-                        list(self.exc_info.object), "property", "properties"
+                        list(self.exc_info.obj), "property", "properties"
                     )
                     return (
                         f' You attempted to access the "{self.exc_info.args[0]}" property'
                         f" of a database item on line {line_num} of said template, but"
                         f" {available_props}. {block_ref}"
                     )
-                elif type(self.exc_info.object) is PageProperties:
+                elif type(self.exc_info.obj) is PageProperties:
                     available_props: str = available_from_list(
-                        list(self.exc_info.object), "property", "properties"
+                        list(self.exc_info.obj), "property", "properties"
                     )
                     return (
                         f' You attempted to access the "{self.exc_info.args[0]}" property'
                         f" of this page on line {line_num} of said template, but"
                         f" {available_props}. {block_ref}"
                     )
-            elif self.exc_info.object in ["test", "filter"]:
+            elif self.exc_info.obj in ["test", "filter"]:
                 return (
                     f' Recieved the message "{str(err)}" when evaluating line {line_num}.'
-                    f' The Jinja {self.exc_info.object} "{self.exc_info.method}" raised'
+                    f' The Jinja {self.exc_info.obj} "{self.exc_info.method}" raised'
                     " this error when called with the following argument(s):"
                     f' {{\n\t"args": {self.exc_info.args},\n\t"kwargs":'
                     f" {self.exc_info.kwargs}\n}}\n{block_ref}"
@@ -397,7 +391,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
             else "Unknown Page."
         )
         self.error += self._specify_err_msg(err)
-        logger.error(self.error)
+        self.client.logger.error(self.error)
 
     def _render_error(self, err, during_render=True):
         if self.render_count == 1 or during_render and self.render_count == 0:
@@ -453,11 +447,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
     def to_pandoc(self):
         if self.databases is None:
             self._get_yaml_from_mentions()
-        if (
-            self.render_count < 1
-            or self.render_count < 2
-            and self.uses_first_pass_output
-        ):
+        if self.render_count < 1 or self.render_count < 2 and self.uses_first_pass_output:
             self._render_text()
         if self.error:
             children_ast = self._error_ast()

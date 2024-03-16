@@ -1,6 +1,3 @@
-from n2y.logger import logger
-
-
 class File:
     """
     See https://developers.notion.com/reference/file-object
@@ -9,12 +6,12 @@ class File:
     def __init__(self, client, notion_data):
         self.client = client
         if notion_data["type"] == "file":
-            logger.debug('Instantiating file "%s"', notion_data["file"]["url"])
+            client.logger.debug('Instantiating file "%s"', notion_data["file"]["url"])
             self.type = "file"
             self.url = notion_data["file"]["url"]
             self.expiry_time = notion_data["file"]["expiry_time"]
         elif notion_data["type"] == "external":
-            logger.debug(
+            client.logger.debug(
                 'Instantiating external file "%s"', notion_data["external"]["url"]
             )
             self.type = "external"

@@ -1,14 +1,13 @@
-import os
 import json
-import tempfile
+import os
 import subprocess
+import tempfile
 from pathlib import Path
 
-from pandoc.types import Para, Image
+from pandoc.types import Image, Para
 
-from n2y.logger import logger
-from n2y.errors import UseNextClass
 from n2y.blocks import FencedCodeBlock
+from n2y.errors import UseNextClass
 
 mermaid_config = {"flowchart": {"useMaxWidth": False}}
 
@@ -89,23 +88,23 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                 "Unable to convert mermaid diagram (%s) into an image. "
                 "The mermaid-cli returned error code %d and printed: %s"
             )
-            logger.error(msg, self.notion_url, exc.returncode, exc.stderr)
+            self.client.logger.error(msg, self.notion_url, exc.returncode, exc.stderr)
         except subprocess.SubprocessError:
             msg = "Unable to convert mermaid diagram (%s) into an image"
-            logger.exception(msg, self.notion_url)
+            self.client.logger.exception(msg, self.notion_url)
         except NotImplementedError:
             msg = (
                 "Unable to convert mermaid diagram (%s) into"
                 " an image due to a syntax error in the graph"
             )
-            logger.exception(msg, self.notion_url)
+            self.client.logger.exception(msg, self.notion_url)
         except FileNotFoundError:
             msg = (
                 "Unable to find the mermaid-cli executable, `mmdc`, on the PATH. "
                 "See here: https://github.com/mermaid-js/mermaid-cli "
                 "Mermaid diagram (%s) in code blocks will not be converted to images."
             )
-            logger.error(msg, self.notion_url)
+            self.client.logger.error(msg, self.notion_url)
         return super().to_pandoc()
 
 

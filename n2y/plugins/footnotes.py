@@ -1,12 +1,10 @@
 import re
 
-from pandoc.types import Note, Str, Para
+from pandoc.types import Note, Para, Str
 
-from n2y.logger import logger
-from n2y.errors import UseNextClass
 from n2y.blocks import ParagraphBlock
+from n2y.errors import UseNextClass
 from n2y.rich_text import TextRichText
-
 
 plugin_data_key = "n2y.plugins.footnotes"
 
@@ -31,10 +29,10 @@ class ParagraphWithFootnoteBlock(ParagraphBlock):
             ] = self._footnote_ast()
             if self._footnote_empty():
                 msg = 'Empty footnote "[%s]" (%s)'
-                logger.warning(msg, self._footnote(), self.notion_url)
+                self.client.logger.warning(msg, self._footnote(), self.notion_url)
         else:
             msg = 'Multiple footnotes for "[%s]", skipping latest (%s)'
-            logger.warning(msg, self._footnote(), self.notion_url)
+            self.client.logger.warning(msg, self._footnote(), self.notion_url)
 
     def _is_footnote(self):
         return self._footnote() is not None
@@ -76,7 +74,7 @@ class TextRichTextWithFootnoteRef(TextRichText):
             if ref not in self.block.page.plugin_data[plugin_data_key]:
                 pandoc_ast.append(token)
                 msg = 'Missing footnote "[%s]". Rendering as plain text (%s)'
-                logger.warning(msg, ref, self.block.notion_url)
+                self.client.logger.warning(msg, ref, self.block.notion_url)
                 continue
             self._append_footnote_to_ast(pandoc_ast, token, ref)
         return pandoc_ast
@@ -90,9 +88,7 @@ class TextRichTextWithFootnoteRef(TextRichText):
         pandoc_ast.append(Str(suffix))
 
     def _is_footnote(self):
-        return any(
-            self._footnote_from_token(t) is not None for t in super().to_pandoc()
-        )
+        return any(self._footnote_from_token(t) is not None for t in super().to_pandoc())
 
     def _footnote_from_token(self, token):
         if not isinstance(token, Str):

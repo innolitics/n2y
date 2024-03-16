@@ -1,4 +1,3 @@
-from n2y.logger import logger
 from n2y.blocks import LinkToPageBlock
 
 
@@ -20,7 +19,7 @@ class ExpandingLinkToPageBlock(LinkToPageBlock):
             return page.block.children_to_pandoc()
         else:
             # TODO: Might be expanded to handle links to databases as well.
-            logger.warning(
+            self.client.logger.warning(
                 "Links to databases (to:%s from:%s) not supported at this time.",
                 self.linked_node_id,
                 self.page.notion_id,

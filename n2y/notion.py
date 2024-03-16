@@ -20,7 +20,7 @@ from n2y.errors import (
     is_api_error_code,
 )
 from n2y.file import File
-from n2y.logger import logger
+from n2y.logger import logger as log
 from n2y.mentions import DEFAULT_MENTIONS
 from n2y.notion_mocks import mock_rich_text_array
 from n2y.page import Page
@@ -69,10 +69,12 @@ class Client:
         media_url="",
         plugins=None,
         export_defaults=None,
+        logger=log,
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
+        self.logger = logger
         self.export_defaults = export_defaults or merge_default_config({})
 
         self.base_url = "https://api.notion.com/v1/"
@@ -106,7 +108,7 @@ class Client:
                 try:
                     self.load_plugin(plugin_module.notion_classes)
                 except PluginError as err:
-                    logger.error('Error loading plugin "%s": %s', plugin, err)
+                    self.logger.error('Error loading plugin "%s": %s', plugin, err)
                     raise
 
     def load_plugin(self, notion_classes):
@@ -176,7 +178,9 @@ class Client:
             try:
                 return cls(*args, **kwargs)
             except UseNextClass:
-                logger.debug("Skipping %s due to UseNextClass exception", cls.__name__)
+                self.logger.debug(
+                    "Skipping %s due to UseNextClass exception", cls.__name__
+                )
 
     def _wrap_notion_page(self, notion_data):
         """
@@ -207,7 +211,7 @@ class Client:
             return self.pages_cache[notion_data["id"]]
         else:
             page = self.instantiate_class("page", None, self, notion_data)
-            not page_in_cache or logger.warning(
+            not page_in_cache or self.logger.warning(
                 f"page in cache overwritten at key \"{notion_data['id']}\""
             )
             self.pages_cache[page.notion_id] = page
@@ -589,7 +593,7 @@ class Client:
             "request_id",
         ]
         if parent_type == "block":
-            logger.warning(
+            self.logger.warning(
                 "Skipping page with block type parent as "
                 "appension is currently unsupported by Notion API"
             )
@@ -619,7 +623,7 @@ class Client:
             "request_id",
         ]
         if parent_type == "block":
-            logger.warning(
+            self.logger.warning(
                 "Skipping database with block type parent as "
                 "appension is currently unsupported by Notion API"
             )

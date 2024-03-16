@@ -1,8 +1,4 @@
-import logging
-
 from n2y.utils import fromisoformat
-
-logger = logging.getLogger(__name__)
 
 
 class Comment:
