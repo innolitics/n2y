@@ -15,7 +15,6 @@ from pandoc.types import (
     Underline,
 )
 
-from n2y.logger import logger
 from n2y.notion_mocks import mock_rich_text
 from n2y.utils import pandoc_write_or_log_errors
 
@@ -51,9 +50,7 @@ class RichText:
 
     def to_value(self, pandoc_format, pandoc_options):
         return pandoc_write_or_log_errors(
-            self.to_pandoc(),
-            format=pandoc_format,
-            options=pandoc_options,
+            self.to_pandoc(), pandoc_format, pandoc_options, self.client.logger
         )
 
     @classmethod
@@ -129,7 +126,7 @@ class MentionRichText(RichText):
 
     def to_pandoc(self):
         if self.code:
-            logger.warning(
+            self.client.logger.warning(
                 'Code formatting is being dropped on mention "%s"', self.plain_text
             )
         mention_ast = self.mention.to_pandoc()
@@ -143,7 +140,7 @@ class EquationRichText(RichText):
 
     def to_pandoc(self):
         if self.code:
-            logger.warning(
+            self.client.logger.warning(
                 'Code formatting is being dropped on equation "%s"', self.expression
             )
         equation_ast = [Math(InlineMath(), self.expression)]
@@ -213,9 +210,7 @@ class RichTextArray:
 
     def to_value(self, pandoc_format, pandoc_options):
         return pandoc_write_or_log_errors(
-            self.to_pandoc(),
-            format=pandoc_format,
-            options=pandoc_options,
+            self.to_pandoc(), pandoc_format, pandoc_options, self.client.logger
         )
 
     def to_plain_text(self):

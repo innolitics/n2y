@@ -390,6 +390,10 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.10.0
+- Instead of importing the logger from the `n2y.logger` module, pass it as an argument wherever
+  necessary to allow custom loggers to be used.
+
 ### v0.9.1
 - Delete print statement in `rich_text.py`
 

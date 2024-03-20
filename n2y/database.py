@@ -1,10 +1,9 @@
-from n2y.logger import logger
 from n2y.utils import fromisoformat, sanitize_filename
 
 
 class Database:
     def __init__(self, client, notion_data):
-        logger.debug("Instantiating database")
+        client.logger.debug("Instantiating database")
         self.client = client
 
         self.notion_data = notion_data
@@ -47,9 +46,9 @@ class Database:
             if tupled_filter not in self._filtered_children:
                 self._filtered_children[tupled_filter] = {}
             if tupled_sort not in self._filtered_children[tupled_filter]:
-                self._filtered_children[tupled_filter][
-                    tupled_sort
-                ] = self.client.get_database_pages(self.notion_id, filter, sort)
+                self._filtered_children[tupled_filter][tupled_sort] = (
+                    self.client.get_database_pages(self.notion_id, filter, sort)
+                )
             children = self._filtered_children[tupled_filter][tupled_sort]
         else:
             children = self.children

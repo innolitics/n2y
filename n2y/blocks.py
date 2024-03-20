@@ -33,7 +33,6 @@ from pandoc.types import (
     TableHead,
 )
 
-from n2y.logger import logger
 from n2y.notion_mocks import mock_block, mock_rich_text_array
 from n2y.utils import header_id_from_text, pandoc_write_or_log_errors, yaml_map_to_meta
 
@@ -60,7 +59,7 @@ class Block:
         2. In some cases a block may choose not to get child blocks.
            Currently, all blocks load all children.
         """
-        logger.debug('Instantiating "%s" block', type(self).__name__)
+        client.logger.debug('Instantiating "%s" block', type(self).__name__)
         self.client = client
         self.page = page
 
@@ -235,7 +234,7 @@ class TableOfContentsBlock(Block):
                 if header[0] > base:
                     subsections[index].append(header)
                 if header[0] < base:
-                    logger.warning(
+                    self.client.logger.warning(
                         f'Skipping out-of-order header "{header[1][0]}" in table of'
                         " contents for page named"
                         f" {self.page.title.to_plain_text()} ({self.page.notion_url})."
@@ -268,9 +267,7 @@ class TableOfContentsBlock(Block):
     def generate_item_block(self, section: list[Header]):
         header = section.pop(0)
         header_text = pandoc_write_or_log_errors(
-            header[2],
-            format="gfm",
-            options=[],
+            header[2], "gfm", [], self.client.logger
         )[:-1]
         rich_text = mock_rich_text_array([(header_text, None, f"#{header[1][0]}")])
         type_data = {
@@ -304,7 +301,7 @@ class TableOfContentsItemBlock(NumberedListItemBlock, TableOfContentsBlock):
                 try:
                     subsections[index].append(header)
                 except IndexError:
-                    logger.warning(
+                    self.client.logger.warning(
                         f'Skipping out-of-order header "{header[1][0]}" in table of'
                         " contents for page named"
                         f" {self.page.title.to_plain_text()} ({self.page.notion_url})."
@@ -553,7 +550,7 @@ class FencedCodeBlock(Block):
         if pandoc_language not in self.pandoc_highlight_languages:
             if pandoc_language != "plain text":
                 msg = 'Dropping syntax highlighting for unsupported language "%s" (%s)'
-                logger.warning(msg, pandoc_language, self.notion_url)
+                self.client.logger.warning(msg, pandoc_language, self.notion_url)
             language = []
         else:
             language = [pandoc_language]
@@ -761,7 +758,7 @@ class TemplateBlock(NoopBlock):
 
 class WarningBlock(NoopBlock):
     def to_pandoc(self):
-        logger.warning(
+        self.client.logger.warning(
             'Skipping unsupported "%s" block (%s)', self.notion_type, self.notion_url
         )
         return None
@@ -871,10 +868,14 @@ class SyncedBlock(Block):
 
     def to_pandoc(self):
         if not self.shared:
-            # logger.warning('Skipping un-shared synced block (%s)', self.notion_url)
+            self.client.logger.warning(
+                "Skipping un-shared synced block (%s)", self.notion_url
+            )
             return None
         elif self.is_recursive:
-            logger.warning("Skipping recursive synced block (%s)", self.notion_url)
+            self.client.logger.warning(
+                "Skipping recursive synced block (%s)", self.notion_url
+            )
             return None
         return self.children_to_pandoc()
 
@@ -900,7 +901,7 @@ class LinkToPageBlock(Block):
 
         if node is None:
             msg = "Permission denied when attempting to access linked node (%r)"
-            logger.warning(msg, self.notion_url)
+            self.client.logger.warning(msg, self.notion_url)
             return None
         else:
             title = node.title.to_pandoc()

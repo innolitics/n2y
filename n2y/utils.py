@@ -39,7 +39,7 @@ def processed_date_to_plain_text(processed_date):
         return processed_date
 
 
-def pandoc_ast_to_markdown(pandoc_ast):
+def pandoc_ast_to_markdown(pandoc_ast, logger):
     # This function tries to avoid calling the separate pandoc binary (which is
     # slow) for basic cases with just spaces and strings
     if pandoc_ast is None or pandoc_ast == []:
@@ -50,8 +50,8 @@ def pandoc_ast_to_markdown(pandoc_ast):
     else:
         return pandoc_write_or_log_errors(
             pandoc_ast,
-            format="markdown",
-            options=[
+            "markdown",
+            [
                 "--wrap",
                 "none",  # don't hard line-wrap
                 "--columns",
@@ -62,18 +62,15 @@ def pandoc_ast_to_markdown(pandoc_ast):
                 "--eol",
                 "lf",  # use linux-style line endings
             ],
+            logger,
         )
 
 
-def pandoc_ast_to_html(pandoc_ast):
-    return pandoc_write_or_log_errors(
-        pandoc_ast,
-        format="html+smart",
-        options=[],
-    )
+def pandoc_ast_to_html(pandoc_ast, logger):
+    return pandoc_write_or_log_errors(pandoc_ast, "html+smart", [], logger)
 
 
-def pandoc_write_or_log_errors(pandoc_ast, format, options):
+def pandoc_write_or_log_errors(pandoc_ast, format, options, logger):
     if pandoc_ast is None or pandoc_ast == []:
         return ""
     try:
@@ -315,9 +312,10 @@ def retry_api_call(api_call):
                 raise err
             elif retry_count < max_api_retries:
                 retry_count += 1
+                log = args[0].logger if args and hasattr(args[0], "logger") else logger
                 if "retry-after" in err.headers:
                     retry_after = float(err.headers["retry-after"])
-                    logger.info(
+                    log.info(
                         "This API call has been rate limited and "
                         "will be retried in %f seconds. Attempt %d of %d.",
                         retry_after,
@@ -326,7 +324,7 @@ def retry_api_call(api_call):
                     )
                 else:
                     retry_after = 2
-                    logger.info(
+                    log.info(
                         "This API call failed and "
                         "will be retried in %f seconds. Attempt %d of %d.",
                         retry_after,

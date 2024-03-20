@@ -1,17 +1,17 @@
+import argparse
+import logging
 import os
 import sys
-import logging
-import argparse
 
-from n2y.logger import logger, HANDLER
+from n2y.blocks import LinkToPageBlock
+from n2y.database import Database
+from n2y.errors import UseNextClass
+from n2y.logger import HANDLER
+from n2y.logger import logger as log
+from n2y.mentions import PageMention
 from n2y.notion import Client
 from n2y.page import Page
-from n2y.database import Database
-from n2y.mentions import PageMention
-from n2y.errors import UseNextClass
-from n2y.blocks import LinkToPageBlock
 from n2y.utils import id_from_share_link
-
 
 plugin_key = "audit"
 
@@ -49,10 +49,11 @@ class ReportingLinkToPageBlock(LinkToPageBlock):
 def cli_main():
     args = sys.argv[1:]
     access_token = os.environ.get("NOTION_ACCESS_TOKEN", None)
+
     sys.exit(main(args, access_token))
 
 
-def main(raw_args, access_token):
+def main(raw_args, access_token, logger=log):
     parser = argparse.ArgumentParser(
         description="Audit a set of Notion pages for external links",
         formatter_class=argparse.RawTextHelpFormatter,
@@ -99,7 +100,7 @@ def main(raw_args, access_token):
         },
     }
 
-    client = Client(access_token)
+    client = Client(access_token, logger=logger)
     client.load_plugin(plugins)
 
     node = client.get_page_or_database(object_id)
@@ -109,7 +110,7 @@ def main(raw_args, access_token):
             "Unable to find database or page with id %s. "
             "Perhaps its not shared with the integration?"
         )
-        logger.error(msg, object_id)
+        client.logger.error(msg, object_id)
         return 2
 
     references = {}
@@ -148,13 +149,15 @@ def audit_node(node, references, depth):
 
 
 def audit_database(database, references, depth):
-    logger.info("%sDatabase %s", " " * depth, database.title.to_plain_text())
+    database.client.logger.info(
+        "%sDatabase %s", " " * depth, database.title.to_plain_text()
+    )
     for page in database.children:
         audit_page(page, references, depth + 1)
 
 
 def audit_page(page, references, depth):
-    logger.info("%sAuditing %s", " " * depth, page.title.to_plain_text())
+    page.client.logger.info("%sAuditing %s", " " * depth, page.title.to_plain_text())
     assert page.notion_id not in references  # expect that each page is visited once
     page.block  # load all of the blocks
     references[page.notion_id] = page.plugin_data.get(plugin_key, [])

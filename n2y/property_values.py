@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from n2y.logger import logger
 from n2y.utils import fromisoformat, process_notion_date, processed_date_to_plain_text
 
 
@@ -224,7 +223,7 @@ class RollupPropertyValue(PropertyValue):
                 for pv in notion_rollup["array"]
             ]
         else:
-            logger.warning("Unhandled rollup type %s", notion_rollup["type"])
+            client.logger.warning("Unhandled rollup type %s", notion_rollup["type"])
             self.value = notion_rollup[notion_rollup["type"]]
         # TODO: handle arrays of dates
 

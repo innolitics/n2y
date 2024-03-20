@@ -2,12 +2,12 @@
 This module contains all the code responsible for exporting `page.Page` and
 `database.Database` objects into the various supported file formats.
 """
+
 import os
 
 import yaml
 from pandoc.types import Table
 
-from n2y.logger import logger
 from n2y.utils import (
     pandoc_format_to_file_extension,
     pandoc_write_or_log_errors,
@@ -29,7 +29,7 @@ def _page_properties(
         property_map = {}
     properties = page.properties_to_values(pandoc_format, pandoc_options)
     if id_property in properties:
-        logger.warning(
+        page.client.logger.warning(
             'The id property "%s" is shadowing an existing property with the same name',
             id_property,
         )
@@ -37,7 +37,7 @@ def _page_properties(
         properties[id_property] = page.notion_id
 
     if url_property in properties:
-        logger.warning(
+        page.client.logger.warning(
             'The url property "%s" is shadowing an existing property with the same name',
             url_property,
         )
@@ -50,7 +50,7 @@ def _page_properties(
                 properties[new] = value
         else:
             msg = "Property %s not found in page %s; skipping remapping from %s to %s"
-            logger.warning(msg, original, page.notion_url, original, new)
+            page.client.logger.warning(msg, original, page.notion_url, original, new)
     return properties
 
 
@@ -67,13 +67,15 @@ def export_page(
 
     if (number_empty_headers := _count_headerless_tables(pandoc_ast)) > 0:
         if "markdown" in pandoc_format or "gfm" in pandoc_format:
-            logger.warning(
+            page.client.logger.warning(
                 "%d table(s) will present empty headers to maintain Markdown spec (%r)",
                 number_empty_headers,
                 page.notion_url,
             )
 
-    page_content = pandoc_write_or_log_errors(pandoc_ast, pandoc_format, pandoc_options)
+    page_content = pandoc_write_or_log_errors(
+        pandoc_ast, pandoc_format, pandoc_options, page.client.logger
+    )
     if isinstance(page_content, str) and yaml_front_matter:
         page_properties = _page_properties(
             page,
@@ -124,7 +126,7 @@ def database_to_yaml(
     property_map=None,
 ):
     if content_property in database.schema:
-        logger.warning(
+        database.client.logger.warning(
             'The content property "%s" is shadowing an existing '
             "property with the same name",
             content_property,
@@ -141,6 +143,7 @@ def database_to_yaml(
                     pandoc_ast,
                     pandoc_format,
                     pandoc_options,
+                    page.client.logger,
                 )
             else:
                 result[content_property] = None
@@ -179,7 +182,7 @@ def database_to_files(
                 )
                 write_document(document, os.path.join(directory, page_filename))
             else:
-                logger.warning(
+                database.client.logger.warning(
                     'Skipping page named "%s" since it has been used', page_filename
                 )
                 counts["duplicate"] += 1
@@ -187,7 +190,7 @@ def database_to_files(
             counts["unnamed"] += 1
     for key, count in counts.items():
         if count > 0:
-            logger.info("%d %s page(s) skipped", count, key)
+            database.client.logger.info("%d %s page(s) skipped", count, key)
 
 
 def write_document(document, path):
@@ -213,7 +216,7 @@ def _page_filename(page, pandoc_format, filename_template=None):
         try:
             return sanitize_filename(filename_template.format(**page_properties))
         except KeyError:
-            logger.warning(
+            page.client.logger.warning(
                 'Invalid filename property, "%s". Valid options are %s',
                 filename_template,
                 ", ".join(page.properties.keys()),

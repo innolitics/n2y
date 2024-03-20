@@ -2,6 +2,7 @@
 These tests verify how the n2y block classes convert notion data into Pandoc
 abstract syntax tree (AST) objects, and then into markdown.
 """
+
 import re
 from unittest import mock
 
@@ -167,7 +168,7 @@ def generate_block(notion_block, plugins=None):
 def process_block(notion_block, plugins=None):
     n2y_block = generate_block(notion_block, plugins=plugins)
     pandoc_ast = n2y_block.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, n2y_block.client.logger)
     return pandoc_ast, markdown
 
 
@@ -178,7 +179,7 @@ def process_parent_block(notion_block, child_notion_blocks, plugins=None):
         mock_get_child_notion_blocks.return_value = child_notion_blocks
         n2y_block = generate_block(notion_block, plugins)
     pandoc_ast = n2y_block.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, n2y_block.client.logger)
     return pandoc_ast, markdown
 
 
@@ -774,7 +775,7 @@ def test_toc_block():
     toc = client.wrap_notion_block(toc_block, None, True)
     toc.render_toc([*toc_headers, *toc_headers])
     pandoc_ast = toc.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert pandoc_ast == [
         OrderedList((1, Decimal(), Period()), [toc_item_ast, toc_item_ast])
     ]
@@ -799,7 +800,7 @@ def test_toc_block_starting_h2():
     toc = client.wrap_notion_block(toc_block, None, True)
     toc.render_toc([*toc_headers_starting_h2, *toc_headers_starting_h2])
     pandoc_ast = toc.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert (
         markdown
         == """\
@@ -825,7 +826,7 @@ def test_toc_block_h1_after_h2_base(wrap_notion_user):
     toc = client.wrap_notion_block(toc_block, page, True)
     toc.render_toc([*toc_headers_starting_h2, *toc_headers])
     pandoc_ast = toc.to_pandoc()
-    markdown = pandoc_ast_to_markdown(pandoc_ast)
+    markdown = pandoc_ast_to_markdown(pandoc_ast, client.logger)
     assert (
         markdown
         == """\
