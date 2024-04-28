@@ -868,9 +868,8 @@ class SyncedBlock(Block):
 
     def to_pandoc(self):
         if not self.shared:
-            self.client.logger.warning(
-                "Skipping un-shared synced block (%s)", self.notion_url
-            )
+            # We can't reliably log a warning here because there is a bug in Notion that
+            # causes too many disruptive false positives.
             return None
         elif self.is_recursive:
             self.client.logger.warning(
