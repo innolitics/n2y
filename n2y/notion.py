@@ -71,11 +71,13 @@ class Client:
         plugins=None,
         export_defaults=None,
         logger=log,
+        retry=True,
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
         self.logger = logger
+        self.retry = retry
         self.export_defaults = export_defaults or merge_default_config({})
 
         self.base_url = "https://api.notion.com/v1/"
