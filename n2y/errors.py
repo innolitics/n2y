@@ -29,6 +29,25 @@ class UseNextClass(N2YError):
     pass
 
 
+class ConnectionThrottled(N2YError):
+    """
+    Raised when the connection is throttled by the Notion API.
+    """
+
+    def __init__(self, response, message=None) -> None:
+        retry = response.headers.get("retry-after")
+        self.retry_after = float(retry) if retry else None
+        self.status = response.status_code
+        self.headers = response.headers
+        self.body = response.text
+        if message is None:
+            message = (
+                "Your connection has been throttled by the Notion API for"
+                f" {self.retry_after} seconds. Please try again later."
+            )
+        super().__init__(message)
+
+
 class RequestTimeoutError(N2YError):
     """
     Exception for requests that timeout.
