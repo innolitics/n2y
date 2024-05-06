@@ -390,6 +390,11 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.10.1
+- Add the `Client.retry` attribute to determine wether or not API calls should be retried after being rate limited.
+- Remove unshared synced block warning and leave a comment explaining why it was removed.
+- Create the `ConnectionThrottled` exception
+
 ### v0.10.0
 - Instead of importing the logger from the `n2y.logger` module, pass it as an argument wherever
   necessary to allow custom loggers to be used.
