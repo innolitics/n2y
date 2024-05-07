@@ -1,11 +1,12 @@
+from datetime import datetime, timedelta, timezone
 from math import isclose
-from pytest import raises
-from datetime import datetime, timezone, timedelta
 
 import pytest
-from pandoc.types import MetaMap, MetaList, MetaBool, MetaString
+from pandoc.types import MetaBool, MetaList, MetaMap, MetaString
+from pytest import raises
 
 from n2y.errors import APIResponseError
+from n2y.notion import Client
 from n2y.utils import (
     fromisoformat,
     header_id_from_text,
@@ -13,6 +14,8 @@ from n2y.utils import (
     retry_api_call,
     yaml_to_meta_value,
 )
+
+foo_token = "foo_token"
 
 
 def test_fromisoformat_datetime():
@@ -65,20 +68,22 @@ class MockResponse:
 
 
 def test_retry_api_call_no_error():
+    client = Client(foo_token)
+
     @retry_api_call
-    def tester():
+    def tester(_):
         return True
 
-    assert tester()
+    assert tester(client)
 
 
 def test_retry_api_call_multiple_errors():
     status_code = 429
-
+    client = Client(foo_token)
     call_count = 0
 
     @retry_api_call
-    def tester(time):
+    def tester(_, time):
         seconds = timedelta.total_seconds(datetime.now() - time)
         nonlocal call_count
         call_count += 1
@@ -95,15 +100,16 @@ def test_retry_api_call_multiple_errors():
             assert isclose(0.51, seconds, abs_tol=0.1)
             return True
 
-    assert tester(datetime.now())
+    assert tester(client, datetime.now())
 
 
-@pytest.mark.parametrize("status_code", [409, 429, 500, 502, 504])
-def test_retry_api_call_onc(status_code):
+@pytest.mark.parametrize("status_code", [409, 429, 500, 502, 504, 503])
+def test_retry_api_call_once(status_code):
     call_count = 0
+    client = Client(foo_token)
 
     @retry_api_call
-    def tester():
+    def tester(_):
         nonlocal call_count
         call_count += 1
 
@@ -112,19 +118,32 @@ def test_retry_api_call_onc(status_code):
         else:
             return True
 
-    assert tester()
+    assert tester(client)
     assert call_count == 2
 
 
 def test_retry_api_call_max_errors():
     status_code = 429
+    client = Client(foo_token)
 
     @retry_api_call
-    def tester():
+    def tester(_):
         raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
 
     with raises(APIResponseError):
-        tester()
+        tester(client)
+
+
+def test_retry_api_call_retry_false():
+    status_code = 429
+    client = Client(foo_token, retry=False)
+
+    @retry_api_call
+    def tester(_):
+        raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
+
+    with raises(APIResponseError):
+        tester(client)
 
 
 def test_yaml_to_meta_value_scalar():

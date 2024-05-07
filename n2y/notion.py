@@ -13,6 +13,7 @@ from n2y.emoji import Emoji
 from n2y.errors import (
     APIErrorCode,
     APIResponseError,
+    ConnectionThrottled,
     HTTPResponseError,
     ObjectNotFound,
     PluginError,
@@ -70,11 +71,13 @@ class Client:
         plugins=None,
         export_defaults=None,
         logger=log,
+        retry=True,
     ):
         self.access_token = access_token
         self.media_root = media_root
         self.media_url = media_url
         self.logger = logger
+        self.retry = retry
         self.export_defaults = export_defaults or merge_default_config({})
 
         self.base_url = "https://api.notion.com/v1/"
@@ -451,6 +454,8 @@ class Client:
                 code = None
             if code == APIErrorCode.ObjectNotFound:
                 raise ObjectNotFound(response, body["message"])
+            elif code == "rate_limited":
+                raise ConnectionThrottled(error.response)
             elif code and is_api_error_code(code):
                 raise APIResponseError(response, body["message"], code)
             raise HTTPResponseError(error.response)

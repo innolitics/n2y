@@ -390,6 +390,14 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.10.1
+- Remove the `104` error status code from the list of error status codes that initate a retry in the
+  `retry_api_call` wrapper function.
+- Add the `Client.retry` attribute to determine wether or not API calls should be retried after
+  being rate limited in the `retry_api_call` wrapper function.
+- Remove unshared synced block warning and leave a comment explaining why it was removed.
+- Create and implement the `ConnectionThrottled` exception
+
 ### v0.10.0
 - Instead of importing the logger from the `n2y.logger` module, pass it as an argument wherever
   necessary to allow custom loggers to be used.

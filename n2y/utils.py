@@ -299,23 +299,27 @@ def load_yaml(data):
 
 
 def retry_api_call(api_call):
+    """
+    Retry an API call if it fails due to a rate limit or server error. Can only be used to
+    decorate methods of the `Client` class.
+    """
     max_api_retries = 4
 
     @functools.wraps(api_call)
     def wrapper(*args, retry_count=0, **kwargs):
+        client = args[0]
         assert "retry_count" not in kwargs, "retry_count is a reserved keyword"
         try:
             return api_call(*args, **kwargs)
         except HTTPResponseError as err:
-            should_retry = err.status in [409, 429, 500, 502, 504, 503, 104]
+            should_retry = err.status in [409, 429, 500, 502, 504, 503]
             if not should_retry:
                 raise err
             elif retry_count < max_api_retries:
                 retry_count += 1
-                log = args[0].logger if args and hasattr(args[0], "logger") else logger
-                if "retry-after" in err.headers:
+                if client.retry and "retry-after" in err.headers:
                     retry_after = float(err.headers["retry-after"])
-                    log.info(
+                    client.logger.info(
                         "This API call has been rate limited and "
                         "will be retried in %f seconds. Attempt %d of %d.",
                         retry_after,
@@ -324,7 +328,7 @@ def retry_api_call(api_call):
                     )
                 else:
                     retry_after = 2
-                    log.info(
+                    client.logger.info(
                         "This API call failed and "
                         "will be retried in %f seconds. Attempt %d of %d.",
                         retry_after,

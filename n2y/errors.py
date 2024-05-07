@@ -29,6 +29,25 @@ class UseNextClass(N2YError):
     pass
 
 
+class ConnectionThrottled(N2YError):
+    """
+    Raised when the connection is throttled by the Notion API.
+    """
+
+    def __init__(self, response, message=None) -> None:
+        retry = response.headers.get("retry-after")
+        self.retry_after = float(retry) if retry else None
+        self.status = response.status_code
+        self.headers = response.headers
+        self.body = response.text
+        if message is None:
+            message = (
+                "Your connection has been throttled by the Notion API for"
+                f" {self.retry_after} seconds. Please try again later."
+            )
+        super().__init__(message)
+
+
 class RequestTimeoutError(N2YError):
     """
     Exception for requests that timeout.
@@ -52,9 +71,7 @@ class HTTPResponseError(N2YError):
 
     def __init__(self, response, message=None) -> None:
         if message is None:
-            message = (
-                f"Request to Notion API failed with status: {response.status_code}"
-            )
+            message = f"Request to Notion API failed with status: {response.status_code}"
         super().__init__(message)
         self.status = response.status_code
         self.headers = response.headers
@@ -88,9 +105,6 @@ class APIErrorCode(str, Enum):
     """Given the bearer token used, the resource does not exist.
     This error can also indicate that the resource has not been shared with owner
     of the bearer token."""
-
-    RateLimited = "rate_limited"
-    """This request exceeds the number of requests allowed. Slow down and try again."""
 
     InvalidJSON = "invalid_json"
     """The request body could not be decoded as JSON."""
