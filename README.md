@@ -390,6 +390,9 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.10.2
+- Have the `ConnectionThrottled` exception inherit the `HTTPResponseError` exception and update tests
+
 ### v0.10.1
 - Remove the `104` error status code from the list of error status codes that initate a retry in the
   `retry_api_call` wrapper function.
