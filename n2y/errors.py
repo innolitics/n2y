@@ -67,7 +67,7 @@ class APIResponseError(HTTPResponseError):
         self.code = code
 
 
-class ConnectionThrottled(APIResponseError):
+class ConnectionThrottled(HTTPResponseError):
     """
     Raised when the connection is throttled by the Notion API.
     """
@@ -75,15 +75,12 @@ class ConnectionThrottled(APIResponseError):
     def __init__(self, response, message=None) -> None:
         retry = response.headers.get("retry-after")
         self.retry_after = float(retry) if retry else None
-        self.status = response.status_code
-        self.headers = response.headers
-        self.body = response.text
         if message is None:
             message = (
                 "Your connection has been throttled by the Notion API for"
                 f" {self.retry_after} seconds. Please try again later."
             )
-        super().__init__(message)
+        super().__init__(response, message)
 
 
 class ObjectNotFound(APIResponseError):
