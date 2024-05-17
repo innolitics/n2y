@@ -5,7 +5,7 @@ import pytest
 from pandoc.types import MetaBool, MetaList, MetaMap, MetaString
 from pytest import raises
 
-from n2y.errors import APIResponseError
+from n2y.errors import APIResponseError, ConnectionThrottled
 from n2y.notion import Client
 from n2y.utils import (
     fromisoformat,
@@ -89,13 +89,13 @@ def test_retry_api_call_multiple_errors():
         call_count += 1
 
         if call_count == 1:
-            raise APIResponseError(MockResponse(0.05, status_code), "", status_code)
+            raise ConnectionThrottled(MockResponse(0.05, status_code))
         elif call_count == 2:
             assert isclose(0.05, seconds, abs_tol=0.1)
-            raise APIResponseError(MockResponse(0.23, status_code), "", status_code)
+            raise ConnectionThrottled(MockResponse(0.23, status_code))
         elif call_count == 3:
             assert isclose(0.35, seconds, abs_tol=0.1)
-            raise APIResponseError(MockResponse(0.16, status_code), "", status_code)
+            raise ConnectionThrottled(MockResponse(0.16, status_code))
         elif call_count == 4:
             assert isclose(0.51, seconds, abs_tol=0.1)
             return True
@@ -114,6 +114,8 @@ def test_retry_api_call_once(status_code):
         call_count += 1
 
         if call_count == 1:
+            if status_code == 429:
+                raise ConnectionThrottled(MockResponse(0.001, status_code))
             raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
         else:
             return True
@@ -128,9 +130,9 @@ def test_retry_api_call_max_errors():
 
     @retry_api_call
     def tester(_):
-        raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
+        raise ConnectionThrottled(MockResponse(0.001, status_code))
 
-    with raises(APIResponseError):
+    with raises(ConnectionThrottled):
         tester(client)
 
 
@@ -140,9 +142,9 @@ def test_retry_api_call_retry_false():
 
     @retry_api_call
     def tester(_):
-        raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
+        raise ConnectionThrottled(MockResponse(0.001, status_code))
 
-    with raises(APIResponseError):
+    with raises(ConnectionThrottled):
         tester(client)
 
 
