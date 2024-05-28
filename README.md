@@ -390,6 +390,13 @@ Here are some features we're planning to add in the future:
 
 ## Changelog
 
+### v0.10.3
+- Add `_get_child_blocks` to the `ExpandingLinkToPageBlock` in the `expandlinktopages.py`
+  plugin and implement it to patch the `Client.get_child_blocks` inside of the `to_pandoc` method.
+  This sets the `page` argument to the `self.page` of the `ExpandingLinkToPageBlock` instance,
+  making sure that the parent page of the blocks on the linked page is set to the parent page of
+  the `ExpandingLinkToPageBlock` and not the linked page itself.
+
 ### v0.10.2
 - Have the `ConnectionThrottled` exception inherit the `HTTPResponseError` exception and update tests
 
