@@ -267,13 +267,23 @@ class LastEditedTimePropertyValue(PropertyValue):
         return datetime.isoformat(self.last_edited_time)
 
 
-class LastEditedBy(PropertyValue):
+class LastEditedByPropertyValue(PropertyValue):
     def __init__(self, client, notion_data, page):
         super().__init__(client, notion_data, page)
         self.last_edited_by = client.wrap_notion_user(notion_data["last_edited_by"])
 
     def to_value(self, _=None, __=None):
         return self.last_edited_by.to_value()
+
+
+class UniqueIdPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
+        self.number = notion_data[self.notion_type]["number"]
+        self.prefix = notion_data[self.notion_type]["prefix"]
+
+    def to_value(self, _=None, __=None):
+        return f"{self.prefix}{self.number}"
 
 
 DEFAULT_PROPERTY_VALUES = {
@@ -296,5 +306,6 @@ DEFAULT_PROPERTY_VALUES = {
     "created_time": CreatedTimePropertyValue,
     "created_by": CreatedByPropertyValue,
     "last_edited_time": LastEditedTimePropertyValue,
-    "last_edited_by": LastEditedBy,
+    "last_edited_by": LastEditedByPropertyValue,
+    "unique_id": UniqueIdPropertyValue,
 }
