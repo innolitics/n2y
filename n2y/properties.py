@@ -153,8 +153,14 @@ class LastEditedTimeProperty(Property):
     pass
 
 
-class LastEditedBy(Property):
+class LastEditedByProperty(Property):
     pass
+
+
+class UniqueIdProperty(Property):
+    def __init__(self, client, notion_data):
+        super().__init__(client, notion_data)
+        self.prefix = notion_data[self.notion_type]["prefix"]
 
 
 DEFAULT_PROPERTIES = {
@@ -177,5 +183,6 @@ DEFAULT_PROPERTIES = {
     "created_time": CreatedTimeProperty,
     "created_by": CreatedByProperty,
     "last_edited_time": LastEditedTimeProperty,
-    "last_edited_by": LastEditedBy,
+    "last_edited_by": LastEditedByProperty,
+    "unique_id": UniqueIdProperty,
 }

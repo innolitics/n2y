@@ -396,6 +396,8 @@ Here are some features we're planning to add in the future:
   This sets the `page` argument to the `self.page` of the `ExpandingLinkToPageBlock` instance,
   making sure that the parent page of the blocks on the linked page is set to the parent page of
   the `ExpandingLinkToPageBlock` and not the linked page itself.
+- Add the `UniqueIdProperty` class to represent database properties of the "unique_id" type
+- Add the `UniqueIdPropertyValue` class to represent page property values of the "unique_id" type
 
 ### v0.10.2
 - Have the `ConnectionThrottled` exception inherit the `HTTPResponseError` exception and update tests

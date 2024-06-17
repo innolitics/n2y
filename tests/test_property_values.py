@@ -220,3 +220,15 @@ def test_rollup_date_array():
         "2022-05-12",
         "2022-05-12",
     ]
+
+
+def test_unique_id():
+    notion_data = mock_property_value("unique_id", {"number": "1234", "prefix": ""})
+    assert process_property_value(notion_data) == "1234"
+
+
+def test_unique_id_with_prefix():
+    notion_data = mock_property_value(
+        "unique_id", {"number": "1234", "prefix": "Number-"}
+    )
+    assert process_property_value(notion_data) == "Number-1234"
