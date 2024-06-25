@@ -112,6 +112,9 @@ class APIErrorCode(str, Enum):
     InvalidRequest = "invalid_request"
     """This request is not supported."""
 
+    InvalidGrant = "invalid_grant"
+    """The authorization code or refresh token is not valid."""
+
     ValidationError = "validation_error"
     """The request body does not match the schema for the expected parameters."""
 
@@ -135,6 +138,25 @@ class APIErrorCode(str, Enum):
 
     DatabaseConnectionUnavailable = "database_connection_unavailable"
     """Notion's database is unavailable or in an unqueryable state. Try again later."""
+
+    RateLimited = "rate_limited"
+    """The client has sent too many requests in a given amount of time."""
+
+    InternalServerError = "internal_server_error"
+    """An unexpected error occurred. Reach out to Notion support."""
+
+    BadGateway = "bad_gateway"
+    """Notion encountered an issue while attempting to complete this request.
+    Please try again."""
+
+    ServiceUnavailable = "service_unavailable"
+    """Notion is unavailable. Try again later."""
+
+    DatabaseConnectionUnavailable = "database_connection_unavailable"
+    """Notion's database is unavailable or in an unqueryable state. Try again later."""
+
+    GatewayTimeout = "gateway_timeout"
+    """Notion timed out while attempting to complete this request. Please try again later."""
 
 
 def is_api_error_code(code: str) -> bool:
