@@ -14,7 +14,6 @@ from n2y.errors import (
     APIErrorCode,
     APIResponseError,
     ConnectionThrottled,
-    HTTPResponseError,
     PandocASTParseError,
 )
 from n2y.logger import logger

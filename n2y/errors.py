@@ -1,6 +1,4 @@
-from dataclasses import dataclass
-from enum import Enum, Flag, StrEnum
-from itertools import chain
+from enum import StrEnum
 
 
 class N2YError(Exception):
@@ -12,23 +10,17 @@ class PandocASTParseError(N2YError):
     Raised if there was an error parsing the AST we provided to Pandoc.
     """
 
-    pass
-
 
 class PluginError(N2YError):
     """
     Raised due to various errors loading a plugin.
     """
 
-    pass
-
 
 class UseNextClass(N2YError):
     """
     Used by plugin classes to indicate that the next class should be used instead of them.
     """
-
-    pass
 
 
 class RequestTimeoutError(N2YError):
