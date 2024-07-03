@@ -1,6 +1,4 @@
-import code
-from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 
 class N2YError(Exception):
