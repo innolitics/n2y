@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 from os import makedirs, path
@@ -461,22 +462,29 @@ class Client:
             raise HTTPResponseError(error.response)
         return response.json() if not stream else response.content
 
-    def download_file(self, url, page, block_id):
+    def download_file(self, url, page, block_id=None):
         """
         Download a file from a given URL into the MEDIA_ROOT.
 
         Preserve the file extension from the URL, but use the
         id of the block followed by an md5 hash.
         """
+        # block_id will be None if the file is not attached to a block
+        # (as is the case for page properties) or one would rather tie
+        # the file name to it's content than it's location in Notion.
+
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
         content = self._get_url(url, stream=True)
         return self.save_file(content, page, extension, block_id)
 
-    def save_file(self, content, page, extension, block_id):
-        block_id_chars = strip_hyphens(block_id)
+    def save_file(self, content, page, extension, block_id=None):
+        if block_id is None:
+            id_chars = hashlib.md5(content).hexdigest()
+        else:
+            id_chars = strip_hyphens(block_id)
         page_title = sanitize_filename(page.title.to_plain_text())
-        relative_filepath = f"{page_title}-{block_id_chars[:11]}{extension}"
+        relative_filepath = f"{page_title}-{id_chars[:11]}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
         with open(full_filepath, "wb") as temp_file:
