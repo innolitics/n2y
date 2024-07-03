@@ -18,7 +18,6 @@ from n2y.errors import (
     ObjectNotFound,
     PluginError,
     UseNextClass,
-    is_api_error_code,
 )
 from n2y.file import File
 from n2y.logger import logger as log
@@ -207,7 +206,7 @@ class Client:
             # the currently favored page class. Otherwise, plugins set for one export
             # will be used in another or a plugin will be set but not used.
             # As we currently use the `jinjarenderpage` plugin for all pages,
-            # this check is most likely uneccessary at this point.
+            # this check is most likely unnecessary at this point.
             self.pages_cache[notion_data["id"]],
             "page",
         ):
@@ -454,9 +453,9 @@ class Client:
                 code = None
             if code == APIErrorCode.ObjectNotFound:
                 raise ObjectNotFound(response, body["message"])
-            elif code == "rate_limited":
+            elif code == APIErrorCode.RateLimited:
                 raise ConnectionThrottled(error.response)
-            elif code and is_api_error_code(code):
+            elif code and code in APIErrorCode:
                 raise APIResponseError(response, body["message"], code)
             raise HTTPResponseError(error.response)
         return response.json() if not stream else response.content

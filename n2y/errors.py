@@ -1,4 +1,6 @@
-from enum import Enum
+from dataclasses import dataclass
+from enum import Enum, Flag, StrEnum
+from itertools import chain
 
 
 class N2YError(Exception):
@@ -67,91 +69,91 @@ class APIResponseError(HTTPResponseError):
         self.code = code
 
 
-class ConnectionThrottled(HTTPResponseError):
+class ConnectionThrottled(APIResponseError):
     """
     Raised when the connection is throttled by the Notion API.
     """
 
     def __init__(self, response, message=None) -> None:
-        retry = response.headers.get("retry-after")
-        self.retry_after = float(retry) if retry else None
+        self.retry_after = (
+            float(retry) if (retry := response.headers.get("retry-after")) else 0
+        )
         if message is None:
             message = (
                 "Your connection has been throttled by the Notion API for"
                 f" {self.retry_after} seconds. Please try again later."
             )
-        super().__init__(response, message)
+        super().__init__(response, message, APIErrorCode.RateLimited)
 
 
 class ObjectNotFound(APIResponseError):
     def __init__(self, response, message) -> None:
-        code = APIErrorCode.ObjectNotFound
-        super().__init__(response, f"{message} [{code}]", code)
-        self.code = code
+        super().__init__(response, message, APIErrorCode.ObjectNotFound)
 
 
-class APIErrorCode(str, Enum):
-    Unauthorized = "unauthorized"
-    """The bearer token is not valid."""
+class APIErrorCode(StrEnum):
+    def __new__(cls, code, is_retryable):
+        obj = str.__new__(cls, code)
+        obj._value_ = str(code)
+        obj.is_retryable = is_retryable
+        cls.RetryableCodes = [i.value for i in cls if i.is_retryable is True]
+        cls.NonretryableCodes = [i.value for i in cls if i.is_retryable is True]
+        return obj
 
-    RestrictedResource = "restricted_resource"
-    """Given the bearer token used, the client doesn't have permission to
-    perform this operation."""
+    BadGateway = "bad_gateway", True
+    """Notion encountered an issue while attempting to complete this request.
+    Please try again."""
 
-    ObjectNotFound = "object_not_found"
+    ConflictError = "conflict_error", True
+    """The transaction could not be completed, potentially due to a data collision.
+    Make sure the parameters are up to date and try again."""
+
+    DatabaseConnectionUnavailable = "database_connection_unavailable", True
+    """Notion's database is unavailable or in an unqueryable state. Try again later."""
+
+    GatewayTimeout = "gateway_timeout", True
+    """Notion timed out while attempting to complete this request.
+    Please try again later."""
+
+    InternalServerError = "internal_server_error", True
+    """An unexpected error occurred. Reach out to Notion support."""
+
+    InvalidGrant = "invalid_grant", False
+    """The authorization code or refresh token is not valid."""
+
+    InvalidJSON = "invalid_json", False
+    """The request body could not be decoded as JSON."""
+
+    InvalidRequest = "invalid_request", False
+    """This request is not supported."""
+
+    InvalidRequestURL = "invalid_request_url", False
+    """The request URL is not valid."""
+
+    MissingVersion = "missing_version", False
+    """The request is missing the required Notion-Version header"""
+
+    ObjectNotFound = "object_not_found", False
     """Given the bearer token used, the resource does not exist.
     This error can also indicate that the resource has not been shared with owner
     of the bearer token."""
 
-    InvalidJSON = "invalid_json"
-    """The request body could not be decoded as JSON."""
-
-    InvalidRequestURL = "invalid_request_url"
-    """The request URL is not valid."""
-
-    InvalidRequest = "invalid_request"
-    """This request is not supported."""
-
-    InvalidGrant = "invalid_grant"
-    """The authorization code or refresh token is not valid."""
-
-    ValidationError = "validation_error"
-    """The request body does not match the schema for the expected parameters."""
-
-    ConflictError = "conflict_error"
-    """The transaction could not be completed, potentially due to a data collision.
-    Make sure the parameters are up to date and try again."""
-
-    InternalServerError = "internal_server_error"
-    """An unexpected error occurred. Reach out to Notion support."""
-
-    ServiceUnavailable = "service_unavailable"
-    """Notion is unavailable. Try again later.
-    This can occur when the time to respond to a request takes longer than 60 seconds,
-    the maximum request timeout."""
-
-    GatewayTimeout = "gateway_timeout"
-    """Notion timed out while attempting to complete this request. Please try again later."""
-
-    MissingVersion = "missing_version"
-    """The request is missing the required Notion-Version header"""
-
-    DatabaseConnectionUnavailable = "database_connection_unavailable"
-    """Notion's database is unavailable or in an unqueryable state. Try again later."""
-
-    RateLimited = "rate_limited"
+    RateLimited = "rate_limited", True
     """The client has sent too many requests in a given amount of time."""
 
-    BadGateway = "bad_gateway"
-    """Notion encountered an issue while attempting to complete this request.
-    Please try again."""
+    RestrictedResource = "restricted_resource", False
+    """Given the bearer token used, the client doesn't have permission to
+    perform this operation."""
 
+    ServiceUnavailable = "service_unavailable", True
+    """Notion is unavailable. Try again later. This can occur when the time to respond
+    to a request takes longer than 60 seconds, the maximum request timeout."""
 
-def is_api_error_code(code: str) -> bool:
-    """Check if given code belongs to the list of valid API error codes."""
-    if isinstance(code, str):
-        return code in (error_code.value for error_code in APIErrorCode)
-    return False
+    Unauthorized = "unauthorized", False
+    """The bearer token is not valid."""
+
+    ValidationError = "validation_error", False
+    """The request body does not match the schema for the expected parameters."""
 
 
 # Some of this code was taken from https://github.com/ramnes/notion-sdk-py

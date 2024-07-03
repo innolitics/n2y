@@ -10,7 +10,13 @@ import yaml
 from pandoc.types import Meta, MetaBool, MetaList, MetaMap, MetaString, Space, Str
 from plumbum import ProcessExecutionError
 
-from n2y.errors import HTTPResponseError, PandocASTParseError
+from n2y.errors import (
+    APIErrorCode,
+    APIResponseError,
+    ConnectionThrottled,
+    HTTPResponseError,
+    PandocASTParseError,
+)
 from n2y.logger import logger
 
 # see https://pandoc.org/MANUAL.html#exit-codes
@@ -311,14 +317,13 @@ def retry_api_call(api_call):
         assert "retry_count" not in kwargs, "retry_count is a reserved keyword"
         try:
             return api_call(*args, **kwargs)
-        except HTTPResponseError as err:
-            should_retry = err.status in [409, 429, 500, 502, 504, 503]
-            if not should_retry:
+        except APIResponseError as err:
+            if err.code not in APIErrorCode.RetryableCodes:
                 raise err
             elif retry_count < max_api_retries:
                 retry_count += 1
-                if client.retry and "retry-after" in err.headers:
-                    retry_after = float(err.headers["retry-after"])
+                if client.retry and isinstance(err, ConnectionThrottled):
+                    retry_after = err.retry_after
                     client.logger.info(
                         "This API call has been rate limited and "
                         "will be retried in %f seconds. Attempt %d of %d.",

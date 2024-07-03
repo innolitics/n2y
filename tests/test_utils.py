@@ -5,7 +5,7 @@ import pytest
 from pandoc.types import MetaBool, MetaList, MetaMap, MetaString
 from pytest import raises
 
-from n2y.errors import APIResponseError, ConnectionThrottled
+from n2y.errors import APIErrorCode, APIResponseError, ConnectionThrottled
 from n2y.notion import Client
 from n2y.utils import (
     fromisoformat,
@@ -16,6 +16,7 @@ from n2y.utils import (
 )
 
 foo_token = "foo_token"
+rate_limited_status_code = 429
 
 
 def test_fromisoformat_datetime():
@@ -61,10 +62,10 @@ def test_page_id_from_share_link():
 
 
 class MockResponse:
-    def __init__(self, time, code):
+    def __init__(self, time, status_code):
         self.headers = {"retry-after": time}
         self.text = ""
-        self.status_code = code
+        self.status_code = status_code
 
 
 def test_retry_api_call_no_error():
@@ -78,7 +79,6 @@ def test_retry_api_call_no_error():
 
 
 def test_retry_api_call_multiple_errors():
-    status_code = 429
     client = Client(foo_token)
     call_count = 0
 
@@ -89,13 +89,13 @@ def test_retry_api_call_multiple_errors():
         call_count += 1
 
         if call_count == 1:
-            raise ConnectionThrottled(MockResponse(0.05, status_code))
+            raise ConnectionThrottled(MockResponse(0.05, rate_limited_status_code))
         elif call_count == 2:
             assert isclose(0.05, seconds, abs_tol=0.1)
-            raise ConnectionThrottled(MockResponse(0.23, status_code))
+            raise ConnectionThrottled(MockResponse(0.23, rate_limited_status_code))
         elif call_count == 3:
             assert isclose(0.35, seconds, abs_tol=0.1)
-            raise ConnectionThrottled(MockResponse(0.16, status_code))
+            raise ConnectionThrottled(MockResponse(0.16, rate_limited_status_code))
         elif call_count == 4:
             assert isclose(0.51, seconds, abs_tol=0.1)
             return True
@@ -103,8 +103,8 @@ def test_retry_api_call_multiple_errors():
     assert tester(client, datetime.now())
 
 
-@pytest.mark.parametrize("status_code", [409, 429, 500, 502, 504, 503])
-def test_retry_api_call_once(status_code):
+@pytest.mark.parametrize("code", APIErrorCode.RetryableCodes)
+def test_retry_api_call_once(code):
     call_count = 0
     client = Client(foo_token)
 
@@ -114,9 +114,9 @@ def test_retry_api_call_once(status_code):
         call_count += 1
 
         if call_count == 1:
-            if status_code == 429:
-                raise ConnectionThrottled(MockResponse(0.001, status_code))
-            raise APIResponseError(MockResponse(0.001, status_code), "", status_code)
+            if code == APIErrorCode.RateLimited:
+                raise ConnectionThrottled(MockResponse(0.001, rate_limited_status_code))
+            raise APIResponseError(MockResponse(0.001, 500), "", code)
         else:
             return True
 
@@ -125,24 +125,22 @@ def test_retry_api_call_once(status_code):
 
 
 def test_retry_api_call_max_errors():
-    status_code = 429
     client = Client(foo_token)
 
     @retry_api_call
     def tester(_):
-        raise ConnectionThrottled(MockResponse(0.001, status_code))
+        raise ConnectionThrottled(MockResponse(0.001, rate_limited_status_code))
 
     with raises(ConnectionThrottled):
         tester(client)
 
 
 def test_retry_api_call_retry_false():
-    status_code = 429
     client = Client(foo_token, retry=False)
 
     @retry_api_call
     def tester(_):
-        raise ConnectionThrottled(MockResponse(0.001, status_code))
+        raise ConnectionThrottled(MockResponse(0.001, rate_limited_status_code))
 
     with raises(ConnectionThrottled):
         tester(client)
