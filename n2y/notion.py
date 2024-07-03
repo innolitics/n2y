@@ -469,6 +469,10 @@ class Client:
         Preserve the file extension from the URL, but use the
         id of the block followed by an md5 hash.
         """
+        # block_id will be None if the file is not attached to a block
+        # (as is the case for page properties) or one would rather tie
+        # the file name to it's content than it's location in Notion.
+
         url_path = path.basename(urlparse(url).path)
         _, extension = path.splitext(url_path)
         content = self._get_url(url, stream=True)
