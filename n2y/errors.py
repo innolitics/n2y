@@ -84,9 +84,9 @@ class ObjectNotFound(APIResponseError):
 
 
 class APIErrorCode(StrEnum):
-    def __new__(cls, code, is_retryable):
+    def __new__(cls, code: str, is_retryable: bool):
         obj = str.__new__(cls, code)
-        obj._value_ = str(code)
+        obj._value_ = code
         obj.is_retryable = is_retryable
         cls.RetryableCodes = [i.value for i in cls if i.is_retryable is True]
         cls.NonretryableCodes = [i.value for i in cls if i.is_retryable is True]
