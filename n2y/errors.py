@@ -1,4 +1,6 @@
-from enum import StrEnum
+import code
+from dataclasses import dataclass
+from enum import Enum, StrEnum
 
 
 class N2YError(Exception):
@@ -84,12 +86,14 @@ class ObjectNotFound(APIResponseError):
 
 
 class APIErrorCode(StrEnum):
+    is_retryable: bool
+
     def __new__(cls, code: str, is_retryable: bool):
         obj = str.__new__(cls, code)
         obj._value_ = code
         obj.is_retryable = is_retryable
         cls.RetryableCodes = [i.value for i in cls if i.is_retryable is True]
-        cls.NonretryableCodes = [i.value for i in cls if i.is_retryable is True]
+        cls.NonretryableCodes = [i.value for i in cls if i.is_retryable is False]
         return obj
 
     BadGateway = "bad_gateway", True
