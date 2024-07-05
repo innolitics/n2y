@@ -90,8 +90,8 @@ class APIErrorCode(StrEnum):
         obj = str.__new__(cls, code)
         obj._value_ = code
         obj.is_retryable = is_retryable
-        cls.RetryableCodes = [i.value for i in cls if i.is_retryable is True]
-        cls.NonretryableCodes = [i.value for i in cls if i.is_retryable is False]
+        cls.RetryableCodes = [ec.value for ec in cls if ec.is_retryable]
+        cls.NonretryableCodes = [ec.value for ec in cls if not ec.is_retryable]
         return obj
 
     BadGateway = "bad_gateway", True
