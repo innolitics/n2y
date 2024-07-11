@@ -1,4 +1,13 @@
-from enum import StrEnum
+try:
+    from enum import StrEnum
+except ImportError:
+    # StrEnum introduced in 3.11
+    # StrEnum defined per recommendation here:
+    #   https://docs.python.org/3.10/library/enum.html#others
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        pass
 
 
 class N2YError(Exception):
