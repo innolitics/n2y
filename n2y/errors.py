@@ -1,3 +1,5 @@
+from enum import EnumMeta
+
 try:
     from enum import StrEnum
 except ImportError:
@@ -92,15 +94,28 @@ class ObjectNotFound(APIResponseError):
         super().__init__(response, message, APIErrorCode.ObjectNotFound)
 
 
-class APIErrorCode(StrEnum):
+class MetaEnum(EnumMeta):
     is_retryable: bool
+    values: list[str] = []
 
+    @property
+    def RetryableCodes(self):
+        return [ec.value for ec in self if ec.is_retryable]
+
+    @property
+    def NonRetryableCodes(self):
+        return [ec.value for ec in self if not ec.is_retryable]
+
+    def __contains__(cls, key):
+        return key in cls.values
+
+
+class APIErrorCode(StrEnum, metaclass=MetaEnum):
     def __new__(cls, code: str, is_retryable: bool):
         obj = str.__new__(cls, code)
+        cls.values.append(code)
         obj._value_ = code
         obj.is_retryable = is_retryable
-        cls.RetryableCodes = [ec.value for ec in cls if ec.is_retryable]
-        cls.NonretryableCodes = [ec.value for ec in cls if not ec.is_retryable]
         return obj
 
     BadGateway = "bad_gateway", True
