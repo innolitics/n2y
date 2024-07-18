@@ -109,6 +109,18 @@ def mock_block(block_type, content, has_children=False, **kwargs):
     }
 
 
+def mock_heading_block(text_blocks_descriptors, level: int = 1, **kwargs) -> dict:
+    if level not in (1, 2, 3):
+        raise ValueError(f"Invalid heading level: {level}")
+    return mock_block(
+        f"heading_{level}",
+        {
+            "color": "default",
+            "rich_text": mock_rich_text_array(text_blocks_descriptors),
+        }
+    )
+
+
 def mock_paragraph_block(text_blocks_descriptors, **kwargs):
     return mock_block(
         "paragraph",
@@ -133,7 +145,9 @@ def mock_property_value(property_value_type, content):
 
 
 def mock_rich_text_property_value(text_blocks_descriptors):
-    return mock_property_value("rich_text", mock_rich_text_array(text_blocks_descriptors))
+    return mock_property_value(
+        "rich_text", mock_rich_text_array(text_blocks_descriptors)
+    )
 
 
 def mock_formula_property_value(formula_type, content):
@@ -234,7 +248,9 @@ def mock_database(title="Mock Database", extra_properties=None):
     }
 
 
-def mock_comment(text_blocks_descriptors: list[list[str | list[str]]], **kwargs) -> dict:
+def mock_comment(
+    text_blocks_descriptors: list[list[str | list[str]]], **kwargs
+) -> dict:
     date = datetime.now(tz=timezone.utc).isoformat()
     return {
         "id": mock_id(),

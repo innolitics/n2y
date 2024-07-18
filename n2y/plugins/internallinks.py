@@ -10,7 +10,7 @@ from n2y.utils import header_id_from_text
 
 
 def get_notion_id_from_href(href: str) -> typing.Optional[str]:
-    """Extract the ID of a target block from a href"""
+    """Extract the ID of a target block from a href fragment"""
     target_id = urllib.parse.urlparse(href, allow_fragments=True).fragment
     if target_id is None:
         return None
@@ -22,7 +22,7 @@ def get_notion_id_from_href(href: str) -> typing.Optional[str]:
         return None
 
 
-def is_internal_link(href: str, notion_id: str) -> bool:
+def is_internal_link(href: typing.Optional[str], notion_id: str) -> bool:
     """Is the href fragment a link to a block on the same page?"""
     return href is not None and href.startswith(f"/{notion_id.replace('-', '')}")
 
