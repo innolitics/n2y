@@ -28,11 +28,10 @@ def is_internal_link(href: typing.Optional[str], notion_id: str) -> bool:
 
 
 def find_target_block(page: Page, target_id: str) -> Block:
-    try:
-        page_block: ChildPageBlock = page.block
-    except AttributeError:
-        logger.error(f"page block")
-        raise
+    page_block: ChildPageBlock = page.block
+    if page_block is None:
+        raise ValueError("Page.block is None")
+
     try:
         return next(
             child for child in page_block.children if child.notion_id == target_id
@@ -44,7 +43,7 @@ def find_target_block(page: Page, target_id: str) -> Block:
 
 class NotionInternalLink(TextRichText):
     """ This plugin fixes internal links to headers on the same page.
-    
+
     Instead of leaving the link to point to the original notion source page,
     it substitutes the link to instead be the ID of the header.
     """

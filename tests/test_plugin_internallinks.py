@@ -26,11 +26,11 @@ def test_get_notion_id_from_href_simple():
 
 
 def test_get_notion_id_from_href_missing_fragment():
-    assert get_notion_id_from_href(f"/1234") is None
+    assert get_notion_id_from_href("/1234") is None
 
 
 def test_get_notion_id_from_href_fragment_is_not_uid():
-    assert get_notion_id_from_href(f"/1234#foo") is None
+    assert get_notion_id_from_href("/1234#foo") is None
 
 
 def test_is_internal_link():
