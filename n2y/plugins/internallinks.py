@@ -43,6 +43,11 @@ def find_target_block(page: Page, target_id: str) -> Block:
 
 
 class NotionInternalLink(TextRichText):
+    """ This plugin fixes internal links to headers on the same page.
+    
+    Instead of leaving the link to point to the original notion source page,
+    it substitutes the link to instead be the ID of the header.
+    """
 
     def to_pandoc(self):
         if not is_internal_link(self.href, self.block.page.notion_id):
