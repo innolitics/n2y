@@ -398,6 +398,9 @@ Here are some features we're planning to add in the future:
   the `ExpandingLinkToPageBlock` and not the linked page itself.
 - Add the `UniqueIdProperty` class to represent database properties of the "unique_id" type
 - Add the `UniqueIdPropertyValue` class to represent page property values of the "unique_id" type
+- Modify the `APIErrorCode` class so that the `in` keyword can be used on it and to have two new
+  attributes that store error codes where the HTTP request should be retried and where the HTTP
+  request should not be retried.
 - Add `internallinks.py` plugin that adds a resolver for internal links
 
 ### v0.10.2
