@@ -2,10 +2,9 @@ import typing
 import uuid
 import urllib.parse
 
-from n2y.blocks import Block, ChildPageBlock
+from n2y.blocks import Block
 from n2y.errors import UseNextClass
 from n2y.logger import logger
-from n2y.page import Page
 from n2y.rich_text import TextRichText
 from n2y.utils import header_id_from_text
 
