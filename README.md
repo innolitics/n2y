@@ -398,6 +398,7 @@ Here are some features we're planning to add in the future:
   the `ExpandingLinkToPageBlock` and not the linked page itself.
 - Add the `UniqueIdProperty` class to represent database properties of the "unique_id" type
 - Add the `UniqueIdPropertyValue` class to represent page property values of the "unique_id" type
+- Add `internallinks.py` plugin that adds a resolver for internal links
 
 ### v0.10.2
 - Have the `ConnectionThrottled` exception inherit the `HTTPResponseError` exception and update tests
