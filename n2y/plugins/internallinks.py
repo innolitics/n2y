@@ -3,6 +3,7 @@ import uuid
 import urllib.parse
 
 from n2y.blocks import Block, ChildPageBlock
+from n2y.errors import UseNextClass
 from n2y.logger import logger
 from n2y.page import Page
 from n2y.rich_text import TextRichText
@@ -42,16 +43,20 @@ def find_target_block(page: Page, target_id: str) -> Block:
 
 
 class NotionInternalLink(TextRichText):
-    """ This plugin fixes internal links to headers on the same page.
+    """This plugin fixes internal links to headers on the same page.
 
     Instead of leaving the link to point to the original notion source page,
     it substitutes the link to instead be the ID of the header.
     """
 
-    def to_pandoc(self):
-        if not is_internal_link(self.href, self.block.page.notion_id):
-            return super().to_pandoc()
+    def __init__(self, client, notion_data, block=None):
+        super().__init__(client, notion_data, block)
+        if block is None or not is_internal_link(
+            self.href, self.block.page.notion_id
+        ):
+            raise UseNextClass
 
+    def to_pandoc(self):
         target_id = get_notion_id_from_href(self.href)
         if target_id is None:
             logger.warning(
