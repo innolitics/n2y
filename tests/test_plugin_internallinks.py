@@ -96,8 +96,8 @@ def mock_page_with_link_to_header(
 
 def test_find_target_block():
     page, heading, paragraph = mock_page_with_link_to_header()
-    assert find_target_block(page, target_id=heading.notion_id) is heading
-    assert find_target_block(page, target_id=paragraph.notion_id) is paragraph
+    assert find_target_block(page.block, target_id=heading.notion_id) is heading
+    assert find_target_block(page.block, target_id=paragraph.notion_id) is paragraph
 
 
 def test_internal_link_to_pandoc():

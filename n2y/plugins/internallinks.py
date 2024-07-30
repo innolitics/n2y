@@ -28,18 +28,32 @@ def is_internal_link(href: typing.Optional[str], notion_id: str) -> bool:
     return href is not None and href.startswith(f"/{notion_id.replace('-', '')}")
 
 
-def find_target_block(page: Page, target_id: str) -> Block:
-    page_block: ChildPageBlock = page.block
-    if page_block is None:
-        raise ValueError("Page.block is None")
+def find_target_block(block: Block, target_id: str) -> Block:
+    """Recursively search for a block with a given ID"""
+    if block.notion_id == target_id:
+        return block
+    if block.children is None:
+        return None
+    for child in block.children:
+        if isinstance(child, Block):
+            target = find_target_block(child, target_id)
+            if target is not None:
+                return target
+    return None
 
-    try:
-        return next(
-            child for child in page_block.children if child.notion_id == target_id
-        )
-    except StopIteration:
-        logger.error(f"Page missing block with target id '{target_id}'")
-        raise
+
+# def find_target_block(page: Page, target_id: str) -> Block:
+#     page_block: ChildPageBlock = page.block
+#     if page_block is None:
+#         raise ValueError("Page.block is None")
+
+#     try:
+#         return next(
+#             child for child in page_block.children if child.notion_id == target_id
+#         )
+#     except StopIteration:
+#         logger.error(f"Page missing block with target id '{target_id}'")
+#         raise
 
 
 class NotionInternalLink(TextRichText):
@@ -64,7 +78,11 @@ class NotionInternalLink(TextRichText):
             )
             return super().to_pandoc()
 
-        target_block = find_target_block(self.block.page, target_id)
+        target_block = find_target_block(self.block.page.block, target_id)
+        if target_block is None:
+            logger.error(f"Internal link target block not found: {target_id}")
+            # Fallback to default behavior for TextRichText conversion
+            return super().to_pandoc()
         header_id = header_id_from_text(target_block.rich_text.to_plain_text())
         self.href = f"#{header_id}"
         return super().to_pandoc()
