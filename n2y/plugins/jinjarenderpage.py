@@ -43,21 +43,19 @@ from n2y.rich_text import MentionRichText
 from n2y.utils import available_from_list, pandoc_ast_to_markdown
 
 
-def join_to(foreign_keys, table, primary_key="notion_id"):
-    """
-    Given a set of ids for an object, and a list of the objects these ids refer
-    to, select out the objects by joining using the specified primary key
-    (which defaults to 'id').
-    """
-    joined = []
-    for foreign_key in foreign_keys:
-        selected_row = None
-        for row in table:
-            if row[primary_key] == foreign_key:
-                selected_row = row
-                break
-        joined.append(selected_row)
-    return joined
+# Custom Jinja Tests
+def regex_search(value, pattern):
+    return bool(re.search(pattern, value))
+
+
+# Custom Jinja Filters
+def _canonicalize(markdown):
+    markdown = markdown.replace("\u201d", '"').replace("\u201c", '"')
+    markdown = markdown.replace("\u2019", "'").replace("\u2018", "'")
+    markdown = markdown.replace("\u2013", "--").replace("\u2014", "---")
+    markdown = markdown.replace("\u2026", "...")
+    markdown = markdown.replace("\u00a0", " ")
+    return markdown
 
 
 def list_matches(string, text):
@@ -111,15 +109,24 @@ def fuzzy_find_in(term_list, text, key="Name", by_length=True, reverse=True):
     return found
 
 
-def _canonicalize(markdown):
-    markdown = markdown.replace("\u201d", '"').replace("\u201c", '"')
-    markdown = markdown.replace("\u2019", "'").replace("\u2018", "'")
-    markdown = markdown.replace("\u2013", "--").replace("\u2014", "---")
-    markdown = markdown.replace("\u2026", "...")
-    markdown = markdown.replace("\u00a0", " ")
-    return markdown
+def join_to(foreign_keys, table, primary_key="notion_id"):
+    """
+    Given a set of ids for an object, and a list of the objects these ids refer
+    to, select out the objects by joining using the specified primary key
+    (which defaults to 'id').
+    """
+    joined = []
+    for foreign_key in foreign_keys:
+        selected_row = None
+        for row in table:
+            if row[primary_key] == foreign_key:
+                selected_row = row
+                break
+        joined.append(selected_row)
+    return joined
 
 
+# Jinja Environment Management
 def _create_jinja_environment():
     environment = jinja2.Environment(
         cache_size=0,
@@ -128,10 +135,12 @@ def _create_jinja_environment():
     )
     environment.globals["first_pass_output"] = FirstPassOutput()
     environment.filters["fuzzy_find_in"] = fuzzy_find_in
+    environment.tests["search"] = regex_search
     environment.filters["join_to"] = join_to
     return environment
 
 
+# Jinja Rendering
 def render_from_string(source, context=None, environment=None):
     if environment is None:
         environment: jinja2.Environment = _create_jinja_environment()
@@ -146,6 +155,7 @@ def render_from_string(source, context=None, environment=None):
     return output
 
 
+# Util Classes
 class JinjaExceptionInfo:
     err: Exception
     obj: object
@@ -245,6 +255,7 @@ class FirstPassOutput:
         return self._source
 
 
+# Plugin Classes
 class JinjaRenderPage(Page):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
@@ -329,6 +340,16 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
                 url_property=export_defaults["url_property"],
             )
 
+    def _prepare_jinja_environment(self):
+        self.jinja_environment.tests = {
+            k: self._debug_assist(v, "test", k)
+            for k, v in self.jinja_environment.tests.items()
+        }
+        self.jinja_environment.filters = {
+            k: self._debug_assist(v, "filter", k)
+            for k, v in self.jinja_environment.filters.items()
+        }
+
     def _specify_err_msg(self, err: Exception):
         block_ref: str = f"See the Notion code block here: {self.notion_url}."
         line_num: str = traceback.format_exc().split('>", line ')[1][0]
@@ -401,14 +422,7 @@ class JinjaFencedCodeBlock(FencedCodeBlock):
         return [Para([Code(("", ["markdown"], []), self.error)])]
 
     def _render_text(self):
-        self.jinja_environment.filters = {
-            k: self._debug_assist(v, "filter", k)
-            for k, v in self.jinja_environment.filters.items()
-        }
-        self.jinja_environment.tests = {
-            k: self._debug_assist(v, "test", k)
-            for k, v in self.jinja_environment.tests.items()
-        }
+        self._prepare_jinja_environment()
         if not getattr(self, "context", None):
             self.context = {
                 "databases": self.databases,
