@@ -43,12 +43,10 @@ from n2y.rich_text import MentionRichText
 from n2y.utils import available_from_list, pandoc_ast_to_markdown
 
 
-# Custom Jinja Tests
 def regex_search(value, pattern):
     return bool(re.search(pattern, value))
 
 
-# Custom Jinja Filters
 def _canonicalize(markdown):
     markdown = markdown.replace("\u201d", '"').replace("\u201c", '"')
     markdown = markdown.replace("\u2019", "'").replace("\u2018", "'")
@@ -126,7 +124,6 @@ def join_to(foreign_keys, table, primary_key="notion_id"):
     return joined
 
 
-# Jinja Environment Management
 def _create_jinja_environment():
     environment = jinja2.Environment(
         cache_size=0,
@@ -140,7 +137,6 @@ def _create_jinja_environment():
     return environment
 
 
-# Jinja Rendering
 def render_from_string(source, context=None, environment=None):
     if environment is None:
         environment: jinja2.Environment = _create_jinja_environment()
@@ -155,7 +151,6 @@ def render_from_string(source, context=None, environment=None):
     return output
 
 
-# Util Classes
 class JinjaExceptionInfo:
     err: Exception
     obj: object
@@ -255,7 +250,6 @@ class FirstPassOutput:
         return self._source
 
 
-# Plugin Classes
 class JinjaRenderPage(Page):
     def __init__(self, client, notion_data):
         super().__init__(client, notion_data)
