@@ -267,7 +267,7 @@ class TableOfContentsBlock(Block):
     def generate_item_block(self, section: list[Header]):
         header = section.pop(0)
         header_text = pandoc_write_or_log_errors(
-            header[2], "gfm", [], self.client.logger
+            header[2], "plain", [], self.client.logger
         )[:-1]
         rich_text = mock_rich_text_array([(header_text, None, f"#{header[1][0]}")])
         type_data = {
