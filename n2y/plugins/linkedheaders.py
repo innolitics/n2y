@@ -1,6 +1,7 @@
-from n2y.blocks import HeadingBlock
-
 from pandoc.types import Header, Link
+
+from n2y.blocks import HeadingBlock
+from n2y.utils import header_id_from_text
 
 
 class LinkedHeadingBlock(HeadingBlock):
@@ -9,8 +10,9 @@ class LinkedHeadingBlock(HeadingBlock):
     """
 
     def to_pandoc(self):
+        section_id = header_id_from_text(self.rich_text.to_plain_text())
         link = [Link(("", [], []), self.rich_text.to_pandoc(), (self.notion_url, ""))]
-        return Header(self.level, ("", [], []), link)
+        return Header(self.level, (section_id, [], []), link)
 
 
 class LinkedHeadingThreeBlock(LinkedHeadingBlock):

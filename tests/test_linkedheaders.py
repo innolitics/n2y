@@ -2,19 +2,22 @@
 These tests verify how the n2y block classes convert notion data into Pandoc
 abstract syntax tree (AST) objects, and then into markdown.
 """
-from pandoc.types import Str, Space, Header, Link
 
-from n2y.utils import strip_hyphens
+from pandoc.types import Header, Link, Space, Str
+
 from n2y.notion_mocks import mock_block, mock_rich_text
+from n2y.utils import header_id_from_text, strip_hyphens
 from tests.test_blocks import process_block
 
 linked_headers = ["n2y.plugins.linkedheaders"]
 
 
 def mock_header_ast(level, suffix, notion_block):
+    rich_text = notion_block[notion_block["type"]]["rich_text"][0]["plain_text"]
+    section_id = header_id_from_text(rich_text)
     return Header(
         level,
-        ("", [], []),
+        (section_id, [], []),
         [
             Link(
                 ("", [], []),
