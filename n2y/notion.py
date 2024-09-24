@@ -476,7 +476,7 @@ class Client:
     def save_file(self, content, page, extension, block_id):
         id_chars = strip_hyphens(block_id)
         page_title = sanitize_filename(page.title.to_plain_text())
-        relative_filepath = f"{page_title}-{id_chars[:11]}{extension}"
+        relative_filepath = f"{page_title}-{id_chars}{extension}"
         full_filepath = path.join(self.media_root, relative_filepath)
         makedirs(self.media_root, exist_ok=True)
         with open(full_filepath, "wb") as temp_file:

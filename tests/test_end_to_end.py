@@ -273,10 +273,16 @@ def test_all_blocks_page_to_markdown(tmpdir):
     # TODO: Add assertions about audio blocks and video blocks
 
     # the word "caption" is bolded
-    assert "![Image **caption**](media/All_Blocks_Test_Page-5f1b0813453.jpeg)" in lines
+    assert (
+        "![Image"
+        " **caption**](media/All_Blocks_Test_Page-5f1b0813453c4e56969ba81443163dd3.jpeg)"
+        in lines
+    )
 
     # from a file block in the Notion page
-    assert os.path.exists(tmpdir / "media" / "All_Blocks_Test_Page-5f1b0813453.jpeg")
+    assert os.path.exists(
+        tmpdir / "media" / "All_Blocks_Test_Page-5f1b0813453c4e56969ba81443163dd3.jpeg"
+    )
 
 
 def test_page_in_database_to_markdown(tmpdir):
