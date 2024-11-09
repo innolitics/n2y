@@ -7,13 +7,13 @@ from n2y.blocks import LinkToPageBlock
 from n2y.database import Database
 from n2y.errors import UseNextClass
 from n2y.logger import HANDLER
-from n2y.logger import logger as log
 from n2y.mentions import PageMention
 from n2y.notion import Client
 from n2y.page import Page
 from n2y.utils import id_from_share_link
 
 plugin_key = "audit"
+log = logging.getLogger(__name__)
 
 
 class ReportingPageMention(PageMention):

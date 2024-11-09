@@ -1,4 +1,5 @@
 import copy
+import logging
 
 import yaml
 
@@ -10,8 +11,9 @@ from n2y.config import (
     merge_config,
     valid_notion_id,
 )
-from n2y.logger import logger
 from n2y.notion_mocks import mock_id
+
+logger = logging.getLogger(__name__)
 
 
 def mock_config_item(node_type):

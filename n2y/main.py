@@ -8,9 +8,10 @@ import yaml
 
 from n2y.config import load_config, merge_default_config
 from n2y.export import database_to_files, database_to_yaml, export_page, write_document
-from n2y.logger import logger as log
 from n2y.notion import Client
 from n2y.utils import share_link_from_id
+
+log = logging.getLogger(__name__)
 
 
 def cli_main():
@@ -108,8 +109,8 @@ def _export_node_from_config(client, export):
         database = client.get_database(export["id"])
         if database is None:
             msg = (
-                "Unable to find database with id '%s' (%s). "
-                "Perhaps the integration doesn't have permission to access this database?"
+                "Unable to find database with id '%s' (%s). Perhaps the integration"
+                " doesn't have permission to access this database?"
             )
             client.logger.error(msg, export["id"], share_link_from_id(export["id"]))
             return False
