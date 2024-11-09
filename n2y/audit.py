@@ -3,10 +3,10 @@ import logging
 import os
 import sys
 
+from n2y import LOG_HANDLER
 from n2y.blocks import LinkToPageBlock
 from n2y.database import Database
 from n2y.errors import UseNextClass
-from n2y.logger import HANDLER
 from n2y.mentions import PageMention
 from n2y.notion import Client
 from n2y.page import Page
@@ -76,7 +76,7 @@ def main(raw_args, access_token, logger=log):
     logging_level = logging.__dict__[args.verbosity]
     new_formatter = logging.Formatter(args.logging_format)
     logger.setLevel(logging_level)
-    HANDLER.setFormatter(new_formatter)
+    LOG_HANDLER.setFormatter(new_formatter)
 
     if access_token is None:
         logger.critical("No NOTION_ACCESS_TOKEN environment variable is set")
