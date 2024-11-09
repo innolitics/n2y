@@ -43,7 +43,7 @@ def main(raw_args, access_token, n2y_cache=None, logger=log):
     args = parser.parse_args(raw_args)
 
     logging_level = logging.__dict__[args.verbosity]
-    logger.setLevel(logging_level)
+    logging.basicConfig(level=logging_level)
 
     if n2y_cache is not None:
         try:
