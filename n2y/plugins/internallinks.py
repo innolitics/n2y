@@ -1,10 +1,9 @@
 import typing
-import uuid
 import urllib.parse
+import uuid
 
 from n2y.blocks import Block
 from n2y.errors import UseNextClass
-from n2y.logger import logger
 from n2y.rich_text import TextRichText
 from n2y.utils import header_id_from_text
 
@@ -64,22 +63,22 @@ class NotionInternalLink(TextRichText):
 
     def __init__(self, client, notion_data, block=None):
         super().__init__(client, notion_data, block)
-        if block is None or not is_internal_link(
-            self.href, self.block.page.notion_id
-        ):
+        if block is None or not is_internal_link(self.href, self.block.page.notion_id):
             raise UseNextClass
 
     def to_pandoc(self):
         target_id = get_notion_id_from_href(self.href)
         if target_id is None:
-            logger.warning(
+            self.client.logger.warning(
                 "Internal link missing; defaulting to link with no-op behavior"
             )
             return super().to_pandoc()
 
         target_block = find_target_block(self.block.page.block, target_id)
         if target_block is None:
-            logger.error(f"Internal link target block not found: {target_id}")
+            self.client.logger.error(
+                f"Internal link target block not found: {target_id}"
+            )
             # Fallback to default behavior for TextRichText conversion
             return super().to_pandoc()
         header_id = header_id_from_text(target_block.rich_text.to_plain_text())

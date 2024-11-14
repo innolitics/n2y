@@ -1,4 +1,5 @@
 import functools
+import logging
 import numbers
 import re
 import unicodedata
@@ -16,7 +17,8 @@ from n2y.errors import (
     ConnectionThrottled,
     PandocASTParseError,
 )
-from n2y.logger import logger
+
+logger = logging.getLogger(__name__)
 
 # see https://pandoc.org/MANUAL.html#exit-codes
 PANDOC_PARSE_ERROR = 64
@@ -182,7 +184,9 @@ def slugify(value, allow_unicode=False):
         value = unicodedata.normalize("NFKC", value)
     else:
         value = (
-            unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+            unicodedata.normalize("NFKD", value)
+            .encode("ascii", "ignore")
+            .decode("ascii")
         )
     value = re.sub(r"[^\w\s-]", "", value.lower())
     return re.sub(r"[-\s]+", "-", value).strip("-_")
