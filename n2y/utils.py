@@ -1,6 +1,7 @@
 import functools
 import logging
 import numbers
+import random
 import re
 import unicodedata
 from datetime import datetime
@@ -312,10 +313,10 @@ def retry_api_call(api_call):
     Retry an API call if it fails due to a rate limit or server error. Can only be used to
     decorate methods of the `Client` class.
     """
-    max_api_retries = 4
+    max_api_retries = 8
 
     @functools.wraps(api_call)
-    def wrapper(*args, retry_count=0, **kwargs):
+    def wrapper(*args, retry_count=0, _retry_after=2, **kwargs):
         client = args[0]
         assert "retry_count" not in kwargs, "retry_count is a reserved keyword"
         try:
@@ -335,7 +336,9 @@ def retry_api_call(api_call):
                         max_api_retries,
                     )
                 else:
-                    retry_after = 2
+                    retry_after = _retry_after
+                    _retry_after *= 1.5
+                    _retry_after += random.uniform(0, 1)
                     client.logger.info(
                         "This API call failed and "
                         "will be retried in %f seconds. Attempt %d of %d.",
@@ -344,7 +347,9 @@ def retry_api_call(api_call):
                         max_api_retries,
                     )
                 sleep(retry_after)
-                return wrapper(*args, retry_count=retry_count, **kwargs)
+                return wrapper(
+                    *args, retry_count=retry_count, _retry_after=_retry_after**kwargs
+                )
             else:
                 raise err
 

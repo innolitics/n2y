@@ -391,6 +391,9 @@ Here are some features we're planning to add in the future:
 ## Changelog
 
 ### v0.10.3
+- Remove the global logger
+- Implement exponential backoff for API call retries
+- Raise the maximum number of retries to 8
 - Add `_get_child_blocks` to the `ExpandingLinkToPageBlock` in the `expandlinktopages.py`
   plugin and implement it to patch the `Client.get_child_blocks` inside of the `to_pandoc` method.
   This sets the `page` argument to the `self.page` of the `ExpandingLinkToPageBlock` instance,
