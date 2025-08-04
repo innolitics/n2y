@@ -71,7 +71,7 @@ class LinkPreviewMention(Mention):
 class LinkMentionMention(Mention):
     def __init__(self, client, notion_data, plain_text, block=None):
         super().__init__(client, notion_data, plain_text, block)
-        self.url = notion_data["link_preview"]["url"]
+        self.url = notion_data["link_mention"]["url"]
 
     def to_pandoc(self):
         return [Str(self.url)]
