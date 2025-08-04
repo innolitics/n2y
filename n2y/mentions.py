@@ -68,7 +68,16 @@ class LinkPreviewMention(Mention):
         return [Str(self.url)]
 
 
-# TODO: handle template button date and user mentions
+class LinkMentionMention(Mention):
+    def __init__(self, client, notion_data, plain_text, block=None):
+        super().__init__(client, notion_data, plain_text, block)
+        self.url = notion_data["link_preview"]["url"]
+
+    def to_pandoc(self):
+        return [Str(self.url)]
+
+
+# TODO: Handle template mention
 
 DEFAULT_MENTIONS = {
     "user": UserMention,
@@ -76,4 +85,5 @@ DEFAULT_MENTIONS = {
     "database": DatabaseMention,
     "date": DateMention,
     "link_preview": LinkPreviewMention,
+    "link_mention": LinkMentionMention,
 }
