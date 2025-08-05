@@ -34,4 +34,4 @@ rsa==4.7.2
 s3transfer==0.6.1
 six==1.16.0
 tomli==2.0.1
-urllib3==1.26.16
+urllib3==2.5.0
