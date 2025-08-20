@@ -679,3 +679,15 @@ class Client:
         if class_object is None or type(class_object) is self.notion_classes[cls][-1]:
             return True
         return False
+
+    def get_user_pages(self, page_size=500):
+        """
+        Retrieves a list of all pages accessible to the current logged-in user (ACCESS TOKEN).
+        """
+        url = f"{self.base_url}search"
+        params = {
+            "page_size": page_size,
+            "filter": {"property": "object", "value": "page"},
+        }
+        results = self._paginated_request(self._post_url, url, params)
+        return [self._wrap_notion_page(page) for page in results]

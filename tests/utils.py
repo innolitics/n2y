@@ -51,4 +51,7 @@ def parse_yaml_front_matter(content):
 
 
 def newline_lf(input):
+    # Windows uses \r\n (carriage return + newline) for line breaks.
+    # Linux/macOS and Pandoc use only \n.
+    # If your tests compare strings like Markdown output, and Pandoc always produces \n, then your Windows-generated strings with \r\n would fail the equality check.
     return input.replace("\r\n", "\n")
