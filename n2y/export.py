@@ -196,11 +196,13 @@ def database_to_files(
 def write_document(document, path):
     if isinstance(document, bytes):
         file_mode = "wb"
+        encoding = None
     else:
         file_mode = "w"
+        encoding = "utf-8"
     if os.path.dirname(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, file_mode) as f:
+    with open(path, file_mode, encoding=encoding) as f:
         f.write(document)
 
 
