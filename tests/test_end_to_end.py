@@ -262,6 +262,8 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "Simple Test Page" in lines  # from the LinkToPageBlock
     assert "Mention: Simple Test Database" in lines
     assert "Simple Test Database" in lines  # from the LinkToPageBlock
+    assert "[Example Domain](https://example.com/)" in document  # Validate link mention url
+    assert "Example Domain" in document  # Validate link mention text
 
     # from the FileBlock
     assert any("[small_file.txt](media/All_Blocks_Test_Page-" in l for l in lines)
@@ -510,20 +512,3 @@ Yakkity yakkity yakkity yak
             "headers to maintain Markdown spec"
         )
         assert any(expected_blurb in m for m in captured_messages)
-
-
-def test_link_mention_with_page(tmpdir):
-    """
-    Test that a Notion page containing an inline link mention is exported correctly.
-    The page can be seen here:
-    https://fresh-pencil-9f3.notion.site/Simple-Link-Mention-Test-2556bc16d85d80a79f05f39a1932d0a2
-    It contains a single inline link mention: https://example.com/
-    The test checks that the markdown export contains the expected link and plain text fallback.
-    """
-    page_id = "2556bc16d85d80a79f05f39a1932d0a2"
-    document = run_n2y_page(tmpdir, page_id)
-
-    # Check markdown export contains the expected link
-    assert "[Example Domain](https://example.com/)" in document
-    # Check plain text fallback
-    assert "Example Domain" in document
