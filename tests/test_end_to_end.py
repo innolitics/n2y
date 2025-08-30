@@ -262,6 +262,8 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "Simple Test Page" in lines  # from the LinkToPageBlock
     assert "Mention: Simple Test Database" in lines
     assert "Simple Test Database" in lines  # from the LinkToPageBlock
+    assert "[Example Domain](https://example.com/)" in document  # Validate link mention url
+    assert "Example Domain" in document  # Validate link mention text
 
     # from the FileBlock
     assert any("[small_file.txt](media/All_Blocks_Test_Page-" in l for l in lines)

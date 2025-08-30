@@ -1,4 +1,4 @@
-from pandoc.types import Str
+from pandoc.types import Str, Link
 from n2y.blocks import RowBlock
 from n2y.rich_text import RichText
 from n2y.utils import process_notion_date, processed_date_to_plain_text
@@ -71,10 +71,21 @@ class LinkPreviewMention(Mention):
 class LinkMentionMention(Mention):
     def __init__(self, client, notion_data, plain_text, block=None):
         super().__init__(client, notion_data, plain_text, block)
-        # TODO: properly implement this
+        link_mention_data = notion_data["link_mention"]
+        # Support both url and href
+        self.link = link_mention_data.get("url") or link_mention_data.get("href")
+        self.text = link_mention_data.get("title") or plain_text or self.link
 
     def to_pandoc(self):
-        return [Str("")]
+        return [Link(("", [], []), [Str(self.text)], (self.link, ""))]
+
+    def to_value(self, format, options):
+        if format == "markdown" and self.link:
+            return f"[{self.text}]({self.link})"
+        return self.text
+
+    def to_plain_text(self):
+        return self.text
 
 
 # TODO: Handle template mention
