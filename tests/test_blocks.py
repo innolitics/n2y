@@ -9,7 +9,6 @@ from unittest import mock
 import pytest
 from pandoc.types import (
     AlignDefault,
-    BlockQuote,
     BulletList,
     Caption,
     Cell,
@@ -364,7 +363,11 @@ def test_block_quote():
         },
     )
     pandoc_ast, markdown = process_block(notion_block)
-    assert pandoc_ast == BlockQuote(
+    # The QuoteBlock implementation uses a Div with custom-style for DOCX
+    # compatibility (no BlockQuote wrapper)
+    from pandoc.types import Div
+    assert pandoc_ast == Div(
+        ("", [], [("custom-style", "Block Quote")]),
         [
             Para(
                 [
@@ -396,7 +399,9 @@ def test_block_quote():
         ]
     )
     expected_markdown = (
-        "> In a time of deceit telling the truth is a revolutionary act.\n"
+        '::: {custom-style="Block Quote"}\n'
+        "In a time of deceit telling the truth is a revolutionary act.\n"
+        ":::\n"
     )
     assert markdown == expected_markdown
 

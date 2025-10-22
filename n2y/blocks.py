@@ -13,6 +13,7 @@ from pandoc.types import (
     ColWidthDefault,
     Decimal,
     DisplayMath,
+    Div,
     Header,
     HorizontalRule,
     Image,
@@ -558,18 +559,52 @@ class FencedCodeBlock(Block):
 
 
 class QuoteBlock(ParagraphBlock):
+    """
+    Handler for Notion quote blocks with DOCX custom-style support.
+
+    Note: We don't use Pandoc's BlockQuote element because:
+    1. Pandoc doesn't support attributes on BlockQuote elements
+    2. DOCX output requires custom-style attributes for proper Word formatting
+    3. Using Div with custom-style provides better DOCX compatibility
+    """
+
     def __init__(self, client, notion_data, page, get_children=True):
         super().__init__(client, notion_data, page, get_children)
         self.rich_text = client.wrap_notion_rich_text_array(
             self.notion_type_data["rich_text"], self
         )
+        self.notion_color = self._extract_notion_color()
+
+    def _extract_notion_color(self):
+        """Extract color information from Notion block data"""
+        try:
+            if hasattr(self.notion_data, "quote") and self.notion_data.quote:
+                return getattr(self.notion_data.quote, "color", "default")
+            return "default"
+        except Exception:
+            return "default"
 
     def to_pandoc(self):
-        pandoc_ast = super().to_pandoc()
-        return (
-            BlockQuote(pandoc_ast)
-            if isinstance(pandoc_ast, list)
-            else BlockQuote([pandoc_ast])
+        # Get content from parent class (Para or list of blocks)
+        quote_content = super().to_pandoc()
+
+        # Since Pandoc doesn't support attributes on BlockQuote,
+        # use a Div with custom-style for DOCX compatibility
+        if isinstance(quote_content, BlockQuote):
+            # Extract the content from the original BlockQuote
+            # (shouldn't happen with ParagraphBlock)
+            content = quote_content[0]
+        elif isinstance(quote_content, list):
+            # Quote has children - use the list directly
+            content = quote_content
+        else:
+            # Single Para or other element - wrap in list
+            content = [quote_content]
+
+        # Create a Div with custom-style for DOCX compatibility
+        return Div(
+            ("", [], [("custom-style", "Block Quote")]),
+            content
         )
 
 
