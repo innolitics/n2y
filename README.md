@@ -315,6 +315,36 @@ Note that any link to a page that the integration doesn't have access to will be
 
 When this plugin is enabled, any "blue" colored toggle block will have it's children directly rendered. The text on the toggle itself will be ignored.
 
+### Quote Block
+
+This plugin enhances quote blocks for better compatibility across different output formats. Instead of using the default Pandoc `BlockQuote` element, it wraps quote content in a `Div` with specific styling attributes.
+
+**Benefits:**
+- **DOCX Output**: Uses the "Block Quote" paragraph style for professional document formatting
+- **Web/HTML**: Includes CSS classes (`blockquote`, `notion-quote`) for proper visual styling
+- **Accessibility**: Maintains semantic meaning through CSS classes
+
+**Usage:**
+```yaml
+plugins:
+  - "n2y.plugins.quoteblock"
+```
+
+**CSS for Web Compatibility:**
+```css
+.blockquote {
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid #ccc;
+  background-color: #f9f9f9;
+  font-style: italic;
+}
+
+.notion-quote {
+  border-left-color: #2196F3;
+}
+```
+
 ## Architecture
 
 An n2y run is divided into four stages:
