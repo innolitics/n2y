@@ -116,12 +116,10 @@ def test_load_plugins_overrides_old_plugins():
 
 def test_load_quoteblock_plugin():
     """Test loading the quoteblock plugin."""
-    from n2y.blocks import QuoteBlock
-    
+    from n2y.blocks import QuoteBlock   
     client = Client("")
     client.load_plugins(["n2y.plugins.quoteblock"])
     assert client.get_class_list("blocks", "quote") == [
         QuoteBlock,
         NotionQuoteBlock,
     ]
-
