@@ -17,14 +17,14 @@ class NotionQuoteBlock(QuoteBlock):
             if hasattr(self.notion_data, 'quote') and self.notion_data.quote:
                 return getattr(self.notion_data.quote, 'color', 'default')
             return 'default'
-        except:
+        except Exception:
             return 'default'
 
     def to_pandoc(self):
         # Get the regular BlockQuote content from parent class
         quote_content = super().to_pandoc()
 
-        # Since Pandoc doesn't support attributes on BlockQuote, 
+        # Since Pandoc doesn't support attributes on BlockQuote,
         # use a Div with blockquote styling classes for visual compatibility
         if isinstance(quote_content, BlockQuote):
             # Extract the content from the original BlockQuote
@@ -36,7 +36,7 @@ class NotionQuoteBlock(QuoteBlock):
 
         # Create a Div with both DOCX custom-style AND CSS classes for web compatibility
         return Div(
-            ("", ["blockquote", "notion-quote"], [("custom-style", "Block Quote")]), 
+            ("", ["blockquote", "notion-quote"], [("custom-style", "Block Quote")]),
             content
         )
 
