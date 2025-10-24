@@ -500,6 +500,7 @@ class Client:
             "created_time",
             "last_edited_by",
             "last_edited_time",
+            "is_locked",
         ]
         db_children = [
             {key: value for (key, value) in child.items() if key not in bad_keys}
@@ -601,6 +602,7 @@ class Client:
             "last_edited_time",
             "created_by",
             "request_id",
+            "is_locked",
         ]
         if parent_type == "block":
             self.logger.warning(
@@ -631,6 +633,7 @@ class Client:
             "last_edited_time",
             "created_by",
             "request_id",
+            "is_locked",
         ]
         if parent_type == "block":
             self.logger.warning(
