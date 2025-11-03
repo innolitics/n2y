@@ -9,13 +9,26 @@ from pandoc.types import Image, Para
 from n2y.blocks import FencedCodeBlock
 from n2y.errors import UseNextClass
 
-mermaid_config = {"flowchart": {"useMaxWidth": False}}
+
+mermaid_config = {
+    "flowchart": {"useMaxWidth": True},   # Forces diagrams to use available width
+    "theme": "default",
+    "themeVariables": {
+        "fontSize": "30px",               # increases default font size for readability
+        "lineColor": "#000000",         # effects color of connecting lines in diagrams
+        "borderColor": "#000000",       # black border color for nodes to provide clear contrast
+        "textColor": "#000000",         # sets text color globally to black for better readability
+        "primaryColor": "#ffffff"       # fill background color in nodes
+    }
+}
+
 
 puppeteer_config = {
     "headless": True,
     "args": [
         "--no-sandbox",
         "--disable-setuid-sandbox",
+        "--force-device-scale-factor=6.0"  # Defines pixel density for browser rendering
     ],
 }
 
@@ -37,20 +50,21 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
         if self.language != "mermaid":
             raise UseNextClass()
 
+    def _create_temp_json(self, config_dict):
+        fd, filepath = tempfile.mkstemp(suffix=".json")
+        os.write(fd, json.dumps(config_dict).encode("utf-8"))
+        os.close(fd)
+        return filepath
+
+    def _create_temp_png(self):
+        fd, filepath = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
+        return filepath
+
     def to_pandoc(self):
-        # TODO: Clean up by extracting all this temp code out
-        temp_fd, temp_filepath = tempfile.mkstemp(suffix=".png")
-        os.close(temp_fd)
-        temp_config_mermaid_fd, temp_config_mermaid_filepath = tempfile.mkstemp(
-            suffix=".json"
-        )
-        os.write(temp_config_mermaid_fd, json.dumps(mermaid_config).encode("utf-8"))
-        os.close(temp_config_mermaid_fd)
-        temp_config_puppeteer_fd, temp_config_puppeteer_filepath = tempfile.mkstemp(
-            suffix=".json"
-        )
-        os.write(temp_config_puppeteer_fd, json.dumps(puppeteer_config).encode("utf-8"))
-        os.close(temp_config_puppeteer_fd)
+        mermaid_config_path = self._create_temp_json(mermaid_config)
+        puppeteer_config_path = self._create_temp_json(puppeteer_config)
+        temp_png_path = self._create_temp_png()
         try:
             diagram_as_text = self.rich_text.to_plain_text()
             diagram_as_bytes = diagram_as_text.encode()
@@ -58,17 +72,19 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                 [
                     "mmdc",
                     "--configFile",
-                    temp_config_mermaid_filepath,
+                    mermaid_config_path,
                     "--puppeteerConfigFile",
-                    temp_config_puppeteer_filepath,
+                    puppeteer_config_path,
                     "-o",
-                    temp_filepath,
+                    temp_png_path,
+                    "--backgroundColor", "white",
+                    "--scale", "3",
                 ],
                 capture_output=True,
                 input=diagram_as_bytes,
                 check=True,
             )
-            with open(temp_filepath, "rb") as temp_file:
+            with open(temp_png_path, "rb") as temp_file:
                 content = temp_file.read()
                 root = Path(__file__).resolve().parent.parent
                 with open(root / "data" / "mermaid_err.png", "rb") as err_img:
@@ -80,7 +96,7 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                 if self.caption:
                     fig_flag = "fig:"
                     caption = self.caption.to_pandoc()
-            return Para([Image(("", [], []), caption, (url, fig_flag))])
+            return Para([Image(("", [], [("width", "100%")]), caption, (url, fig_flag))])
         except subprocess.CalledProcessError as exc:
             # as of now, mmdc does not ever return a non-zero error code, so
             # this won't ever be hit
@@ -105,6 +121,12 @@ class MermaidFencedCodeBlock(FencedCodeBlock):
                 "Mermaid diagram (%s) in code blocks will not be converted to images."
             )
             self.client.logger.error(msg, self.notion_url)
+        finally:
+            for path in [mermaid_config_path, puppeteer_config_path, temp_png_path]:
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
         return super().to_pandoc()
 
 
