@@ -12,9 +12,9 @@ from n2y.errors import UseNextClass
 
 mermaid_config = {
     "flowchart": {"useMaxWidth": True},   # Forces diagrams to use available width
-    "theme": "default",
+    "theme": "base",
     "themeVariables": {
-        "fontSize": "30px",               # increases default font size for readability
+        "fontSize": "30px",               # increases base font size for readability
         "lineColor": "#000000",         # effects color of connecting lines in diagrams
         "borderColor": "#000000",       # black border color for nodes to provide clear contrast
         "textColor": "#000000",         # sets text color globally to black for better readability
