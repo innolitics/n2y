@@ -175,9 +175,10 @@ class Client:
         try:
             return self.notion_classes[notion_object][object_type]
         except KeyError:
-            raise NotImplementedError(
-                f'Unknown "{notion_object}" class of type "{object_type}"'
+            self.logger.warning(
+                f'Unknown "{notion_object}" class of type "{object_type}". Skipping.'
             )
+            return []
 
     def instantiate_class(self, notion_object, object_type, *args, **kwargs):
         class_list = self.get_class_list(notion_object, object_type)
