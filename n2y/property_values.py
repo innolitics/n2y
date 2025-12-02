@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from n2y.utils import fromisoformat, process_notion_date, processed_date_to_plain_text
 
 
@@ -286,6 +285,17 @@ class UniqueIdPropertyValue(PropertyValue):
         return f"{self.prefix}{self.number}"
 
 
+class ButtonPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
+        self.button = notion_data.get("button", {})
+        # Notion's API for button property values is limited; store raw data
+
+    def to_value(self, _=None, __=None):
+        # Return a dict or string representation of the button property
+        return self.button
+
+
 DEFAULT_PROPERTY_VALUES = {
     "title": TitlePropertyValue,
     "rich_text": TextPropertyValue,
@@ -308,4 +318,5 @@ DEFAULT_PROPERTY_VALUES = {
     "last_edited_time": LastEditedTimePropertyValue,
     "last_edited_by": LastEditedByPropertyValue,
     "unique_id": UniqueIdPropertyValue,
+    "button": ButtonPropertyValue,
 }
