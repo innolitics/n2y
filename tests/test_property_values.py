@@ -232,3 +232,26 @@ def test_unique_id_with_prefix():
         "unique_id", {"number": "1234", "prefix": "Number-"}
     )
     assert process_property_value(notion_data) == "Number-1234"
+
+
+def test_place_empty():
+    notion_data = mock_property_value("place", None)
+    assert process_property_value(notion_data) is None
+
+
+def test_place_non_empty():
+    notion_data = mock_property_value(
+        "place",
+        {
+            "name": "Austin, TX, United States",
+            "address": "Austin, TX, United States",
+            "lat": 30.26759,
+            "lon": -97.74299,
+        },
+    )
+    assert process_property_value(notion_data) == "Austin, TX, United States"
+
+
+def test_button():
+    notion_data = mock_property_value("button", {})
+    assert process_property_value(notion_data) is None

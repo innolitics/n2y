@@ -163,6 +163,14 @@ class UniqueIdProperty(Property):
         self.prefix = notion_data[self.notion_type]["prefix"]
 
 
+class PlaceProperty(Property):
+    pass
+
+
+class ButtonProperty(Property):
+    pass
+
+
 DEFAULT_PROPERTIES = {
     "title": TitleProperty,
     "rich_text": TextProperty,
@@ -185,4 +193,6 @@ DEFAULT_PROPERTIES = {
     "last_edited_time": LastEditedTimeProperty,
     "last_edited_by": LastEditedByProperty,
     "unique_id": UniqueIdProperty,
+    "place": PlaceProperty,
+    "button": ButtonProperty,
 }

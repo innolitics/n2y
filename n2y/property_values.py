@@ -286,6 +286,33 @@ class UniqueIdPropertyValue(PropertyValue):
         return f"{self.prefix}{self.number}"
 
 
+class PlacePropertyValue(PropertyValue):
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
+        notion_place = notion_data["place"]
+        if notion_place is not None:
+            self.name = notion_place.get("name")
+            self.address = notion_place.get("address")
+            self.lat = notion_place.get("lat")
+            self.lon = notion_place.get("lon")
+        else:
+            self.name = None
+            self.address = None
+            self.lat = None
+            self.lon = None
+
+    def to_value(self, _=None, __=None):
+        return self.name
+
+
+class ButtonPropertyValue(PropertyValue):
+    def __init__(self, client, notion_data, page):
+        super().__init__(client, notion_data, page)
+
+    def to_value(self, _=None, __=None):
+        return None
+
+
 DEFAULT_PROPERTY_VALUES = {
     "title": TitlePropertyValue,
     "rich_text": TextPropertyValue,
@@ -308,4 +335,6 @@ DEFAULT_PROPERTY_VALUES = {
     "last_edited_time": LastEditedTimePropertyValue,
     "last_edited_by": LastEditedByPropertyValue,
     "unique_id": UniqueIdPropertyValue,
+    "place": PlacePropertyValue,
+    "button": ButtonPropertyValue,
 }
