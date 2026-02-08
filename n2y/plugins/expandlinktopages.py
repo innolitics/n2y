@@ -18,6 +18,12 @@ class ExpandingLinkToPageBlock(LinkToPageBlock):
             # itself.
             with patch.object(self.client, "get_child_blocks", self._get_child_blocks()):
                 page = self.client.get_page(self.linked_node_id)
+                # Clear the cached block tree so it gets rebuilt using the
+                # patched get_child_blocks, which sets self.page to the
+                # exporting document rather than the linked page. Without this,
+                # a cached _block from a prior export would retain stale page
+                # context (e.g., image filenames using the wrong document title).
+                page._block = None
                 # The `page.block` refers to the ChildPageBlock in the page; we don't
                 # want to call `to_pandoc` on it directly, since we don't want a
                 # full pandoc document, but just the content that would have been in
