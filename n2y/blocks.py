@@ -973,6 +973,7 @@ DEFAULT_BLOCKS = {
     "heading_1": HeadingOneBlock,
     "heading_2": HeadingTwoBlock,
     "heading_3": HeadingThreeBlock,
+    "heading_4": HeadingThreeBlock,
     "bulleted_list_item": BulletedListItemBlock,
     "numbered_list_item": NumberedListItemBlock,
     "to_do": ToDoListItemBlock,
