@@ -249,13 +249,13 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert "-   List block" in lines
     assert "1.  Number list block" in lines
     assert "-   Toggle list" in lines
-    assert '::: {custom-style="Block Quote"}' in lines
+    assert '::: {custom-style="Block Quote" markdown="1"}' in lines
     assert "Block quote single paragraph" in lines
     assert "Block quote second paragraph" in lines
     assert ":::" in lines
     assert "---" in lines
     assert "Callout block" in lines
-    assert "$e^{-i \\pi} = -1$" in lines
+    assert "$$e^{-i \\pi} = -1$$" in lines
     assert "``` javascript\nCode Block\n```" in document
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
