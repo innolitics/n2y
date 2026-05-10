@@ -3,8 +3,8 @@ from collections import deque
 
 from pandoc.types import (
     Code,
+    DisplayMath,
     Emph,
-    InlineMath,
     LineBreak,
     Link,
     Math,
@@ -143,7 +143,7 @@ class EquationRichText(RichText):
             self.client.logger.warning(
                 'Code formatting is being dropped on equation "%s"', self.expression
             )
-        equation_ast = [Math(InlineMath(), self.expression)]
+        equation_ast = [Math(DisplayMath(), self.expression)]
         return self.annotate_pandoc_ast(equation_ast)
 
 
