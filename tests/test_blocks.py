@@ -367,7 +367,7 @@ def test_block_quote():
     # compatibility (no BlockQuote wrapper)
     from pandoc.types import Div
     assert pandoc_ast == Div(
-        ("", [], [("custom-style", "Block Quote")]),
+        ("", [], [("custom-style", "Block Quote"), ("markdown", "1")]),
         [
             Para(
                 [
@@ -399,7 +399,7 @@ def test_block_quote():
         ]
     )
     expected_markdown = (
-        '::: {custom-style="Block Quote"}\n'
+        '::: {custom-style="Block Quote" markdown="1"}\n'
         "In a time of deceit telling the truth is a revolutionary act.\n"
         ":::\n"
     )

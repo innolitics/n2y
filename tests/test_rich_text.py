@@ -1,7 +1,7 @@
 from pandoc.types import (
     Code,
+    DisplayMath,
     Emph,
-    InlineMath,
     Link,
     Math,
     Space,
@@ -220,7 +220,7 @@ def test_equation_inline():
         Str("Equation"),
         Space(),
         Str("("),
-        Math(InlineMath(), example_equation),
+        Math(DisplayMath(), example_equation),
         Str(")"),
         Space(),
         Str("is"),
@@ -237,9 +237,9 @@ def test_equation_inline():
     ]
     assert (
         markdown
-        == "The Schrödinger Equation\n(${\\displaystyle "
+        == "The Schrödinger Equation\n($${\\displaystyle "
         "i\\hbar {\\frac {d}{dt}}\\vert \\Psi (t)\\"
-        "rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}$)\nis"
+        "rangle={\\hat {H}}\\vert \\Psi (t)\\rangle}$$)\nis"
         " a very useful one indeed\n"
     )
 
@@ -303,4 +303,4 @@ def test_prepend():
     mention.items.append(mention_rich_text)
     assert plain.to_pandoc() == [Str("plain"), Space(), Str("text")]
     assert mention.to_pandoc() == [Str("Test"), Space(), Str("Page")]
-    assert equation.to_pandoc() == [Math(InlineMath(), equation_text)]
+    assert equation.to_pandoc() == [Math(DisplayMath(), equation_text)]
