@@ -1005,4 +1005,5 @@ DEFAULT_BLOCKS = {
     "table": TableBlock,
     "table_row": RowBlock,
     "unsupported": UnsupportedBlock,
+    "transcription": UnsupportedBlock,
 }

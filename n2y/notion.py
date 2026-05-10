@@ -49,6 +49,36 @@ DEFAULT_NOTION_CLASSES = {
 }
 
 
+# Fields that are read-only on the Notion API and must be stripped from a
+# block payload before sending it as a child via the "Append block children"
+# endpoint. Sending any of these (even with a "correct" value) now causes a
+# 400 validation error.
+_BLOCK_APPEND_READ_ONLY_KEYS = (
+    "id",
+    "parent",
+    "created_time",
+    "created_by",
+    "last_edited_time",
+    "last_edited_by",
+    "has_children",
+    "archived",
+    "in_trash",
+    "url",
+    "public_url",
+    "request_id",
+    "is_locked",
+)
+
+
+def _sanitize_block_for_append(notion_block):
+    """Strip read-only fields so the block is accepted by Notion's append API."""
+    return {
+        key: value
+        for (key, value) in notion_block.items()
+        if key not in _BLOCK_APPEND_READ_ONLY_KEYS
+    }
+
+
 class Client:
     """
     An instance of the client class has a few purposes:
@@ -501,6 +531,10 @@ class Client:
             "last_edited_by",
             "last_edited_time",
             "is_locked",
+            "archived",
+            "in_trash",
+            "public_url",
+            "request_id",
         ]
         db_children = [
             {key: value for (key, value) in child.items() if key not in bad_keys}
@@ -589,6 +623,7 @@ class Client:
                     portion = child_data_list[i:portion_index_stop]
                 else:
                     portion = child_data_list[i:]
+                portion = [_sanitize_block_for_append(b) for b in portion]
                 appension_return = self._patch_url(
                     f"{self.base_url}blocks/{block_id}/children", {"children": portion}
                 )
@@ -603,6 +638,9 @@ class Client:
             "created_by",
             "request_id",
             "is_locked",
+            "archived",
+            "in_trash",
+            "public_url",
         ]
         if parent_type == "block":
             self.logger.warning(
@@ -634,6 +672,9 @@ class Client:
             "created_by",
             "request_id",
             "is_locked",
+            "archived",
+            "in_trash",
+            "public_url",
         ]
         if parent_type == "block":
             self.logger.warning(
