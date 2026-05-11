@@ -255,7 +255,7 @@ def test_all_blocks_page_to_markdown(tmpdir):
     assert ":::" in lines
     assert "---" in lines
     assert "Callout block" in lines
-    assert "$$e^{-i \\pi} = -1$$" in lines
+    assert '<span markdown="0">\\(e^{-i \\pi} = -1\\)</span>' in document
     assert "``` javascript\nCode Block\n```" in document
     assert lines.count("This is a synced block.") == 2
     assert "This is a synced block from another page." in lines
