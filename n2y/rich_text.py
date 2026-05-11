@@ -4,10 +4,10 @@ from collections import deque
 from pandoc.types import (
     Code,
     Emph,
-    Format,
+    InlineMath,
     LineBreak,
     Link,
-    RawInline,
+    Math,
     Space,
     Str,
     Strikeout,
@@ -143,14 +143,7 @@ class EquationRichText(RichText):
             self.client.logger.warning(
                 'Code formatting is being dropped on equation "%s"', self.expression
             )
-        # Emit MathJax's standard inline-math delimiters wrapped in a
-        # markdown="0" span so downstream Markdown processors (notably
-        # Kramdown, which doesn't recognize $...$ as math and would
-        # otherwise interpret underscores inside as emphasis markers) pass
-        # the contents through to MathJax untouched. Block-level equations
-        # are handled separately by EquationBlock as DisplayMath.
-        raw_html = f'<span markdown="0">\\({self.expression}\\)</span>'
-        equation_ast = [RawInline(Format("html"), raw_html)]
+        equation_ast = [Math(InlineMath(), self.expression)]
         return self.annotate_pandoc_ast(equation_ast)
 
 
