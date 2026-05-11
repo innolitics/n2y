@@ -602,8 +602,9 @@ class QuoteBlock(ParagraphBlock):
             content = [quote_content]
 
         # Create a Div with custom-style for DOCX compatibility
+        # Include markdown="1" so kramdown processes markdown inside the div
         return Div(
-            ("", [], [("custom-style", "Block Quote")]),
+            ("", [], [("custom-style", "Block Quote"), ("markdown", "1")]),
             content
         )
 
@@ -1004,4 +1005,5 @@ DEFAULT_BLOCKS = {
     "table": TableBlock,
     "table_row": RowBlock,
     "unsupported": UnsupportedBlock,
+    "transcription": UnsupportedBlock,
 }
