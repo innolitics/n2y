@@ -53,6 +53,7 @@ The export configuration items may contain the following keys:
 | notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
 | notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
 | property_map | A mapping between the name of properties in Notion, and the name of the properties in the exported files. Set the new value to `null` to discard the property.|
+| keep_unmapped_properties | Defaults to `true`. When set to `false`, the `property_map` acts as an allowlist: any property not in the map is dropped from the export. This prevents properties added or renamed in Notion from leaking into the exported files. The `id_property` and `url_property` are always kept. |
 
 ## Example Configuration Files
 
@@ -402,6 +403,8 @@ Here are some features we're planning to add in the future:
   attributes that store error codes where the HTTP request should be retried and where the HTTP
   request should not be retried.
 - Add `internallinks.py` plugin that adds a resolver for internal links
+- Add the `keep_unmapped_properties` export option; when `false`, the `property_map` acts as an
+  allowlist and properties not in the map are dropped from the export
 
 ### v0.10.2
 - Have the `ConnectionThrottled` exception inherit the `HTTPResponseError` exception and update tests

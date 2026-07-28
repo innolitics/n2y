@@ -42,6 +42,27 @@ def test_page_properties_mapping(page):
     assert properties == {"title": "T"}
 
 
+def test_page_properties_drop_unmapped(page):
+    properties = _page_properties(
+        page, property_map={"property": "p"}, keep_unmapped_properties=False
+    )
+    assert properties == {"p": "P\n"}
+
+
+def test_page_properties_drop_unmapped_keeps_id_and_url(page):
+    properties = _page_properties(
+        page, id_property="id", url_property="url", keep_unmapped_properties=False
+    )
+    assert set(properties) == {"id", "url"}
+
+
+def test_page_properties_drop_unmapped_keeps_mapped_title(page):
+    properties = _page_properties(
+        page, property_map={"title": "title"}, keep_unmapped_properties=False
+    )
+    assert properties == {"title": "T"}
+
+
 def test_page_filename_no_template(page):
     assert _page_filename(page, "pdf") == pdf
     assert _page_filename(page, "pdf+extra") == pdf

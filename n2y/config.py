@@ -32,6 +32,9 @@ EXPORT_DEFAULTS = {
     ],
     "plugins": [],
     "property_map": {},
+    # When False, the property_map acts as an allowlist: properties not in the
+    # map are dropped instead of passing through under their Notion names.
+    "keep_unmapped_properties": True,
     "filename_template": None,
 }
 

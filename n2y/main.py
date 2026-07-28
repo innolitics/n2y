@@ -103,6 +103,7 @@ def _export_node_from_config(client, export):
             export["id_property"],
             export["url_property"],
             export["property_map"],
+            export["keep_unmapped_properties"],
         )
         write_document(document, export["output"])
     else:
@@ -125,6 +126,7 @@ def _export_node_from_config(client, export):
                 notion_filter=export["notion_filter"],
                 notion_sorts=export["notion_sorts"],
                 property_map=export["property_map"],
+                keep_unmapped_properties=export["keep_unmapped_properties"],
             )
             result = yaml.dump(result, sort_keys=False)
             write_document(result, export["output"])
@@ -141,6 +143,7 @@ def _export_node_from_config(client, export):
                 id_property=export["id_property"],
                 url_property=export["url_property"],
                 property_map=export["property_map"],
+                keep_unmapped_properties=export["keep_unmapped_properties"],
             )
         else:
             client.logger.error("Unknown node_type '%s'", node_type)

@@ -22,6 +22,7 @@ def _page_properties(
     id_property=None,
     url_property=None,
     property_map=None,
+    keep_unmapped_properties=True,
 ):
     if pandoc_format is None:
         pandoc_format = "markdown"
@@ -51,6 +52,16 @@ def _page_properties(
         else:
             msg = "Property %s not found in page %s; skipping remapping from %s to %s"
             page.client.logger.warning(msg, original, page.notion_url, original, new)
+    if not keep_unmapped_properties:
+        # Treat the property map as an allowlist so that properties added or
+        # renamed in Notion don't leak into the exported files.
+        kept_properties = {new for new in property_map.values() if new}
+        kept_properties.update(p for p in (id_property, url_property) if p)
+        properties = {
+            name: value
+            for name, value in properties.items()
+            if name in kept_properties
+        }
     return properties
 
 
@@ -62,6 +73,7 @@ def export_page(
     id_property=None,
     url_property=None,
     property_map=None,
+    keep_unmapped_properties=True,
 ):
     pandoc_ast = page.to_pandoc()
 
@@ -84,6 +96,7 @@ def export_page(
             id_property,
             url_property,
             property_map,
+            keep_unmapped_properties,
         )
         return "\n".join(
             [
@@ -124,6 +137,7 @@ def database_to_yaml(
     url_property=None,
     content_property=None,
     property_map=None,
+    keep_unmapped_properties=True,
 ):
     if content_property in database.schema:
         database.client.logger.warning(
@@ -134,7 +148,13 @@ def database_to_yaml(
     results = []
     for page in database.children_filtered(notion_filter, notion_sorts):
         result = _page_properties(
-            page, pandoc_format, pandoc_options, id_property, url_property, property_map
+            page,
+            pandoc_format,
+            pandoc_options,
+            id_property,
+            url_property,
+            property_map,
+            keep_unmapped_properties,
         )
         if content_property:
             pandoc_ast = page.to_pandoc()
@@ -163,6 +183,7 @@ def database_to_files(
     id_property=None,
     url_property=None,
     property_map=None,
+    keep_unmapped_properties=True,
 ):
     seen_file_names = set()
     counts = {"unnamed": 0, "duplicate": 0}
@@ -179,6 +200,7 @@ def database_to_files(
                     id_property,
                     url_property,
                     property_map,
+                    keep_unmapped_properties,
                 )
                 write_document(document, os.path.join(directory, page_filename))
             else:
