@@ -56,6 +56,16 @@ def test_page_properties_drop_unmapped_keeps_id_and_url(page):
     assert set(properties) == {"id", "url"}
 
 
+def test_page_properties_drop_unmapped_keeps_plugin_injected(page):
+    # Plugins may inject extra properties (e.g. embedded mention data) that
+    # don't exist in the page's notion_data; the allowlist must keep them.
+    page.properties["injected"] = page.properties["property"]
+    properties = _page_properties(
+        page, property_map={"property": "p"}, keep_unmapped_properties=False
+    )
+    assert properties == {"p": "P\n", "injected": "P\n"}
+
+
 def test_page_properties_drop_unmapped_keeps_mapped_title(page):
     properties = _page_properties(
         page, property_map={"title": "title"}, keep_unmapped_properties=False
