@@ -54,13 +54,16 @@ def _page_properties(
             page.client.logger.warning(msg, original, page.notion_url, original, new)
     if not keep_unmapped_properties:
         # Treat the property map as an allowlist so that properties added or
-        # renamed in Notion don't leak into the exported files.
+        # renamed in Notion don't leak into the exported files. Only properties
+        # that exist in Notion are dropped; properties injected by plugins
+        # (which won't appear in the page's notion_data) are always kept.
+        notion_property_names = set(page.notion_data["properties"].keys())
         kept_properties = {new for new in property_map.values() if new}
         kept_properties.update(p for p in (id_property, url_property) if p)
         properties = {
             name: value
             for name, value in properties.items()
-            if name in kept_properties
+            if name in kept_properties or name not in notion_property_names
         }
     return properties
 

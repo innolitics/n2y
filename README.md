@@ -53,7 +53,7 @@ The export configuration items may contain the following keys:
 | notion_filter | A [notion filter object](https://developers.notion.com/reference/post-database-query-filter) to be applied to the database. |
 | notion_sorts | A [notion sorts object](https://developers.notion.com/reference/post-database-query-sort) to be applied to the database. |
 | property_map | A mapping between the name of properties in Notion, and the name of the properties in the exported files. Set the new value to `null` to discard the property.|
-| keep_unmapped_properties | Defaults to `true`. When set to `false`, the `property_map` acts as an allowlist: any property not in the map is dropped from the export. This prevents properties added or renamed in Notion from leaking into the exported files. The `id_property` and `url_property` are always kept. |
+| keep_unmapped_properties | Defaults to `true`. When set to `false`, the `property_map` acts as an allowlist: any Notion property not in the map is dropped from the export. This prevents properties added or renamed in Notion from leaking into the exported files. The `id_property`, the `url_property`, and properties injected by plugins are always kept. |
 
 ## Example Configuration Files
 
