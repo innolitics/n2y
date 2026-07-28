@@ -7,6 +7,7 @@ from datetime import datetime
 from time import sleep
 
 import pandoc
+import requests
 import yaml
 from pandoc.types import Meta, MetaBool, MetaList, MetaMap, MetaString, Space, Str
 from plumbum import ProcessExecutionError
@@ -325,6 +326,22 @@ def retry_api_call(api_call):
         assert "retry_count" not in kwargs, "retry_count is a reserved keyword"
         try:
             return api_call(*args, **kwargs)
+        except requests.exceptions.ConnectionError as err:
+            # Transient network failures (e.g. connection reset by peer during
+            # long pulls with many file downloads) are worth retrying too.
+            if retry_count >= max_api_retries:
+                raise err
+            retry_count += 1
+            retry_after = 2 * retry_count
+            client.logger.info(
+                "This API call failed with a connection error and "
+                "will be retried in %f seconds. Attempt %d of %d.",
+                retry_after,
+                retry_count,
+                max_api_retries,
+            )
+            sleep(retry_after)
+            return wrapper(*args, retry_count=retry_count, **kwargs)
         except APIResponseError as err:
             if err.code not in APIErrorCode.RetryableCodes:
                 raise err

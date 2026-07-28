@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from math import isclose
+from unittest.mock import patch
 
 import pytest
+import requests
 from pandoc.types import MetaBool, MetaList, MetaMap, MetaString
 from pytest import raises
 
@@ -122,6 +124,34 @@ def test_retry_api_call_once(code):
 
     assert tester(client)
     assert call_count == 2
+
+
+def test_retry_api_call_connection_error():
+    client = Client(foo_token)
+    call_count = 0
+
+    @retry_api_call
+    def tester(_):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise requests.exceptions.ConnectionError("Connection reset by peer")
+        return True
+
+    with patch("n2y.utils.sleep"):
+        assert tester(client)
+    assert call_count == 2
+
+
+def test_retry_api_call_connection_error_max_retries():
+    client = Client(foo_token)
+
+    @retry_api_call
+    def tester(_):
+        raise requests.exceptions.ConnectionError("Connection reset by peer")
+
+    with patch("n2y.utils.sleep"), raises(requests.exceptions.ConnectionError):
+        tester(client)
 
 
 def test_retry_api_call_max_errors():
