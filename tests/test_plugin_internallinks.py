@@ -1,5 +1,9 @@
 from unittest.mock import Mock, patch
 
+import pytest
+
+from n2y.errors import UseNextClass
+
 from n2y.blocks import ChildPageBlock, DividerBlock, HeadingOneBlock, ParagraphBlock
 from n2y.notion import Client
 from n2y.notion_mocks import (
@@ -12,6 +16,7 @@ from n2y.notion_mocks import (
 )
 from n2y.page import Page
 from n2y.plugins.internallinks import (
+    NotionInternalLink,
     find_target_block,
     get_notion_id_from_href,
     is_internal_link,
@@ -149,6 +154,17 @@ def mock_page_with_link_to_divider(wrap_notion_user, link_text: str = "see below
 
     page.block.children = [divider_block, paragraph_with_link_block]
     return page, href
+
+
+@patch("n2y.notion.Client.wrap_notion_user")
+def test_internal_link_in_block_without_page_uses_next_class(wrap_notion_user):
+    # Rich text can appear in contexts whose block has no page (e.g. property
+    # values); the plugin must defer instead of crashing on block.page.
+    client = Client("", plugins=["n2y.plugins.internallinks"])
+    wrap_notion_user.return_value = User(client, mock_user())
+    rich_text = mock_rich_text(text="x", href="/1234#5678")
+    with pytest.raises(UseNextClass):
+        NotionInternalLink(client, rich_text, block=Mock(page=None))
 
 
 def test_internal_link_to_textless_block_left_unresolved():
