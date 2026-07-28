@@ -81,6 +81,14 @@ class NotionInternalLink(TextRichText):
             )
             # Fallback to default behavior for TextRichText conversion
             return super().to_pandoc()
+        if getattr(target_block, "rich_text", None) is None:
+            # Links can target blocks with no text to anchor to (e.g. images);
+            # there is no header id to point at, so leave the link unchanged.
+            self.client.logger.warning(
+                f"Internal link target block {target_id} has no text; "
+                "leaving link unresolved"
+            )
+            return super().to_pandoc()
         header_id = header_id_from_text(target_block.rich_text.to_plain_text())
         self.href = f"#{header_id}"
         return super().to_pandoc()

@@ -1,6 +1,6 @@
 from unittest.mock import Mock, patch
 
-from n2y.blocks import ChildPageBlock, HeadingOneBlock, ParagraphBlock
+from n2y.blocks import ChildPageBlock, DividerBlock, HeadingOneBlock, ParagraphBlock
 from n2y.notion import Client
 from n2y.notion_mocks import (
     mock_block,
@@ -110,3 +110,51 @@ def test_internal_link_to_pandoc():
     markdown = pandoc_ast_to_markdown(page.to_pandoc(), Mock())
     assert f"# {header_text}" in markdown
     assert f"[{link_text}](#{header_id_from_text(header_text)})" in markdown
+
+
+@patch("n2y.notion.Client.wrap_notion_user")
+def mock_page_with_link_to_divider(wrap_notion_user, link_text: str = "see below"):
+    client = Client("", plugins=["n2y.plugins.internallinks"])
+    wrap_notion_user.return_value = User(client, mock_user())
+
+    page = Page(client, notion_data=mock_page())
+    page_block = ChildPageBlock(
+        client=client,
+        notion_data=mock_block("child_page", {"title": "Mock Page"}),
+        page=page,
+        get_children=False,
+    )
+    page._block = page_block
+
+    divider_block = DividerBlock(
+        client=client,
+        notion_data=mock_block("divider", {}),
+        page=page,
+        get_children=False,
+    )
+
+    href = (
+        f"/{page.notion_id.replace('-', '')}"
+        f"#{divider_block.notion_id.replace('-', '')}"
+    )
+    paragraph_with_link_block = ParagraphBlock(
+        client=client,
+        notion_data=mock_block(
+            "paragraph",
+            {"rich_text": [mock_rich_text(text=link_text, href=href)]},
+        ),
+        page=page,
+        get_children=False,
+    )
+
+    page.block.children = [divider_block, paragraph_with_link_block]
+    return page, href
+
+
+def test_internal_link_to_textless_block_left_unresolved():
+    # Links can target blocks with no rich_text (images, dividers); the plugin
+    # must not crash and should leave the link unchanged.
+    link_text = "see below"
+    page, href = mock_page_with_link_to_divider(link_text=link_text)
+    markdown = pandoc_ast_to_markdown(page.to_pandoc(), Mock())
+    assert f"[{link_text}]({href})" in markdown

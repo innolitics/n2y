@@ -230,6 +230,11 @@ def header_id_from_text(header_text, existing_ids=None):
 
     See https://pandoc.org/MANUAL.html#extension-auto_identifiers
     """
+    # Markdown parsers (pandoc, kramdown) strip surrounding whitespace from
+    # heading text before generating ids; Notion rich text can carry trailing
+    # spaces, which would otherwise become trailing hyphens that don't match
+    # the ids the downstream renderer produces.
+    header_text = header_text.strip()
     have_struck_letter = False
 
     new_header_text = ""
