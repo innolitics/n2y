@@ -63,7 +63,13 @@ class NotionInternalLink(TextRichText):
 
     def __init__(self, client, notion_data, block=None):
         super().__init__(client, notion_data, block)
-        if block is None or not is_internal_link(self.href, self.block.page.notion_id):
+        # Rich text can appear in contexts without a page (e.g. property
+        # values); only same-page links inside a page's blocks are resolvable.
+        if (
+            block is None
+            or block.page is None
+            or not is_internal_link(self.href, self.block.page.notion_id)
+        ):
             raise UseNextClass
 
     def to_pandoc(self):
